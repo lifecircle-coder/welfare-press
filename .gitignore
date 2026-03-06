@@ -34,3 +34,16 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# test & utility scripts
+test_*.js
+check_*.js
+verify_*.js
+clear_*.js
+wipe_*.js
+compile_errors.txt
+*.html
+
+# sql files
+/*.sql
+!/supabase/migrations/*.sql
