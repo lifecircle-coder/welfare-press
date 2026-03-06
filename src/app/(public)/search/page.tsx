@@ -1,12 +1,10 @@
-'use client';
-
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { searchArticles } from '@/lib/services';
 import type { Article } from '@/lib/services';
 
-export default function SearchPage() {
+function SearchContent() {
     const searchParams = useSearchParams();
     const query = searchParams.get('q');
     const [results, setResults] = useState<Article[]>([]);
@@ -62,5 +60,13 @@ export default function SearchPage() {
                 </div>
             )}
         </div>
+    );
+}
+
+export default function SearchPage() {
+    return (
+        <Suspense fallback={<div className="text-center py-20">로딩 중...</div>}>
+            <SearchContent />
+        </Suspense>
     );
 }
