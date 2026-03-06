@@ -30,7 +30,7 @@ export default function SearchPage() {
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             <h1 className="text-2xl font-bold text-gray-900 mb-6">
-                <span className="text-primary">'{query}'</span> 검색 결과
+                <span className="text-primary">&apos;{query}&apos;</span> 검색 결과
             </h1>
 
             {loading ? (

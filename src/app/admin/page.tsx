@@ -69,7 +69,7 @@ export default function AdminDashboard() {
             setWeeklyStats(formattedWeekly);
         }
         loadDashboard();
-    }, []);
+    }, [router]);
 
     // Helper to normalize bar height (max value = 100%)
     // Helper to normalize bar height (max value = 100%)
