@@ -1,95 +1,24 @@
-'use client';
-
 import Link from 'next/link';
-import { useState, useEffect } from 'react';
-import { getArticles } from '@/lib/services';
+import Image from 'next/image';
 import type { Article } from '@/lib/services';
 
-export default function HeroSection() {
-    const [heroArticles, setHeroArticles] = useState<Article[]>([]);
-    const [loading, setLoading] = useState(true);
+interface HeroSectionProps {
+    articles: Article[];
+}
 
-    useEffect(() => {
-        async function loadHero() {
-            setLoading(true);
-            const allArticles = await getArticles();
+export default function HeroSection({ articles }: HeroSectionProps) {
+    if (!articles || articles.length === 0) {
+        return <div className="h-40 flex items-center justify-center text-gray-400">등록된 주요 뉴스가 없습니다.</div>;
+    }
 
-            // Filter published only
-            const published = allArticles.filter(a => a.status === 'published');
+    // Since articles are pre-fetched and sorted by the server-side specialized service,
+    // we can directly pick the top 3.
+    const main = articles[0];
+    const sub1 = articles[1];
+    const sub2 = articles[2];
 
-            if (published.length === 0) {
-                setLoading(false);
-                return;
-            }
+    if (!main) return null;
 
-            // Group by Category
-            const categoryGroups: Record<string, Article[]> = {};
-            published.forEach(a => {
-                // Determine broad category if prefix is used, or just use category
-                // User requirement says "Each menu list". The categories are:
-                // '일자리·취업', '주거·금융', '건강·의료', '생활·안전', '임신·육아'
-                // Our DB stores "category" as these strings.
-                if (!categoryGroups[a.category]) {
-                    categoryGroups[a.category] = [];
-                }
-                categoryGroups[a.category].push(a);
-            });
-
-            // For each category, pick the "Best" candidate
-            // Priority: Today's News (Latest time) > Recent 7 days (Latest time)
-            const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
-
-            const categoryCandidates: { category: string, article: Article, isToday: boolean, timestamp: number }[] = [];
-
-            Object.keys(categoryGroups).forEach(cat => {
-                const articles = categoryGroups[cat];
-                // Sort by date desc (assuming ISO string or YYYY-MM-DD)
-                // created_at is not in interface, so we rely on 'date' or verify services.ts adds created_at
-                // In services.ts we used 'date: new Date().toISOString()', so it's a full timestamp.
-                articles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-                const top = articles[0];
-                const isToday = top.date.startsWith(todayStr);
-
-                categoryCandidates.push({
-                    category: cat,
-                    article: top,
-                    isToday: isToday,
-                    timestamp: new Date(top.date).getTime()
-                });
-            });
-
-            // Sort Candidates
-            // 1. Has Today's item?
-            // 2. Timestamp desc
-            categoryCandidates.sort((a, b) => {
-                if (a.isToday && !b.isToday) return -1;
-                if (!a.isToday && b.isToday) return 1;
-                return b.timestamp - a.timestamp;
-            });
-
-            // Pick Top 3
-            const selected = categoryCandidates.slice(0, 3).map(c => c.article);
-
-            setHeroArticles(selected);
-            setLoading(false);
-        }
-
-        loadHero();
-    }, []);
-
-    if (loading) return <div className="h-96 w-full bg-gray-100 animate-pulse rounded-xl"></div>;
-
-    // If fewer than 3, we just show what we have. 
-    // The UI handles 1, 2, or 3 items robustly implicitly? 
-    // We need to ensure we don't crash.
-    const main = heroArticles[0];
-    const sub1 = heroArticles[1];
-    const sub2 = heroArticles[2];
-
-    if (!main) return null; // Nothing to show
-
-    // Helper for placeholder color
     const getBgColor = (cat: string) => {
         if (cat.includes('일자리')) return 'bg-blue-400';
         if (cat.includes('건강')) return 'bg-green-400';
@@ -98,6 +27,7 @@ export default function HeroSection() {
         if (cat.includes('육아')) return 'bg-pink-400';
         return 'bg-gray-400';
     };
+
     const getSubBgColor = (cat: string) => {
         if (cat.includes('일자리')) return 'bg-blue-300';
         if (cat.includes('건강')) return 'bg-green-300';
@@ -115,13 +45,18 @@ export default function HeroSection() {
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
-
-                {/* Main Hero Card (Left, Large) */}
+                {/* Main Hero Card */}
                 <Link href={`/article/${main.id}`} className="md:col-span-2 group cursor-pointer block">
                     <div className="relative w-full h-64 md:h-96 rounded-xl overflow-hidden mb-4 shadow-sm bg-gray-100">
-                        {/* Use Thumbnail if available, else Color Placeholder */}
                         {main.thumbnail ? (
-                            <img src={main.thumbnail} alt={main.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                            <Image
+                                src={main.thumbnail}
+                                alt={main.title}
+                                fill
+                                priority={true} // High priority for LCP optimization
+                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                sizes="(max-width: 1024px) 100vw, 66vw"
+                            />
                         ) : (
                             <div className={`w-full h-full flex items-center justify-center text-white text-4xl font-bold ${getBgColor(main.category)}`}>
                                 {main.category}
@@ -143,13 +78,20 @@ export default function HeroSection() {
                     </div>
                 </Link>
 
-                {/* Side Stacked Cards (Right, Small) */}
+                {/* Side Stacked Cards */}
                 <div className="flex flex-col gap-6 md:col-span-1">
                     {[sub1, sub2].filter(Boolean).map(article => (
                         <Link key={article.id} href={`/article/${article.id}`} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col group">
                             <div className="h-40 bg-gray-100 relative overflow-hidden">
                                 {article.thumbnail ? (
-                                    <img src={article.thumbnail} alt={article.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <Image
+                                        src={article.thumbnail}
+                                        alt={article.title}
+                                        fill
+                                        priority={true} // High priority for sub-hero images as well
+                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                                    />
                                 ) : (
                                     <div className={`w-full h-full flex items-center justify-center text-white font-bold ${getSubBgColor(article.category)}`}>
                                         {article.category}
@@ -168,7 +110,6 @@ export default function HeroSection() {
                         </Link>
                     ))}
                 </div>
-
             </div>
         </section>
     );

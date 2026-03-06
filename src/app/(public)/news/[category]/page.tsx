@@ -1,45 +1,40 @@
-'use client';
-
-import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { getArticles } from '@/lib/services';
-import type { Article } from '@/lib/services';
 
-export default function CategoryNews({ params }: { params: { category: string } }) {
+export const revalidate = 60; // 1분 단위 캐싱
+
+export default async function CategoryNews({ params }: { params: { category: string } }) {
     const categoryName = decodeURIComponent(params.category);
-    const [newsList, setNewsList] = useState<Article[]>([]);
-    const [topArticles, setTopArticles] = useState<Article[]>([]);
 
-    useEffect(() => {
-        const fetchNews = async () => {
-            const allArticles = await getArticles();
+    // Server-side Data Fetching (Limited to 50 for performance)
+    const allArticles = await getArticles(50);
 
-            // 1. Map URL Slug to Internal Category Name
-            const categoryMap: Record<string, string> = {
-                'childcare': '육아',
-                'jobs': '일자리',
-                'housing': '주거',
-                'health': '건강',
-                'safety': '생활',
-            };
-            const internalCategory = categoryMap[categoryName];
+    // 1. Map URL Slug to Internal Category Name
+    const categoryMap: Record<string, string> = {
+        'childcare': '육아',
+        'jobs': '일자리',
+        'housing': '주거',
+        'health': '건강',
+        'safety': '생활',
+    };
+    const internalCategory = categoryMap[categoryName];
 
-            // 2. Filter Logic
-            if (categoryName === 'all' || !internalCategory) {
-                // General or All
-                setNewsList(allArticles);
-            } else {
-                // Specific Category
-                setNewsList(allArticles.filter(a => a.category === internalCategory || a.category.includes(internalCategory)));
-            }
+    // 2. Filter Logic (on Server)
+    let newsList = [];
+    if (categoryName === 'all' || !internalCategory) {
+        newsList = allArticles.filter(a => a.status === 'published');
+    } else {
+        newsList = allArticles.filter(a =>
+            a.status === 'published' &&
+            (a.category === internalCategory || a.category.includes(internalCategory))
+        );
+    }
 
-            // 3. Top 10 by Views (Global)
-            const sorted = [...allArticles].sort((a, b) => b.views - a.views).slice(0, 10);
-            setTopArticles(sorted);
-        };
-
-        fetchNews();
-    }, [categoryName]);
+    // 3. Top 10 by Views (Global)
+    const topArticles = [...allArticles]
+        .filter(a => a.status === 'published')
+        .sort((a, b) => b.views - a.views)
+        .slice(0, 10);
 
     // UI Mapping
     const categoryTitleMap: Record<string, string> = {
@@ -52,8 +47,7 @@ export default function CategoryNews({ params }: { params: { category: string } 
     };
     const displayName = categoryTitleMap[categoryName] || '뉴스';
 
-    // Helper for Dynamic Border Color (User Request #5)
-    // "Changes underline color to match the category theme"
+    // Helper for Dynamic Border Color
     const getBorderColor = (slug: string) => {
         switch (slug) {
             case 'jobs': return 'border-blue-600 text-blue-900';
@@ -73,7 +67,6 @@ export default function CategoryNews({ params }: { params: { category: string } 
             </h1>
 
             <div className="flex flex-col lg:flex-row gap-8">
-
                 {/* Main News List (Left) */}
                 <div className="flex-1">
                     <div className="space-y-6">
@@ -89,13 +82,12 @@ export default function CategoryNews({ params }: { params: { category: string } 
                                     className="block bg-white border border-gray-100 rounded-xl p-6 hover:shadow-lg transition-shadow group"
                                 >
                                     <div className="flex flex-col md:flex-row gap-6">
-                                        {/* Thumbnail Placeholder */}
-                                        {/* Thumbnail or Placeholder */}
                                         {news.thumbnail ? (
                                             <img
                                                 src={news.thumbnail}
                                                 alt={news.title}
                                                 className="w-full md:w-48 h-32 rounded-lg object-cover flex-shrink-0 bg-gray-100"
+                                                loading="lazy"
                                             />
                                         ) : (
                                             <div className={`w-full md:w-48 h-32 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold
@@ -109,11 +101,10 @@ export default function CategoryNews({ params }: { params: { category: string } 
                                             </div>
                                         )}
 
-                                        {/* Content */}
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="text-primary text-sm font-bold">[{news.category}]</span>
-                                                <span className="text-gray-400 text-sm">{news.date}</span>
+                                                <span className="text-gray-400 text-sm">{new Date(news.date).toLocaleDateString()}</span>
                                             </div>
                                             <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary leading-tight">
                                                 {news.title}
@@ -149,7 +140,6 @@ export default function CategoryNews({ params }: { params: { category: string } 
                         </ul>
                     </div>
                 </aside>
-
             </div>
         </div>
     );

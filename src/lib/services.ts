@@ -59,17 +59,65 @@ export interface PartnershipInquiry {
 
 // --- Articles ---
 
-export const getArticles = async (): Promise<Article[]> => {
+/**
+ * 목록용 기사 조회 (본문 content 제외, 페이징 지원)
+ */
+export const getArticles = async (limit = 20, offset = 0): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
-        .select('*')
-        .order('created_at', { ascending: false });
+        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
 
     if (error) {
         console.error('Error fetching articles:', error);
         return [];
     }
     return data || [];
+};
+
+/**
+ * 카테고리별 기사 조회 (본문 content 제외, 페이징 지원)
+ */
+export const getArticlesByCategory = async (category: string, limit = 20, offset = 0): Promise<Article[]> => {
+    const { data, error } = await supabase
+        .from('articles')
+        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .eq('category', category)
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+    if (error) {
+        console.error('Error fetching articles by category:', error);
+        return [];
+    }
+    return data || [];
+};
+
+/**
+ * 히어로 섹션 전용 기사 조회 (각 카테고리별 최신 1건씩만 효율적으로 호출)
+ */
+export const getHeroArticles = async (): Promise<Article[]> => {
+    const targetCategories = ['건강·의료', '임신·육아', '일자리·취업', '생활·안전', '주거·금융'];
+
+    // 개별 쿼리 병렬 처리로 전체 속도 향상
+    const promises = targetCategories.map(cat =>
+        supabase
+            .from('articles')
+            .select('id, title, category, author, date, summary, thumbnail')
+            .eq('category', cat)
+            .eq('status', 'published')
+            .order('created_at', { ascending: false })
+            .limit(1)
+            .single()
+    );
+
+    const results = await Promise.all(promises);
+    return results
+        .filter(r => r.data)
+        .map(r => r.data as Article);
 };
 
 export const getArticleById = async (id: string): Promise<Article | undefined> => {
@@ -123,12 +171,15 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
     return { success: true };
 };
 
+/**
+ * 기사 검색 (본문 content 제외)
+ */
 export const searchArticles = async (query: string): Promise<Article[]> => {
     if (!query.trim()) return [];
 
     const { data, error } = await supabase
         .from('articles')
-        .select('*')
+        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
         .or(`title.ilike.%${query}%,content.ilike.%${query}%,summary.ilike.%${query}%`)
         .order('created_at', { ascending: false });
 

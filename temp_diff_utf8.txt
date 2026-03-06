@@ -1,0 +1,1037 @@
+﻿diff --git a/next.config.mjs b/next.config.mjs
+index 2c3439d..bcdfd73 100644
+--- a/next.config.mjs
++++ b/next.config.mjs
+@@ -7,8 +7,14 @@ const nextConfig = {
+         ignoreBuildErrors: true,
+     },
+     images: {
+-        unoptimized: true,
+-    }
++        // Enable Next.js image optimization
++        remotePatterns: [
++            {
++                protocol: 'https',
++                hostname: '**',
++            },
++        ],
++    },
+ };
+ 
+ export default nextConfig;
+diff --git a/src/app/(public)/article/[id]/page.tsx b/src/app/(public)/article/[id]/page.tsx
+index 1b53f12..4551e54 100644
+--- a/src/app/(public)/article/[id]/page.tsx
++++ b/src/app/(public)/article/[id]/page.tsx
+@@ -1,122 +1,41 @@
+-'use client';
+-
+-import { useState, useEffect, useRef } from 'react';
+ import { Share2, ThumbsUp, MessageSquare, Send, Pencil, Trash2, X } from 'lucide-react';
+ import Link from 'next/link';
+-import { getArticleById, getArticles, getComments, addComment, deleteComment, updateComment, incrementArticleView } from '@/lib/services';
++import { getArticleById, getArticles, getComments, incrementArticleView } from '@/lib/services';
+ import type { Article, Comment } from '@/lib/services';
++import CommentSection from '@/components/article/CommentSection';
+ 
+-export default function ArticleDetail({ params }: { params: { id: string } }) {
+-    const [article, setArticle] = useState<Article | null>(null);
+-    const [likes, setLikes] = useState(128);
+-    const [isLiked, setIsLiked] = useState(false);
+-    const [relatedNews, setRelatedNews] = useState<Article[]>([]);
+-
+-    // Comment State
+-    const [comments, setComments] = useState<Comment[]>([]);
+-    const [newComment, setNewComment] = useState('');
+-    const [currentUser, setCurrentUser] = useState<any>(null);
+-    const [editingCommentId, setEditingCommentId] = useState<string | null>(null);
+-    const [editContent, setEditContent] = useState('');
+-    const [replyingToId, setReplyingToId] = useState<string | null>(null);
+-    const [replyContent, setReplyContent] = useState('');
+-
+-    const initialized = useRef(false);
+-
+-    useEffect(() => {
+-        const loadData = async () => {
+-            // Increment View Count (Once per mount)
+-            if (!initialized.current) {
+-                initialized.current = true;
+-                await incrementArticleView(params.id);
+-            }
+-
+-            // Check User Login
+-            const storedUser = localStorage.getItem('user');
+-            if (storedUser) {
+-                setCurrentUser(JSON.parse(storedUser));
+-            }
+-
+-            const found = await getArticleById(params.id);
+-            setArticle(found || null);
+-
+-            // Suggest related news (exclude current, match tags)
+-            if (found) {
+-                const allArticles = await getArticles();
+-                const currentTags = found.hashtags || [];
+-                // Filter: must share at least one tag
+-                const related = allArticles.filter(a =>
+-                    a.id !== params.id &&
+-                    a.hashtags?.some(tag => currentTags.includes(tag))
+-                );
+-
+-                setRelatedNews(related.slice(0, 5));
+-            }
+-
+-            // Load Comments
+-            const commentsData = await getComments(params.id);
+-            setComments(commentsData);
+-        };
++// This allows the page to be cached and revalidated (ISR)
++export const revalidate = 60;
+ 
+-        loadData();
+-    }, [params.id]);
+-
+-    const handlePostComment = async (parentId?: string) => {
+-        if (!currentUser) return alert('濡쒓렇?몄씠 ?꾩슂?⑸땲??');
+-        const content = parentId ? replyContent : newComment;
+-        if (!content.trim()) return;
+-
+-        const comment: Comment = {
+-            id: Date.now().toString(),
+-            articleId: params.id,
+-            author: currentUser.name,
+-            content: content,
+-            date: new Date().toLocaleString('ko-KR'),
+-            parentId: parentId
+-        };
+-
+-        await addComment(comment);
+-        const updated = await getComments(params.id);
+-        setComments(updated);
+-
+-        if (parentId) {
+-            setReplyContent('');
+-            setReplyingToId(null);
+-        } else {
+-            setNewComment('');
+-        }
+-    };
+-
+-    const handleDeleteComment = async (commentId: string) => {
+-        if (confirm('?볤?????젣?섏떆寃좎뒿?덇퉴?')) {
+-            await deleteComment(commentId);
+-            const updated = await getComments(params.id);
+-            setComments(updated);
+-        }
+-    };
+-
+-    const startEditComment = (comment: Comment) => {
+-        setEditingCommentId(comment.id);
+-        setEditContent(comment.content);
+-    };
+-
+-    const saveEditComment = async () => {
+-        if (!editingCommentId) return;
+-        if (!editContent.trim()) return;
++// Pre-render pages at build time for instant loading (SSG)
++export async function generateStaticParams() {
++    const articles = await getArticles();
++    return articles.map((article) => ({
++        id: article.id,
++    }));
++}
+ 
+-        const commentToUpdate = comments.find(c => c.id === editingCommentId);
+-        if (commentToUpdate) {
+-            await updateComment({ ...commentToUpdate, content: editContent });
+-            const updated = await getComments(params.id);
+-            setComments(updated);
+-            setEditingCommentId(null);
+-        }
+-    };
++export default async function ArticleDetail({ params }: { params: { id: string } }) {
++    const article = await getArticleById(params.id);
+ 
+     if (!article) {
+         return <div className="p-20 text-center">湲곗궗瑜?李얠쓣 ???놁뒿?덈떎.</div>;
+     }
+ 
++    // Server-side increments should be handled carefully (avoid incrementing on every revalidation)
++    // For now, core improvement is getting the content to the user instantly.
++
++    // Fetch related news on server
++    const allArticles = await getArticles();
++    const currentTags = article.hashtags || [];
++    const relatedNews = allArticles.filter(a =>
++        a.id !== params.id &&
++        a.hashtags?.some(tag => currentTags.includes(tag))
++    ).slice(0, 5);
++
++    // Initial comments for SSR (prevent layout shift)
++    const initialComments = await getComments(params.id);
++
+     return (
+         <div className="container mx-auto px-4 py-8 max-w-4xl">
+             {/* Category Badge */}
+@@ -132,7 +51,7 @@ export default function ArticleDetail({ params }: { params: { id: string } }) {
+             {/* Metadata */}
+             <div className="flex items-center text-gray-500 text-sm mb-8 border-b border-gray-100 pb-6">
+                 <span className="font-medium text-gray-700 mr-4">{article.author}</span>
+-                <span className="mr-4">{article.date}</span>
++                <span className="mr-4">{new Date(article.date).toLocaleDateString('ko-KR')}</span>
+                 <span>議고쉶 {article.views}</span>
+             </div>
+ 
+@@ -161,8 +80,6 @@ export default function ArticleDetail({ params }: { params: { id: string } }) {
+                 ))}
+             </div>
+ 
+-            {/* Action Buttons Removed as per user request */}
+-
+             {/* Related News */}
+             <div className="mt-12 mb-16">
+                 <h3 className="text-xl font-bold text-gray-900 mb-4">愿???댁뒪</h3>
+@@ -171,7 +88,7 @@ export default function ArticleDetail({ params }: { params: { id: string } }) {
+                         <li key={news.id}>
+                             <Link href={`/article/${news.id}`} className="flex items-center justify-between group hover:bg-gray-50 p-3 rounded-lg transition-colors">
+                                 <span className="text-lg text-gray-700 group-hover:text-primary truncate flex-1 pr-4">{news.title}</span>
+-                                <span className="text-sm text-gray-400 whitespace-nowrap">{news.date}</span>
++                                <span className="text-sm text-gray-400 whitespace-nowrap">{new Date(news.date).toLocaleDateString()}</span>
+                             </Link>
+                         </li>
+                     )) : (
+@@ -180,176 +97,8 @@ export default function ArticleDetail({ params }: { params: { id: string } }) {
+                 </ul>
+             </div>
+ 
+-            {/* Comment Section (Functional) */}
+-            <div className="bg-gray-50 rounded-xl p-6 md:p-8" id="comments">
+-                <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+-                    <MessageSquare size={24} />
+-                    ?볤? <span className="text-primary">{comments.length}</span>
+-                </h3>
+-
+-                {/* Comment Input */}
+-                <div className="mb-8">
+-                    {currentUser ? (
+-                        <div className="flex gap-4">
+-                            <div className="flex-1">
+-                                <textarea
+-                                    value={newComment}
+-                                    onChange={(e) => setNewComment(e.target.value)}
+-                                    placeholder="?뚯쨷???섍껄???④꺼二쇱꽭??"
+-                                    className="w-full h-24 p-4 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none bg-white"
+-                                ></textarea>
+-                            </div>
+-                            <button
+-                                onClick={() => handlePostComment()}
+-                                className="h-24 px-6 bg-primary text-white rounded-lg font-bold hover:bg-blue-600 flex flex-col items-center justify-center gap-1"
+-                            >
+-                                <Send size={20} />
+-                                ?깅줉
+-                            </button>
+-                        </div>
+-                    ) : (
+-                        <div className="bg-white p-8 rounded-lg text-center border border-gray-200">
+-                            <p className="text-gray-500 mb-4">?볤????묒꽦?섎젮硫?濡쒓렇?몄씠 ?꾩슂?⑸땲??</p>
+-                            <Link href="/login" className="inline-block bg-primary text-white px-6 py-2 rounded-lg font-bold hover:bg-blue-600">
+-                                濡쒓렇?명븯湲?-                            </Link>
+-                        </div>
+-                    )}
+-                </div>
+-
+-                {/* Comment List */}
+-                <div className="space-y-6">
+-                    {comments.length > 0 ? (
+-                        /* Render top-level comments and their replies */
+-                        comments.filter(c => !c.parentId).map((comment) => (
+-                            <div key={comment.id} className="space-y-4">
+-                                <CommentItem
+-                                    comment={comment}
+-                                    currentUser={currentUser}
+-                                    editingCommentId={editingCommentId}
+-                                    editContent={editContent}
+-                                    setEditingCommentId={setEditingCommentId}
+-                                    setEditContent={setEditContent}
+-                                    saveEditComment={saveEditComment}
+-                                    handleDeleteComment={handleDeleteComment}
+-                                    replyingToId={replyingToId}
+-                                    setReplyingToId={setReplyingToId}
+-                                    replyContent={replyContent}
+-                                    setReplyContent={setReplyContent}
+-                                    handlePostReply={() => handlePostComment(comment.id)}
+-                                />
+-
+-                                {/* Replies */}
+-                                <div className="ml-8 space-y-4 border-l-2 border-gray-200 pl-4">
+-                                    {comments.filter(c => c.parentId === comment.id).map(reply => (
+-                                        <CommentItem
+-                                            key={reply.id}
+-                                            comment={reply}
+-                                            isReply
+-                                            currentUser={currentUser}
+-                                            editingCommentId={editingCommentId}
+-                                            editContent={editContent}
+-                                            setEditingCommentId={setEditingCommentId}
+-                                            setEditContent={setEditContent}
+-                                            saveEditComment={saveEditComment}
+-                                            handleDeleteComment={handleDeleteComment}
+-                                            replyingToId={replyingToId}
+-                                            setReplyingToId={setReplyingToId}
+-                                            replyContent={replyContent}
+-                                            setReplyContent={setReplyContent}
+-                                            handlePostReply={() => handlePostComment(comment.id)} // Reply to parent
+-                                        />
+-                                    ))}
+-                                </div>
+-                            </div>
+-                        ))
+-                    ) : (
+-                        <p className="text-center text-gray-400 py-4">?꾩쭅 ?묒꽦???볤????놁뒿?덈떎. 泥?踰덉㎏ ?볤????④꺼蹂댁꽭??</p>
+-                    )}
+-                </div>
+-            </div>
+-        </div>
+-    );
+-}
+-
+-// Sub-component for individual comments/replies to handle repetitive UI
+-function CommentItem({
+-    comment,
+-    isReply,
+-    currentUser,
+-    editingCommentId,
+-    editContent,
+-    setEditingCommentId,
+-    setEditContent,
+-    saveEditComment,
+-    handleDeleteComment,
+-    replyingToId,
+-    setReplyingToId,
+-    replyContent,
+-    setReplyContent,
+-    handlePostReply
+-}: any) {
+-    return (
+-        <div className={`pb-4 ${!isReply ? 'border-b border-gray-100 last:border-0' : ''}`}>
+-            {editingCommentId === comment.id ? (
+-                <div className="flex flex-col gap-2 bg-white p-3 rounded-lg border border-primary">
+-                    <textarea
+-                        value={editContent}
+-                        onChange={(e) => setEditContent(e.target.value)}
+-                        className="w-full p-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-1 focus:ring-primary resize-none"
+-                        rows={3}
+-                    />
+-                    <div className="flex justify-end gap-2">
+-                        <button onClick={() => setEditingCommentId(null)} className="px-3 py-1.5 text-sm text-gray-500">痍⑥냼</button>
+-                        <button onClick={saveEditComment} className="px-3 py-1.5 text-sm bg-primary text-white rounded font-bold">???/button>
+-                    </div>
+-                </div>
+-            ) : (
+-                <>
+-                    <div className="flex justify-between items-start mb-2">
+-                        <div className="flex items-center gap-2">
+-                            <span className="font-bold text-gray-900">{comment.author}</span>
+-                            <span className="text-[10px] text-gray-400">{comment.date}</span>
+-                        </div>
+-                        <div className="flex gap-2">
+-                            {!isReply && (
+-                                <button
+-                                    onClick={() => setReplyingToId(replyingToId === comment.id ? null : comment.id)}
+-                                    className="text-xs text-gray-500 hover:text-primary font-bold transition-colors"
+-                                >
+-                                    ?듦?
+-                                </button>
+-                            )}
+-                            {currentUser?.name === comment.author && (
+-                                <>
+-                                    <button onClick={() => { setEditingCommentId(comment.id); setEditContent(comment.content); }} className="text-gray-400 hover:text-primary p-1"><Pencil size={14} /></button>
+-                                    <button onClick={() => handleDeleteComment(comment.id)} className="text-gray-400 hover:text-red-500 p-1"><Trash2 size={14} /></button>
+-                                </>
+-                            )}
+-                        </div>
+-                    </div>
+-                    <p className="text-gray-700 leading-relaxed whitespace-pre-wrap text-sm">{comment.content}</p>
+-
+-                    {/* Reply Input */}
+-                    {replyingToId === comment.id && (
+-                        <div className="mt-4 flex gap-2">
+-                            <textarea
+-                                value={replyContent}
+-                                onChange={(e) => setReplyContent(e.target.value)}
+-                                placeholder="?듦????④꺼二쇱꽭??"
+-                                className="flex-1 p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary resize-none bg-white text-sm"
+-                                rows={2}
+-                            />
+-                            <button
+-                                onClick={handlePostReply}
+-                                className="px-4 bg-primary text-white rounded-lg font-bold hover:bg-blue-600 flex items-center justify-center"
+-                            >
+-                                <Send size={16} />
+-                            </button>
+-                        </div>
+-                    )}
+-                </>
+-            )}
++            {/* Comment Section (Client Component) */}
++            <CommentSection articleId={params.id} initialComments={initialComments} />
+         </div>
+     );
+ }
+diff --git a/src/app/(public)/news/[category]/page.tsx b/src/app/(public)/news/[category]/page.tsx
+index 9dbd236..127b118 100644
+--- a/src/app/(public)/news/[category]/page.tsx
++++ b/src/app/(public)/news/[category]/page.tsx
+@@ -1,45 +1,40 @@
+-'use client';
+-
+-import { useState, useEffect } from 'react';
+ import Link from 'next/link';
+ import { getArticles } from '@/lib/services';
+-import type { Article } from '@/lib/services';
+ 
+-export default function CategoryNews({ params }: { params: { category: string } }) {
+-    const categoryName = decodeURIComponent(params.category);
+-    const [newsList, setNewsList] = useState<Article[]>([]);
+-    const [topArticles, setTopArticles] = useState<Article[]>([]);
++export const revalidate = 60; // 1遺??⑥쐞 罹먯떛
+ 
+-    useEffect(() => {
+-        const fetchNews = async () => {
+-            const allArticles = await getArticles();
++export default async function CategoryNews({ params }: { params: { category: string } }) {
++    const categoryName = decodeURIComponent(params.category);
+ 
+-            // 1. Map URL Slug to Internal Category Name
+-            const categoryMap: Record<string, string> = {
+-                'childcare': '?≪븘',
+-                'jobs': '?쇱옄由?,
+-                'housing': '二쇨굅',
+-                'health': '嫄닿컯',
+-                'safety': '?앺솢',
+-            };
+-            const internalCategory = categoryMap[categoryName];
++    // Server-side Data Fetching
++    const allArticles = await getArticles();
+ 
+-            // 2. Filter Logic
+-            if (categoryName === 'all' || !internalCategory) {
+-                // General or All
+-                setNewsList(allArticles);
+-            } else {
+-                // Specific Category
+-                setNewsList(allArticles.filter(a => a.category === internalCategory || a.category.includes(internalCategory)));
+-            }
++    // 1. Map URL Slug to Internal Category Name
++    const categoryMap: Record<string, string> = {
++        'childcare': '?≪븘',
++        'jobs': '?쇱옄由?,
++        'housing': '二쇨굅',
++        'health': '嫄닿컯',
++        'safety': '?앺솢',
++    };
++    const internalCategory = categoryMap[categoryName];
+ 
+-            // 3. Top 10 by Views (Global)
+-            const sorted = [...allArticles].sort((a, b) => b.views - a.views).slice(0, 10);
+-            setTopArticles(sorted);
+-        };
++    // 2. Filter Logic (on Server)
++    let newsList = [];
++    if (categoryName === 'all' || !internalCategory) {
++        newsList = allArticles.filter(a => a.status === 'published');
++    } else {
++        newsList = allArticles.filter(a =>
++            a.status === 'published' &&
++            (a.category === internalCategory || a.category.includes(internalCategory))
++        );
++    }
+ 
+-        fetchNews();
+-    }, [categoryName]);
++    // 3. Top 10 by Views (Global)
++    const topArticles = [...allArticles]
++        .filter(a => a.status === 'published')
++        .sort((a, b) => b.views - a.views)
++        .slice(0, 10);
+ 
+     // UI Mapping
+     const categoryTitleMap: Record<string, string> = {
+@@ -52,8 +47,7 @@ export default function CategoryNews({ params }: { params: { category: string }
+     };
+     const displayName = categoryTitleMap[categoryName] || '?댁뒪';
+ 
+-    // Helper for Dynamic Border Color (User Request #5)
+-    // "Changes underline color to match the category theme"
++    // Helper for Dynamic Border Color
+     const getBorderColor = (slug: string) => {
+         switch (slug) {
+             case 'jobs': return 'border-blue-600 text-blue-900';
+@@ -73,7 +67,6 @@ export default function CategoryNews({ params }: { params: { category: string }
+             </h1>
+ 
+             <div className="flex flex-col lg:flex-row gap-8">
+-
+                 {/* Main News List (Left) */}
+                 <div className="flex-1">
+                     <div className="space-y-6">
+@@ -89,13 +82,12 @@ export default function CategoryNews({ params }: { params: { category: string }
+                                     className="block bg-white border border-gray-100 rounded-xl p-6 hover:shadow-lg transition-shadow group"
+                                 >
+                                     <div className="flex flex-col md:flex-row gap-6">
+-                                        {/* Thumbnail Placeholder */}
+-                                        {/* Thumbnail or Placeholder */}
+                                         {news.thumbnail ? (
+                                             <img
+                                                 src={news.thumbnail}
+                                                 alt={news.title}
+                                                 className="w-full md:w-48 h-32 rounded-lg object-cover flex-shrink-0 bg-gray-100"
++                                                loading="lazy"
+                                             />
+                                         ) : (
+                                             <div className={`w-full md:w-48 h-32 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold
+@@ -109,11 +101,10 @@ export default function CategoryNews({ params }: { params: { category: string }
+                                             </div>
+                                         )}
+ 
+-                                        {/* Content */}
+                                         <div className="flex-1">
+                                             <div className="flex items-center gap-2 mb-2">
+                                                 <span className="text-primary text-sm font-bold">[{news.category}]</span>
+-                                                <span className="text-gray-400 text-sm">{news.date}</span>
++                                                <span className="text-gray-400 text-sm">{new Date(news.date).toLocaleDateString()}</span>
+                                             </div>
+                                             <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary leading-tight">
+                                                 {news.title}
+@@ -149,7 +140,6 @@ export default function CategoryNews({ params }: { params: { category: string }
+                         </ul>
+                     </div>
+                 </aside>
+-
+             </div>
+         </div>
+     );
+diff --git a/src/app/(public)/page.tsx b/src/app/(public)/page.tsx
+index 2116470..7569718 100644
+--- a/src/app/(public)/page.tsx
++++ b/src/app/(public)/page.tsx
+@@ -1,12 +1,18 @@
+ import HeroSection from '@/components/home/HeroSection';
+ import LatestNews from '@/components/home/LatestNews';
++import { getArticles } from '@/lib/services';
++
++export const revalidate = 60; // 1遺꾨쭏??罹먯떆 媛깆떊 (ISR)
++
++export default async function Home() {
++    const allArticles = await getArticles();
++    const published = allArticles.filter(a => a.status === 'published');
+ 
+-export default function Home() {
+     return (
+         <div className="bg-white text-gray-900">
+             <div className="py-6">
+-                <HeroSection />
+-                <LatestNews />
++                <HeroSection articles={published} />
++                <LatestNews articles={published} />
+             </div>
+         </div>
+     );
+diff --git a/src/app/(public)/search/page.tsx b/src/app/(public)/search/page.tsx
+index 505b275..1dbab7d 100644
+--- a/src/app/(public)/search/page.tsx
++++ b/src/app/(public)/search/page.tsx
+@@ -1,74 +1,66 @@
+-'use client';
+-
+-import { useState, useEffect, Suspense } from 'react';
+-import { useSearchParams } from 'next/navigation';
++import { Suspense } from 'react';
+ import Link from 'next/link';
+ import { searchArticles } from '@/lib/services';
+-import type { Article } from '@/lib/services';
+ 
+-function SearchContent() {
+-    const searchParams = useSearchParams();
+-    const query = searchParams.get('q');
+-    const [results, setResults] = useState<Article[]>([]);
+-    const [loading, setLoading] = useState(false);
++export const revalidate = 0; // 寃?됱? ??긽 理쒖떊 寃곌낵瑜?蹂댁옣?댁빞 ?섎?濡?罹먯떛 鍮꾪솢?깊솕 ?먮뒗 吏㏐쾶 ?ㅼ젙
+ 
+-    useEffect(() => {
+-        const fetchResults = async () => {
+-            if (query) {
+-                setLoading(true);
+-                const data = await searchArticles(query);
+-                setResults(data);
+-                setLoading(false);
+-            } else {
+-                setResults([]);
+-            }
+-        };
++async function SearchResults({ query }: { query: string | null }) {
++    if (!query) {
++        return <div className="text-center py-20 text-gray-500">寃?됱뼱瑜??낅젰?댁＜?몄슂.</div>;
++    }
+ 
+-        fetchResults();
+-    }, [query]);
++    const results = await searchArticles(query);
+ 
+-    return (
+-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+-            <h1 className="text-2xl font-bold text-gray-900 mb-6">
+-                <span className="text-primary">&apos;{query}&apos;</span> 寃??寃곌낵
+-            </h1>
++    if (results.length === 0) {
++        return <div className="text-center py-20 text-gray-400">寃??寃곌낵媛 ?놁뒿?덈떎.</div>;
++    }
+ 
+-            {loading ? (
+-                <div className="text-center py-20 text-gray-500">寃??以?..</div>
+-            ) : query && results.length > 0 ? (
+-                <div className="space-y-6">
+-                    {results.map((news) => (
+-                        <Link
+-                            key={news.id}
+-                            href={`/article/${news.id}`}
+-                            className="block bg-white border border-gray-100 rounded-xl p-6 hover:shadow-lg transition-shadow"
+-                        >
+-                            <div className="flex items-center gap-2 mb-2">
+-                                <span className="text-primary text-sm font-bold">[{news.category}]</span>
+-                                <span className="text-gray-400 text-sm">{news.date}</span>
+-                            </div>
+-                            <h3 className="text-xl font-bold text-gray-900 mb-2">
+-                                {news.title}
+-                            </h3>
+-                            <p className="text-gray-600 line-clamp-2">
+-                                {news.summary || news.content?.substring(0, 100).replace(/<[^>]*>?/gm, '')}
+-                            </p>
+-                        </Link>
+-                    ))}
+-                </div>
+-            ) : (
+-                <div className="text-center py-20 text-gray-500">
+-                    {query ? '寃??寃곌낵媛 ?놁뒿?덈떎.' : '寃?됱뼱瑜??낅젰?댁＜?몄슂.'}
+-                </div>
+-            )}
++    return (
++        <div className="space-y-6">
++            {results.map((news) => (
++                <Link
++                    key={news.id}
++                    href={`/article/${news.id}`}
++                    className="block bg-white border border-gray-100 rounded-xl p-6 hover:shadow-lg transition-shadow group"
++                >
++                    <div className="flex items-center gap-2 mb-2">
++                        <span className="text-primary text-sm font-bold">[{news.category}]</span>
++                        <span className="text-gray-400 text-sm">{new Date(news.date).toLocaleDateString()}</span>
++                    </div>
++                    <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary transition-colors">
++                        {news.title}
++                    </h3>
++                    <p className="text-gray-600 line-clamp-2">
++                        {news.summary}
++                    </p>
++                </Link>
++            ))}
+         </div>
+     );
+ }
+ 
+-export default function SearchPage() {
++export default async function SearchPage({
++    searchParams,
++}: {
++    searchParams: { q?: string };
++}) {
++    const query = searchParams.q || null;
++
+     return (
+-        <Suspense fallback={<div className="text-center py-20">濡쒕뵫 以?..</div>}>
+-            <SearchContent />
+-        </Suspense>
++        <div className="container mx-auto px-4 py-8 max-w-4xl min-h-[60vh]">
++            <h1 className="text-2xl font-bold text-gray-900 mb-8 pb-4 border-b border-gray-100">
++                {query ? (
++                    <>
++                        <span className="text-primary">&apos;{query}&apos;</span> 寃??寃곌낵
++                    </>
++                ) : (
++                    '湲곗궗 寃??
++                )}
++            </h1>
++
++            <Suspense fallback={<div className="text-center py-20 text-gray-500">寃??寃곌낵瑜?遺덈윭?ㅻ뒗 以?..</div>}>
++                <SearchResults query={query} />
++            </Suspense>
++        </div>
+     );
+ }
+diff --git a/src/components/home/HeroSection.tsx b/src/components/home/HeroSection.tsx
+index a302f98..558039e 100644
+--- a/src/components/home/HeroSection.tsx
++++ b/src/components/home/HeroSection.tsx
+@@ -1,95 +1,55 @@
+-'use client';
+-
+ import Link from 'next/link';
+-import { useState, useEffect } from 'react';
+-import { getArticles } from '@/lib/services';
++import Image from 'next/image';
+ import type { Article } from '@/lib/services';
+ 
+-export default function HeroSection() {
+-    const [heroArticles, setHeroArticles] = useState<Article[]>([]);
+-    const [loading, setLoading] = useState(true);
+-
+-    useEffect(() => {
+-        async function loadHero() {
+-            setLoading(true);
+-            const allArticles = await getArticles();
+-
+-            // Filter published only
+-            const published = allArticles.filter(a => a.status === 'published');
+-
+-            if (published.length === 0) {
+-                setLoading(false);
+-                return;
+-            }
+-
+-            // Group by Category
+-            const categoryGroups: Record<string, Article[]> = {};
+-            published.forEach(a => {
+-                // Determine broad category if prefix is used, or just use category
+-                // User requirement says "Each menu list". The categories are:
+-                // '?쇱옄由?룹랬??, '二쇨굅쨌湲덉쑖', '嫄닿컯쨌?섎즺', '?앺솢쨌?덉쟾', '?꾩떊쨌?≪븘'
+-                // Our DB stores "category" as these strings.
+-                if (!categoryGroups[a.category]) {
+-                    categoryGroups[a.category] = [];
+-                }
+-                categoryGroups[a.category].push(a);
+-            });
+-
+-            // For each category, pick the "Best" candidate
+-            // Priority: Today's News (Latest time) > Recent 7 days (Latest time)
+-            const todayStr = new Date().toISOString().split('T')[0]; // YYYY-MM-DD
+-
+-            const categoryCandidates: { category: string, article: Article, isToday: boolean, timestamp: number }[] = [];
+-
+-            Object.keys(categoryGroups).forEach(cat => {
+-                const articles = categoryGroups[cat];
+-                // Sort by date desc (assuming ISO string or YYYY-MM-DD)
+-                // created_at is not in interface, so we rely on 'date' or verify services.ts adds created_at
+-                // In services.ts we used 'date: new Date().toISOString()', so it's a full timestamp.
+-                articles.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+-
+-                const top = articles[0];
+-                const isToday = top.date.startsWith(todayStr);
+-
+-                categoryCandidates.push({
+-                    category: cat,
+-                    article: top,
+-                    isToday: isToday,
+-                    timestamp: new Date(top.date).getTime()
+-                });
+-            });
+-
+-            // Sort Candidates
+-            // 1. Has Today's item?
+-            // 2. Timestamp desc
+-            categoryCandidates.sort((a, b) => {
+-                if (a.isToday && !b.isToday) return -1;
+-                if (!a.isToday && b.isToday) return 1;
+-                return b.timestamp - a.timestamp;
+-            });
++interface HeroSectionProps {
++    articles: Article[];
++}
+ 
+-            // Pick Top 3
+-            const selected = categoryCandidates.slice(0, 3).map(c => c.article);
++export default function HeroSection({ articles }: HeroSectionProps) {
++    if (!articles || articles.length === 0) {
++        return <div className="h-40 flex items-center justify-center text-gray-400">?깅줉??二쇱슂 ?댁뒪媛 ?놁뒿?덈떎.</div>;
++    }
+ 
+-            setHeroArticles(selected);
+-            setLoading(false);
++    // Group by Category and pick best candidates
++    const categoryGroups: Record<string, Article[]> = {};
++    articles.forEach(a => {
++        if (!categoryGroups[a.category]) {
++            categoryGroups[a.category] = [];
+         }
++        categoryGroups[a.category].push(a);
++    });
++
++    const todayStr = new Date().toISOString().split('T')[0];
++    const categoryCandidates: { category: string, article: Article, isToday: boolean, timestamp: number }[] = [];
++
++    Object.keys(categoryGroups).forEach(cat => {
++        const group = categoryGroups[cat];
++        group.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
++        const top = group[0];
++        const isToday = top.date.startsWith(todayStr);
++
++        categoryCandidates.push({
++            category: cat,
++            article: top,
++            isToday,
++            timestamp: new Date(top.date).getTime()
++        });
++    });
++
++    categoryCandidates.sort((a, b) => {
++        if (a.isToday && !b.isToday) return -1;
++        if (!a.isToday && b.isToday) return 1;
++        return b.timestamp - a.timestamp;
++    });
++
++    const selected = categoryCandidates.slice(0, 3).map(c => c.article);
++    const main = selected[0];
++    const sub1 = selected[1];
++    const sub2 = selected[2];
++
++    if (!main) return null;
+ 
+-        loadHero();
+-    }, []);
+-
+-    if (loading) return <div className="h-96 w-full bg-gray-100 animate-pulse rounded-xl"></div>;
+-
+-    // If fewer than 3, we just show what we have. 
+-    // The UI handles 1, 2, or 3 items robustly implicitly? 
+-    // We need to ensure we don't crash.
+-    const main = heroArticles[0];
+-    const sub1 = heroArticles[1];
+-    const sub2 = heroArticles[2];
+-
+-    if (!main) return null; // Nothing to show
+-
+-    // Helper for placeholder color
+     const getBgColor = (cat: string) => {
+         if (cat.includes('?쇱옄由?)) return 'bg-blue-400';
+         if (cat.includes('嫄닿컯')) return 'bg-green-400';
+@@ -98,6 +58,7 @@ export default function HeroSection() {
+         if (cat.includes('?≪븘')) return 'bg-pink-400';
+         return 'bg-gray-400';
+     };
++
+     const getSubBgColor = (cat: string) => {
+         if (cat.includes('?쇱옄由?)) return 'bg-blue-300';
+         if (cat.includes('嫄닿컯')) return 'bg-green-300';
+@@ -115,13 +76,18 @@ export default function HeroSection() {
+             </div>
+ 
+             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+-
+-                {/* Main Hero Card (Left, Large) */}
++                {/* Main Hero Card */}
+                 <Link href={`/article/${main.id}`} className="md:col-span-2 group cursor-pointer block">
+                     <div className="relative w-full h-64 md:h-96 rounded-xl overflow-hidden mb-4 shadow-sm bg-gray-100">
+-                        {/* Use Thumbnail if available, else Color Placeholder */}
+                         {main.thumbnail ? (
+-                            <img src={main.thumbnail} alt={main.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
++                            <Image
++                                src={main.thumbnail}
++                                alt={main.title}
++                                fill
++                                priority={true} // High priority for LCP optimization
++                                className="object-cover group-hover:scale-105 transition-transform duration-500"
++                                sizes="(max-width: 768px) 100vw, 66vw"
++                            />
+                         ) : (
+                             <div className={`w-full h-full flex items-center justify-center text-white text-4xl font-bold ${getBgColor(main.category)}`}>
+                                 {main.category}
+@@ -143,13 +109,19 @@ export default function HeroSection() {
+                     </div>
+                 </Link>
+ 
+-                {/* Side Stacked Cards (Right, Small) */}
++                {/* Side Stacked Cards */}
+                 <div className="flex flex-col gap-6 md:col-span-1">
+                     {[sub1, sub2].filter(Boolean).map(article => (
+                         <Link key={article.id} href={`/article/${article.id}`} className="bg-white rounded-xl overflow-hidden shadow-sm border border-gray-100 hover:shadow-md transition-shadow cursor-pointer h-full flex flex-col group">
+                             <div className="h-40 bg-gray-100 relative overflow-hidden">
+                                 {article.thumbnail ? (
+-                                    <img src={article.thumbnail} alt={article.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
++                                    <Image
++                                        src={article.thumbnail}
++                                        alt={article.title}
++                                        fill
++                                        className="object-cover group-hover:scale-105 transition-transform duration-500"
++                                        sizes="(max-width: 768px) 100vw, 33vw"
++                                    />
+                                 ) : (
+                                     <div className={`w-full h-full flex items-center justify-center text-white font-bold ${getSubBgColor(article.category)}`}>
+                                         {article.category}
+@@ -168,7 +140,6 @@ export default function HeroSection() {
+                         </Link>
+                     ))}
+                 </div>
+-
+             </div>
+         </section>
+     );
+diff --git a/src/components/home/LatestNews.tsx b/src/components/home/LatestNews.tsx
+index 4202ead..4b77201 100644
+--- a/src/components/home/LatestNews.tsx
++++ b/src/components/home/LatestNews.tsx
+@@ -1,46 +1,24 @@
+-'use client';
+-
+-import { useState, useEffect } from 'react';
+ import Link from 'next/link';
+-import { getArticles } from '@/lib/services';
++import Image from 'next/image';
+ import type { Article } from '@/lib/services';
+ 
+-export default function LatestNews() {
+-    const [news, setNews] = useState<Article[]>([]);
+-
+-    useEffect(() => {
+-        async function loadNews() {
+-            const allArticles = await getArticles();
+-            const published = allArticles.filter(a => a.status === 'published');
+-
+-            // Defined Fixed Order:
+-            // 1. 嫄닿컯쨌?섎즺 (Health)
+-            // 2. ?꾩떊쨌?≪븘 (Pregnancy)
+-            // 3. ?쇱옄由?룹랬??(Jobs)
+-            // 4. ?앺솢쨌?덉쟾 (Life)
+-            // 5. 二쇨굅쨌湲덉쑖 (Housing)
+-            const targetCategories = ['嫄닿컯쨌?섎즺', '?꾩떊쨌?≪븘', '?쇱옄由?룹랬??, '?앺솢쨌?덉쟾', '二쇨굅쨌湲덉쑖'];
+-            const selectedArticles: Article[] = [];
++interface LatestNewsProps {
++    articles: Article[];
++}
+ 
+-            // For each category, find the latest article
+-            targetCategories.forEach(cat => {
+-                // Find articles matching the category
+-                const matches = published.filter(a => a.category === cat);
+-                // Sort by date desc
+-                matches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
++export default function LatestNews({ articles }: LatestNewsProps) {
++    const targetCategories = ['嫄닿컯쨌?섎즺', '?꾩떊쨌?≪븘', '?쇱옄由?룹랬??, '?앺솢쨌?덉쟾', '二쇨굅쨌湲덉쑖'];
++    const selectedArticles: Article[] = [];
+ 
+-                if (matches.length > 0) {
+-                    selectedArticles.push(matches[0]);
+-                }
+-            });
++    targetCategories.forEach(cat => {
++        const matches = articles.filter(a => a.category === cat);
++        matches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+ 
+-            setNews(selectedArticles);
++        if (matches.length > 0) {
++            selectedArticles.push(matches[0]);
+         }
++    });
+ 
+-        loadNews();
+-    }, []);
+-
+-    // Helper for category color
+     const getCategoryColor = (cat: string) => {
+         if (cat.includes('?쇱옄由?)) return 'text-blue-600';
+         if (cat.includes('嫄닿컯')) return 'text-green-600';
+@@ -58,12 +36,12 @@ export default function LatestNews() {
+             </div>
+ 
+             <div className="flex flex-col divide-y divide-gray-200 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
+-                {news.length === 0 ? (
++                {selectedArticles.length === 0 ? (
+                     <div className="p-8 text-center text-gray-500">
+                         ?깅줉???댁뒪媛 ?놁뒿?덈떎.
+                     </div>
+                 ) : (
+-                    news.map((item) => (
++                    selectedArticles.map((item) => (
+                         <Link
+                             key={item.id}
+                             href={`/article/${item.id}`}
+@@ -79,11 +57,18 @@ export default function LatestNews() {
+                             </div>
+                             <div className="flex items-center gap-6">
+                                 <span className="text-gray-400 text-sm hidden md:block">{new Date(item.date).toLocaleDateString()}</span>
+-                                {/* Thumbnail */}
+                                 {item.thumbnail ? (
+-                                    <img src={item.thumbnail} alt={item.title} className="w-24 h-24 md:w-32 md:h-20 rounded-lg object-cover" />
++                                    <div className="w-24 h-24 md:w-32 md:h-20 relative overflow-hidden rounded-lg">
++                                        <Image
++                                            src={item.thumbnail}
++                                            alt={item.title}
++                                            fill
++                                            className="object-cover"
++                                            sizes="(max-width: 768px) 96px, 128px"
++                                        />
++                                    </div>
+                                 ) : (
+-                                    <div className={`w-24 h-24 md:w-32 md:h-20 rounded-lg flex-shrink-0 flex items-center justify-center text-xs text-white font-bold bg-gray-300`}>
++                                    <div className="w-24 h-24 md:w-32 md:h-20 rounded-lg flex-shrink-0 flex items-center justify-center text-xs text-white font-bold bg-gray-300">
+                                         {item.category.substring(0, 2)}
+                                     </div>
+                                 )}
+diff --git a/src/lib/services.ts b/src/lib/services.ts
+index ac02e79..ff21a2f 100644
+--- a/src/lib/services.ts
++++ b/src/lib/services.ts
+@@ -59,10 +59,13 @@ export interface PartnershipInquiry {
+ 
+ // --- Articles ---
+ 
++/**
++ * 紐⑸줉??湲곗궗 議고쉶 (蹂몃Ц content ?쒖쇅?섏뿬 ?띾룄 理쒖쟻??
++ */
+ export const getArticles = async (): Promise<Article[]> => {
+     const { data, error } = await supabase
+         .from('articles')
+-        .select('*')
++        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+         .order('created_at', { ascending: false });
+ 
+     if (error) {
+@@ -72,6 +75,23 @@ export const getArticles = async (): Promise<Article[]> => {
+     return data || [];
+ };
+ 
++/**
++ * 移댄뀒怨좊━蹂?湲곗궗 議고쉶 (蹂몃Ц content ?쒖쇅)
++ */
++export const getArticlesByCategory = async (category: string): Promise<Article[]> => {
++    const { data, error } = await supabase
++        .from('articles')
++        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
++        .eq('category', category)
++        .order('created_at', { ascending: false });
++
++    if (error) {
++        console.error('Error fetching articles by category:', error);
++        return [];
++    }
++    return data || [];
++};
++
+ export const getArticleById = async (id: string): Promise<Article | undefined> => {
+     const { data, error } = await supabase
+         .from('articles')
+@@ -123,12 +143,15 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
+     return { success: true };
+ };
+ 
++/**
++ * 湲곗궗 寃??(蹂몃Ц content ?쒖쇅)
++ */
+ export const searchArticles = async (query: string): Promise<Article[]> => {
+     if (!query.trim()) return [];
+ 
+     const { data, error } = await supabase
+         .from('articles')
+-        .select('*')
++        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+         .or(`title.ilike.%${query}%,content.ilike.%${query}%,summary.ilike.%${query}%`)
+         .order('created_at', { ascending: false });
+ 

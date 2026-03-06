@@ -1,0 +1,50 @@
+﻿
+> welfare-press@0.1.0 build
+> next build
+
+  ??Next.js 14.2.3
+  - Environments: .env.local
+
+   Creating an optimized production build ...
+ ??Compiled successfully
+   Skipping validation of types
+   Skipping linting
+   Collecting page data ...
+   Generating static pages (0/17) ...
+   Generating static pages (4/17) 
+   Generating static pages (8/17) 
+   Generating static pages (12/17) 
+ ??Generating static pages (17/17)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                          Size     First Load JS
+????/                                                5.29 kB        99.3 kB
+????/_not-found                                      871 B          88.1 kB
+????/admin                                           5.11 kB         143 kB
+????/admin/articles                                  34.9 kB         180 kB
+????/admin/articles/write                            6.8 kB          152 kB
+????/admin/inquiries                                 4.98 kB         143 kB
+????/admin/login                                     3.14 kB         141 kB
+????/admin/partnerships                              6.47 kB         144 kB
+????/admin/users                                     5.89 kB         144 kB
+??? /admin/users/[id]                                6.72 kB         151 kB
+????/article/[id]                                    5.39 kB         150 kB
+??  ??/article/82419596-2e72-4b65-b90f-b90f0b0fad5c
+??  ??/article/f006f73d-bfa1-4007-8cff-44717406893d
+??? /auth/callback                                   0 B                0 B
+????/login                                           2.75 kB         147 kB
+????/mypage                                          5.56 kB         150 kB
+??? /news/[category]                                 176 B          94.1 kB
+??? /policy/[type]                                   5.22 kB        92.4 kB
+??? /search                                          176 B          94.1 kB
++ First Load JS shared by all                        87.2 kB
+  ??chunks/23-25f09db32f0c0bad.js                    31.5 kB
+  ??chunks/fd9d1056-47f1f6ddf2860a78.js              53.6 kB
+  ??other shared chunks (total)                      2.09 kB
+
+
+?? (Static)   prerendered as static content
+?? (SSG)      prerendered as static HTML (uses getStaticProps)
+?  (Dynamic)  server-rendered on demand
+

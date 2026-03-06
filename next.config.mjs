@@ -7,8 +7,14 @@ const nextConfig = {
         ignoreBuildErrors: true,
     },
     images: {
-        unoptimized: true,
-    }
+        // Enable Next.js image optimization
+        remotePatterns: [
+            {
+                protocol: 'https',
+                hostname: '**',
+            },
+        ],
+    },
 };
 
 export default nextConfig;
