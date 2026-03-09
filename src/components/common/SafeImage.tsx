@@ -17,7 +17,7 @@ export default function SafeImage({ src, fallback, ...props }: SafeImageProps) {
         setHasError(false);
     }, [src]);
 
-    if (!imgSrc || imgSrc === '' || hasError) {
+    if (!imgSrc || imgSrc.trim() === '' || hasError) {
         return <>{fallback}</>;
     }
 

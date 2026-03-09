@@ -85,23 +85,30 @@ export default function ClientQuillEditor({ value, onChange, articleId }: Client
     ];
 
     return (
-        <div className="relative min-h-[450px]">
+        <div className="relative mb-12">
+            <style>{`
+                .ql-container {
+                    min-height: 400px !important;
+                    font-size: 16px !important;
+                }
+                .ql-editor {
+                    min-height: 400px !important;
+                }
+            `}</style>
             {isUploading && (
                 <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded">
                     <div className="text-primary font-bold">이미지 업로드 중...</div>
                 </div>
             )}
-            <div className="h-[400px] mb-12">
-                <ReactQuill
-                    ref={quillRef}
-                    theme="snow"
-                    value={value}
-                    onChange={onChange}
-                    modules={modules}
-                    formats={formats}
-                    style={{ height: '400px', backgroundColor: 'white' }}
-                />
-            </div>
+            <ReactQuill
+                ref={quillRef}
+                theme="snow"
+                value={value}
+                onChange={onChange}
+                modules={modules}
+                formats={formats}
+                className="bg-white"
+            />
         </div>
     );
 }
