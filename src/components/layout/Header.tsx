@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Search, Menu, ZoomIn, X, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 
 import { supabase } from '@/lib/supabaseClient';
 
@@ -12,13 +12,20 @@ export default function Header() {
     const [isSearchOpen, setIsSearchOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [isNavigating, setIsNavigating] = useState(false);
     const router = useRouter();
+    const pathname = usePathname();
 
     const today = new Date().toLocaleDateString('ko-KR', {
         year: 'numeric',
         month: '2-digit',
         day: '2-digit',
     });
+
+    // Handle navigation progress bar
+    useEffect(() => {
+        setIsNavigating(false);
+    }, [pathname]);
 
     useEffect(() => {
         // Check for active session on load
@@ -65,6 +72,12 @@ export default function Header() {
 
 
 
+    const handleMenuClick = (href: string) => {
+        if (href === pathname) return;
+        setIsNavigating(true);
+        setIsMenuOpen(false);
+    };
+
     const menuItems = [
         { name: '종합', href: '/news/all' },
         { name: '건강·의료', href: '/news/health' },
@@ -105,6 +118,10 @@ export default function Header() {
     return (
         <>
             <header className="w-full bg-white border-b border-gray-200 sticky top-0 z-50">
+                {/* Navigation Progress Bar */}
+                {isNavigating && (
+                    <div className="fixed top-0 left-0 h-1 bg-primary z-[60] animate-progress shadow-[0_0_10px_rgba(59,130,246,0.5)]"></div>
+                )}
                 {/* Top Bar */}
                 <div className="bg-gray-50 border-b border-gray-100 py-2">
                     <div className="container mx-auto px-4 flex justify-between items-center text-sm text-gray-600">
@@ -212,7 +229,11 @@ export default function Header() {
                         <ul className="flex items-center justify-center gap-8 py-3 font-medium text-lg text-gray-800">
                             {menuItems.map((item) => (
                                 <li key={item.name}>
-                                    <Link href={item.href} className="hover:text-primary transition-colors py-2 block">
+                                    <Link
+                                        href={item.href}
+                                        onClick={() => handleMenuClick(item.href)}
+                                        className="hover:text-primary transition-colors py-2 block"
+                                    >
                                         {item.name}
                                     </Link>
                                 </li>
@@ -245,6 +266,15 @@ export default function Header() {
             <style jsx global>{`
                 html.text-lg-mode {
                     font-size: 112.5%; /* 18px base */
+                }
+                @keyframes progress {
+                    0% { width: 0%; opacity: 1; }
+                    50% { width: 70%; opacity: 1; }
+                    90% { width: 90%; opacity: 1; }
+                    100% { width: 100%; opacity: 0; }
+                }
+                .animate-progress {
+                    animation: progress 2s ease-out forwards;
                 }
             `}</style>
         </>

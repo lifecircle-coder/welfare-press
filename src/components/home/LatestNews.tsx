@@ -36,8 +36,9 @@ export default function LatestNews({ articles }: LatestNewsProps) {
 
             <div className="flex flex-col divide-y divide-gray-200 bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 {selectedArticles.length === 0 ? (
-                    <div className="p-8 text-center text-gray-500">
-                        등록된 뉴스가 없습니다.
+                    <div className="p-16 text-center bg-white rounded-xl">
+                        <div className="text-4xl mb-4">📂</div>
+                        <p className="text-gray-500 font-medium">분야별 뉴스가 없습니다.</p>
                     </div>
                 ) : (
                     selectedArticles.map((item) => (
