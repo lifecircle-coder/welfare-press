@@ -33,9 +33,9 @@ export default function Footer() {
                         </p>
 
                         <div className="text-sm text-gray-400 space-y-1.5 pt-4">
-                            <p>더복  |  서울특별시 영등포구 여의대방로35가길 19. 109-703  |  등록 : 서울 -아00000 _ 2026년 06월 00일  |</p>
-                            <p>기사제보·광고·제휴문의 : 02-6396-2114  |  wow@thebok.co.kr  |</p>
-                            <p>대표 겸 발행인·편집인 : 변·창·환  |  청소년보호책임자 : 변·창·환  |</p>
+                            <p>등록 : 서울-아00000_2026년 06월 00일 | 발행인·편집인 : 변·창·환 | 청소년보호책임 : 변·창·환 |</p>
+                            <p>주소 : 서울특별시 영등포구 여의대방로35가길 19. 109-703 |</p>
+                            <p>전화 : 02-6396-2114 | 이메일 : wow@thebok.co.kr</p>
                             <div className="pt-4 flex flex-wrap gap-3 justify-center md:justify-start">
                                 <Link href="/policy/terms" className="cursor-pointer hover:underline hover:text-gray-600">이용약관</Link>
                                 <span className="text-gray-300">|</span>
