@@ -9,7 +9,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "복지뉴스 - 전국민을 위한 복지 전문 뉴스",
+  title: "THE 복(福) : 복지신문 - 전국민을 위한 복지 전문 뉴스",
   description: "어르신, 육아, 일자리 등 다양한 복지 정보를 제공합니다.",
 };
 
@@ -24,7 +24,7 @@ export default function RootLayout({
     <html lang="ko">
       <head>
         {/* Preconnect to Supabase for faster API calls */}
-        <link rel="preconnect" href="https://wvocjgtnsjdzonhyzbic.supabase.co" crossOrigin="anonymous" />
+        <link rel="preconnect" href="https://thebok.co.kr" crossOrigin="anonymous" />
       </head>
       <body className={`${inter.variable} font-sans flex flex-col min-h-screen bg-gray-50`}>
         <VisitorTracker />
