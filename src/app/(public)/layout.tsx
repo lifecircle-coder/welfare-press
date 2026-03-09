@@ -1,9 +1,6 @@
 import Header from '@/components/layout/Header';
-import dynamic from 'next/dynamic';
-
-// Dynamically import non-critical components to reduce initial JS payload
-const Footer = dynamic(() => import('@/components/layout/Footer'), { ssr: true });
-const VisitTracker = dynamic(() => import('@/components/VisitTracker'), { ssr: false });
+import Footer from '@/components/layout/Footer';
+import VisitTracker from '@/components/VisitTracker';
 
 export default function PublicLayout({
     children,

@@ -10,12 +10,11 @@ export default function LatestNews({ articles }: LatestNewsProps) {
     const targetCategories = ['건강·의료', '임신·육아', '일자리·취업', '생활·안전', '주거·금융'];
     const selectedArticles: Article[] = [];
 
+    // For each core category, pick the latest article from the provided list
     targetCategories.forEach(cat => {
-        const matches = articles.filter(a => a.category === cat);
-        matches.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-
-        if (matches.length > 0) {
-            selectedArticles.push(matches[0]);
+        const match = articles.find(a => a.category === cat);
+        if (match) {
+            selectedArticles.push(match);
         }
     });
 

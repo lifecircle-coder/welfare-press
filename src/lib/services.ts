@@ -97,27 +97,21 @@ export const getArticlesByCategory = async (category: string, limit = 20, offset
 };
 
 /**
- * 히어로 섹션 전용 기사 조회 (각 카테고리별 최신 1건씩만 효율적으로 호출)
+ * 히어로 섹션용 최신 기사 조회 (최신 5건)
  */
-export const getHeroArticles = async (): Promise<Article[]> => {
-    const targetCategories = ['건강·의료', '임신·육아', '일자리·취업', '생활·안전', '주거·금융'];
+export const getHeroArticles = async (limit = 5): Promise<Article[]> => {
+    const { data, error } = await supabase
+        .from('articles')
+        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .eq('status', 'published')
+        .order('created_at', { ascending: false })
+        .limit(limit);
 
-    // 개별 쿼리 병렬 처리로 전체 속도 향상
-    const promises = targetCategories.map(cat =>
-        supabase
-            .from('articles')
-            .select('id, title, category, author, date, summary, thumbnail')
-            .eq('category', cat)
-            .eq('status', 'published')
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .single()
-    );
-
-    const results = await Promise.all(promises);
-    return results
-        .filter(r => r.data)
-        .map(r => r.data as Article);
+    if (error) {
+        console.error('Error fetching hero articles:', error);
+        return [];
+    }
+    return data || [];
 };
 
 export const getArticleById = async (id: string): Promise<Article | undefined> => {
@@ -138,12 +132,37 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
     // Check if updating or inserting
     const existing = await getArticleById(article.id);
 
-    // Auto-extract thumbnail from content if not present
+    // Auto-extract thumbnail from content if not present or if we want to ensure it's optimized
     let thumbnail = article.thumbnail;
-    if (!thumbnail && article.content) {
-        const imgMatch = article.content.match(/<img[^>]+src="([^">]+)"/);
-        if (imgMatch) {
-            thumbnail = imgMatch[1];
+    const firstImgMatch = article.content?.match(/<img[^>]+src="([^">]+)"/);
+    const firstImgUrl = firstImgMatch ? firstImgMatch[1] : null;
+
+    // Use the first image from content as the primary source for thumbnail
+    if (firstImgUrl) {
+        thumbnail = firstImgUrl;
+    }
+
+    // Optimization logic: If thumbnail exists and is NOT already optimized (not from our storage)
+    if (thumbnail && !thumbnail.includes('supabase.co/storage/v1/object/public/partnership_files/articles/')) {
+        try {
+            console.log('Requesting thumbnail optimization...');
+            const response = await fetch('/api/optimize-image', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ imageUrl: thumbnail, articleId: article.id })
+            });
+
+            if (response.ok) {
+                const { optimizedUrl } = await response.json();
+                if (optimizedUrl) {
+                    thumbnail = optimizedUrl;
+                    console.log('Thumbnail optimized successfully:', thumbnail);
+                }
+            } else {
+                console.warn('Thumbnail optimization failed, using original.');
+            }
+        } catch (err) {
+            console.error('Error during thumbnail optimization:', err);
         }
     }
 

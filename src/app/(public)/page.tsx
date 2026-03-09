@@ -5,11 +5,14 @@ import { getArticles, getHeroArticles } from '@/lib/services';
 export const revalidate = 60; // 1분마다 캐시 갱신 (ISR)
 
 export default async function Home() {
-    // Parallelize core data fetching for faster server-side response
-    const [heroArticles, latestArticles] = await Promise.all([
-        getHeroArticles(),
-        getArticles(10) // Only fetch top 10 for the "Latest" section initially
-    ]);
+    // Fetch all latest articles to distribute between Hero and Latest sections
+    const allArticles = await getArticles(23); // Fetch 20+ for variety
+
+    // Top 3 for Section 1 (Hero)
+    const heroArticles = allArticles.slice(0, 3);
+
+    // Section 2 (LatestNews) gets the rest, excluding Section 1
+    const latestArticles = allArticles.slice(3);
 
     return (
         <div className="bg-white text-gray-900">

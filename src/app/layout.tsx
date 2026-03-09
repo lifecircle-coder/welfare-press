@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
-  display: 'block', // Use 'block' to prevent layout shift by hiding text until font is ready
+  display: 'swap', // Reverting to swap as 'block' caused visual issues for the user
 });
 
 export const metadata: Metadata = {

@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { getArticles } from '@/lib/services';
 
 export const revalidate = 60; // 1분 단위 캐싱
@@ -83,19 +84,22 @@ export default async function CategoryNews({ params }: { params: { category: str
                                 >
                                     <div className="flex flex-col md:flex-row gap-6">
                                         {news.thumbnail ? (
-                                            <img
-                                                src={news.thumbnail}
-                                                alt={news.title}
-                                                className="w-full md:w-48 h-32 rounded-lg object-cover flex-shrink-0 bg-gray-100"
-                                                loading="lazy"
-                                            />
+                                            <div className="w-full md:w-48 h-32 relative overflow-hidden rounded-lg flex-shrink-0 bg-gray-100">
+                                                <Image
+                                                    src={news.thumbnail}
+                                                    alt={news.title}
+                                                    fill
+                                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    sizes="(max-width: 768px) 100vw, 192px"
+                                                />
+                                            </div>
                                         ) : (
                                             <div className={`w-full md:w-48 h-32 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold
-                                                ${news.category === '일자리' ? 'bg-blue-300' :
-                                                    news.category === '건강' ? 'bg-green-300' :
-                                                        news.category === '주거' ? 'bg-indigo-300' :
-                                                            news.category === '생활' ? 'bg-orange-300' :
-                                                                news.category === '육아' ? 'bg-pink-300' : 'bg-gray-300'}
+                                                ${news.category.includes('일자리') ? 'bg-blue-300' :
+                                                    news.category.includes('건강') ? 'bg-green-300' :
+                                                        news.category.includes('주거') ? 'bg-indigo-300' :
+                                                            news.category.includes('생활') ? 'bg-orange-300' :
+                                                                news.category.includes('육아') ? 'bg-pink-300' : 'bg-gray-300'}
                                             `}>
                                                 {news.category}
                                             </div>

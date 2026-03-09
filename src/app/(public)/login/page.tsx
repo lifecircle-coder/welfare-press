@@ -13,10 +13,16 @@ export default function LoginPage() {
     const handleOAuthLogin = async (provider: 'google' | 'kakao') => {
         try {
             setIsLoading(true);
+            const redirectTo = `${window.location.origin}/auth/callback`;
+            console.log('Attempting OAuth login with redirect:', redirectTo);
+
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: provider,
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback`,
+                    queryParams: {
+                        prompt: 'select_account',
+                    },
+                    redirectTo: redirectTo,
                 },
             });
             if (error) {

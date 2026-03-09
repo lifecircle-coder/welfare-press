@@ -1,0 +1,54 @@
+[
+  {
+    "id": "15e963ed-fdb3-4115-8672-bfb439751559",
+    "email": "info.00677@gmail.com",
+    "metadata": {
+      "avatar_url": "https://lh3.googleusercontent.com/a/ACg8ocI7CmrqF5pz6-Z-CO28uu4RiD4tqymsC-ooUq63WD92RNNB9OQ=s96-c",
+      "email": "info.00677@gmail.com",
+      "email_verified": true,
+      "full_name": "이어사리설",
+      "iss": "https://accounts.google.com",
+      "name": "이어사리설",
+      "phone_verified": false,
+      "picture": "https://lh3.googleusercontent.com/a/ACg8ocI7CmrqF5pz6-Z-CO28uu4RiD4tqymsC-ooUq63WD92RNNB9OQ=s96-c",
+      "provider_id": "100967744139540130473",
+      "sub": "100967744139540130473"
+    },
+    "created_at": "2026-03-06T01:06:32.980929Z"
+  },
+  {
+    "id": "bafa2a7c-49d4-4a43-a5e9-4e8e196cd884",
+    "email": "press1@welfare-press.admin",
+    "metadata": {
+      "email_verified": true,
+      "full_name": "김정호",
+      "login_id": "press1",
+      "name": "김정호",
+      "needs_password_change": false,
+      "role": "reporter"
+    },
+    "created_at": "2026-03-05T08:25:47.824917Z"
+  },
+  {
+    "id": "ecda9c96-59b2-426c-96be-50f319e1e070",
+    "email": "press@welfare-press.admin",
+    "metadata": {
+      "email_verified": true,
+      "full_name": "이철민",
+      "login_id": "press",
+      "name": "이철민",
+      "needs_password_change": false,
+      "role": "reporter"
+    },
+    "created_at": "2026-03-05T08:01:54.665369Z"
+  },
+  {
+    "id": "00000000-0000-0000-0000-000000000001",
+    "email": "master@welfare-press.admin",
+    "metadata": {
+      "name": "최고관리자",
+      "role": "admin"
+    },
+    "created_at": "2026-03-05T07:14:30.664046Z"
+  }
+]

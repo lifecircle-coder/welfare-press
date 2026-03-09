@@ -65,23 +65,35 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
     }
 
     try {
-        // API 자체 정렬옵션이 없으므로, 최대한 최신 데이터를 가져오기 위해 500건을 한 번에 가져와 클라이언트 측에서 정렬해야 함
-        const response = await axios.get(`${NATIONAL_API_URL}/NationalWelfarelistV001`, {
-            params: {
-                serviceKey: decodeURIComponent(API_KEY),
-                callTp: 'L',
-                pageNo: 1, // 항상 1페이지부터
-                numOfRows: 500,
-                srchKeyCode: '003',
-                searchWrd: searchKeyword || '지원금', // '지원'보다는 '지원금', '수당' 등으로 필터링 유도
-            }
-        });
+        let data;
+        if (typeof window !== 'undefined') {
+            // Browser env: Use proxy
+            const response = await axios.get('/api/public-data', {
+                params: {
+                    type: 'NATIONAL_LIST',
+                    searchWrd: searchKeyword
+                }
+            });
+            data = response.data;
+        } else {
+            // Server env: Call direct
+            const response = await axios.get(`${NATIONAL_API_URL}/NationalWelfarelistV001`, {
+                params: {
+                    serviceKey: decodeURIComponent(API_KEY),
+                    callTp: 'L',
+                    pageNo: 1,
+                    numOfRows: 500,
+                    srchKeyCode: '003',
+                    searchWrd: searchKeyword || '지원금',
+                }
+            });
+            data = response.data;
+        }
 
-        const jsonObj = parser.parse(response.data);
+        const jsonObj = parser.parse(data);
         const servList = jsonObj.wantedList?.servList;
 
         if (!servList) return [];
-        // 단건일 경우 객체로 반환되므로 배열로 맞춤
         let arrayList = Array.isArray(servList) ? servList : [servList];
 
         let mappedList = arrayList.map(item => ({
@@ -89,14 +101,12 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
             apiSource: 'NATIONAL' as const
         }));
 
-        // 날짜가 있는 최신 정책부터 내림차순 정렬 (2025 가장 최상단)
         mappedList.sort((a, b) => {
             const dateA = String(a.svcfrstRegTs || '');
             const dateB = String(b.svcfrstRegTs || '');
             return dateB.localeCompare(dateA);
         });
 
-        // 가장 최신의 50건만 잘라서 반환
         return mappedList.slice(0, 50);
 
     } catch (error) {
@@ -109,19 +119,30 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
  * [1순위] 중앙부처 복지서비스 상세 조회 (AI 기사 작성용 핵심 데이타 추출)
  */
 export const getNationalWelfareDetail = async (servId: string): Promise<WelfareService | null> => {
-    if (USE_MOCK_DATA) return null; // Mock에서는 리스트 데이터만 활용 권장
+    if (USE_MOCK_DATA) return null;
 
     try {
-        const response = await axios.get(`${NATIONAL_API_URL}/NationalWelfaredetailedV001`, {
-            params: {
-                serviceKey: decodeURIComponent(API_KEY),
-                callTp: 'D',
-                servId,
-            }
-        });
+        let data;
+        if (typeof window !== 'undefined') {
+            const response = await axios.get('/api/public-data', {
+                params: {
+                    type: 'NATIONAL_DETAIL',
+                    servId
+                }
+            });
+            data = response.data;
+        } else {
+            const response = await axios.get(`${NATIONAL_API_URL}/NationalWelfaredetailedV001`, {
+                params: {
+                    serviceKey: decodeURIComponent(API_KEY),
+                    callTp: 'D',
+                    servId,
+                }
+            });
+            data = response.data;
+        }
 
-        const jsonObj = parser.parse(response.data);
-        // 실제 응답 구조 확인 필요 (가이드 기반 추정)
+        const jsonObj = parser.parse(data);
         const detail = jsonObj.wantedDtl;
         return detail ? (detail as WelfareService) : null;
 
@@ -137,18 +158,30 @@ export const getNationalWelfareDetail = async (servId: string): Promise<WelfareS
 export const getLocalGovWelfareList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
     if (USE_MOCK_DATA) return [];
     try {
-        const response = await axios.get(`${LOCAL_API_URL}/LcgvWelfarelist`, {
-            params: {
-                serviceKey: decodeURIComponent(API_KEY),
-                callTp: 'L',
-                pageNo,
-                numOfRows,
-                arrgOrd: '001', // 001: 최신순
-            }
-        });
+        let data;
+        if (typeof window !== 'undefined') {
+            const response = await axios.get('/api/public-data', {
+                params: {
+                    type: 'LOCAL_LIST',
+                    pageNo,
+                    numOfRows
+                }
+            });
+            data = response.data;
+        } else {
+            const response = await axios.get(`${LOCAL_API_URL}/LcgvWelfarelist`, {
+                params: {
+                    serviceKey: decodeURIComponent(API_KEY),
+                    callTp: 'L',
+                    pageNo,
+                    numOfRows,
+                    arrgOrd: '001',
+                }
+            });
+            data = response.data;
+        }
 
-        // If already JSON, use it directly. Otherwise, parse from XML.
-        const jsonObj = typeof response.data === 'object' ? response.data : parser.parse(response.data);
+        const jsonObj = typeof data === 'object' ? data : parser.parse(data);
         const servList = jsonObj.wantedList?.servList || jsonObj.servList || jsonObj.data;
 
         if (!servList) return [];
@@ -159,8 +192,8 @@ export const getLocalGovWelfareList = async (pageNo = 1, numOfRows = 50): Promis
             servNm: item.servNm,
             jurMnofNm: `${item.ctpvNm || ''} ${item.sggNm || ''}`.trim() || item.bizChrDeptNm || '지자체',
             servDgst: item.servDgst,
-            servDtlLink: '', // 목록에는 제공되지 않음
-            svcfrstRegTs: '', // 목록에는 날짜가 없으므로 공란 처리
+            servDtlLink: '',
+            svcfrstRegTs: '',
             apiSource: 'LOCAL'
         }));
 
@@ -177,15 +210,27 @@ export const getLocalGovWelfareList = async (pageNo = 1, numOfRows = 50): Promis
 export const getLocalGovWelfareDetail = async (servId: string): Promise<WelfareService | null> => {
     if (USE_MOCK_DATA) return null;
     try {
-        const response = await axios.get(`${LOCAL_API_URL}/LcgvWelfaredetailed`, {
-            params: {
-                serviceKey: decodeURIComponent(API_KEY),
-                callTp: 'D',
-                servId,
-            }
-        });
+        let data;
+        if (typeof window !== 'undefined') {
+            const response = await axios.get('/api/public-data', {
+                params: {
+                    type: 'LOCAL_DETAIL',
+                    servId
+                }
+            });
+            data = response.data;
+        } else {
+            const response = await axios.get(`${LOCAL_API_URL}/LcgvWelfaredetailed`, {
+                params: {
+                    serviceKey: decodeURIComponent(API_KEY),
+                    callTp: 'D',
+                    servId,
+                }
+            });
+            data = response.data;
+        }
 
-        const jsonObj = typeof response.data === 'object' ? response.data : parser.parse(response.data);
+        const jsonObj = typeof data === 'object' ? data : parser.parse(data);
         const detail = jsonObj.wantedDtl || jsonObj.data;
         if (!detail) return null;
 
@@ -242,16 +287,26 @@ export const getResourceInfoList = async (pageNo = 1, numOfRows = 10): Promise<R
  */
 export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
     try {
-        const response = await axios.get(`${SUBSIDY_API_URL}/serviceList`, {
-            params: {
-                serviceKey: decodeURIComponent(API_KEY),
-                page: pageNo,
-                perPage: numOfRows,
-            }
-        });
-
-        // ODCloud API는 보통 JSON을 바로 반환하며 data 필드에 리스트가 있음
-        const list = response.data?.data;
+        let list;
+        if (typeof window !== 'undefined') {
+            const response = await axios.get('/api/public-data', {
+                params: {
+                    type: 'SUBSIDY_LIST',
+                    pageNo,
+                    numOfRows
+                }
+            });
+            list = response.data?.data;
+        } else {
+            const response = await axios.get(`${SUBSIDY_API_URL}/serviceList`, {
+                params: {
+                    serviceKey: decodeURIComponent(API_KEY),
+                    page: pageNo,
+                    perPage: numOfRows,
+                }
+            });
+            list = response.data?.data;
+        }
 
         if (!list) return [];
         let arrayList = Array.isArray(list) ? list : [list];
@@ -276,15 +331,28 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
  */
 export const getYouthPolicyList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
     try {
-        const response = await axios.get(YOUTH_API_URL, {
-            params: {
-                openApiVlak: YOUTH_API_KEY,
-                pageIndex: pageNo,
-                display: numOfRows,
-                query: '수당'
-            }
-        });
-        const jsonObj = parser.parse(response.data);
+        let data;
+        if (typeof window !== 'undefined') {
+            const response = await axios.get('/api/public-data', {
+                params: {
+                    type: 'YOUTH_LIST',
+                    pageNo,
+                    numOfRows
+                }
+            });
+            data = response.data;
+        } else {
+            const response = await axios.get(YOUTH_API_URL, {
+                params: {
+                    openApiVlak: YOUTH_API_KEY,
+                    pageIndex: pageNo,
+                    display: numOfRows,
+                    query: '수당'
+                }
+            });
+            data = response.data;
+        }
+        const jsonObj = parser.parse(data);
         const list = jsonObj.youthPolicyList?.youthPolicy;
 
         if (!list) return [];
@@ -310,15 +378,28 @@ export const getYouthPolicyList = async (pageNo = 1, numOfRows = 50): Promise<We
  */
 export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
     try {
-        const response = await axios.get(`${MOGEF_API_URL}/nwEnwSelectList`, {
-            params: {
-                serviceKey: decodeURIComponent(API_KEY),
-                pageNo,
-                numOfRows,
-                type: 'xml'
-            }
-        });
-        const jsonObj = parser.parse(response.data);
+        let data;
+        if (typeof window !== 'undefined') {
+            const response = await axios.get('/api/public-data', {
+                params: {
+                    type: 'MOGEF_LIST',
+                    pageNo,
+                    numOfRows
+                }
+            });
+            data = response.data;
+        } else {
+            const response = await axios.get(`${MOGEF_API_URL}/nwEnwSelectList`, {
+                params: {
+                    serviceKey: decodeURIComponent(API_KEY),
+                    pageNo,
+                    numOfRows,
+                    type: 'xml'
+                }
+            });
+            data = response.data;
+        }
+        const jsonObj = parser.parse(data);
         const list = jsonObj.response?.body?.items?.item;
 
         if (!list) return [];
