@@ -25,11 +25,11 @@ export default function Footer() {
                     {/* Left: Info */}
                     <div className="flex-1 space-y-4 text-center md:text-left w-full">
                         <Link href="/" className="text-2xl font-bold text-gray-400 tracking-tight block hover:text-primary transition-colors">
-                            THE 복(福) : 복지뉴스
+                            THE 복(福) : 복지신문
                         </Link>
                         <p className="text-gray-500 font-medium leading-relaxed">
-                            전국민을 위한 복지 전문 뉴스,<br />
-                            정확하고 빠른 정보를 전달합니다.
+                            전국민을 위한 복지전문 인터넷신문,<br />
+                            정확하고 빠른 뉴스·정보를 전달합니다.
                         </p>
 
                         <div className="text-sm text-gray-400 space-y-1.5 pt-4">
