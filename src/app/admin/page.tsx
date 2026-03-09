@@ -13,6 +13,7 @@ export default function AdminDashboard() {
     const [topArticles, setTopArticles] = useState<Article[]>([]);
     const [categoryDist, setCategoryDist] = useState<{ cat: string; percent: number; color: string }[]>([]);
     const [weeklyStats, setWeeklyStats] = useState<{ day: string; val: number; date: string }[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
 
     useEffect(() => {
         async function loadDashboard() {
@@ -23,10 +24,15 @@ export default function AdminDashboard() {
                 return;
             }
 
-            const statsData = await getStats();
+            // Fetch concurrently
+            const [statsData, articlesData, weeklyData] = await Promise.all([
+                getStats(),
+                getArticles(),
+                getWeeklyStats()
+            ]);
+
             setStats(statsData);
 
-            const articlesData = await getArticles();
             const sorted = articlesData.sort((a, b) => b.views - a.views).slice(0, 5); // Top 5
             setTopArticles(sorted);
 
@@ -47,7 +53,6 @@ export default function AdminDashboard() {
             setCategoryDist(dist);
 
             // Weekly Stats
-            const weeklyData = await getWeeklyStats();
             // Fill in missing days for the last 7 days if DB doesn't have them
             const days = ['일', '월', '화', '수', '목', '금', '토'];
             const today = new Date();
@@ -67,6 +72,7 @@ export default function AdminDashboard() {
                 };
             });
             setWeeklyStats(formattedWeekly);
+            setIsLoading(false);
         }
         loadDashboard();
     }, [router]);
@@ -79,97 +85,106 @@ export default function AdminDashboard() {
         <>
             <h2 className="text-2xl font-bold text-gray-900 mb-6">대시보드</h2>
 
-            {/* Stats Cards */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <StatCard title="총 방문자 (조회수 합계)" value={stats.totalVisitors.toLocaleString()} change="-" color="blue" />
-                <StatCard title="총 기사 수" value={stats.totalArticles.toLocaleString()} change="-" color="green" />
-                <StatCard
-                    title="미답변 문의"
-                    value={stats.pendingInquiries.toString()}
-                    change={stats.pendingInquiries > 0 ? "주의" : "양호"}
-                    color={stats.pendingInquiries > 0 ? "red" : "green"}
-                />
-            </div>
+            {isLoading ? (
+                <div className="flex flex-col items-center justify-center h-64">
+                    <div className="w-10 h-10 border-4 border-gray-200 border-t-primary rounded-full animate-spin"></div>
+                    <p className="text-gray-500 mt-4 text-sm">데이터를 불러오는 중입니다...</p>
+                </div>
+            ) : (
+                <>
+                    {/* Stats Cards */}
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                        <StatCard title="총 방문자 (조회수 합계)" value={stats.totalVisitors.toLocaleString()} change="-" color="blue" />
+                        <StatCard title="총 기사 수" value={stats.totalArticles.toLocaleString()} change="-" color="green" />
+                        <StatCard
+                            title="미답변 문의"
+                            value={stats.pendingInquiries.toString()}
+                            change={stats.pendingInquiries > 0 ? "주의" : "양호"}
+                            color={stats.pendingInquiries > 0 ? "red" : "green"}
+                        />
+                    </div>
 
-            {/* Charts & Analytics Section */}
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+                    {/* Charts & Analytics Section */}
+                    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
 
-                {/* Weekly Visitor Trend */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <div className="flex justify-between items-center mb-6">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                            <BarChart size={18} className="text-primary" />
-                            주간 방문자 추이
-                        </h3>
-                        <div className="flex bg-gray-50 rounded-lg p-1 border border-gray-200">
-                            <div className="px-3 py-1 text-xs text-gray-500 font-medium">
-                                {weeklyStats.length > 0 && `${weeklyStats[0].date} ~ ${weeklyStats[weeklyStats.length - 1].date}`}
+                        {/* Weekly Visitor Trend */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
+                                    <BarChart size={18} className="text-primary" />
+                                    주간 방문자 추이
+                                </h3>
+                                <div className="flex bg-gray-50 rounded-lg p-1 border border-gray-200">
+                                    <div className="px-3 py-1 text-xs text-gray-500 font-medium">
+                                        {weeklyStats.length > 0 && `${weeklyStats[0].date} ~ ${weeklyStats[weeklyStats.length - 1].date}`}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Chart Visualization */}
+                            <div className="h-64 flex justify-between gap-2 px-2">
+                                {weeklyStats.map((d, i) => (
+                                    <div key={i} className="h-full flex flex-col justify-end items-center gap-2 flex-1 group">
+                                        <div className="text-xs font-bold text-gray-500 mb-1">{Number(d.val)}</div>
+                                        <div
+                                            className={`w-full rounded-t-lg transition-colors relative ${i === 6 ? 'bg-primary' : 'bg-blue-100 group-hover:bg-blue-300'}`}
+                                            style={{ height: `${(Number(d.val) / maxVal) * 80}%`, minHeight: '4px' }}
+                                        >
+                                        </div>
+                                        <div className="flex flex-col items-center">
+                                            <span className={`text-xs font-bold ${i === 6 ? 'text-primary' : 'text-gray-500'}`}>{d.day}</span>
+                                            <span className="text-[10px] text-gray-400">{d.date}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Article Analytics */}
+                        <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                            <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                <ArrowUpRight size={18} className="text-green-600" />
+                                기사 분석
+                            </h3>
+
+                            {/* Category Distribution */}
+                            <div className="mb-8">
+                                <h4 className="text-sm font-bold text-gray-600 mb-4">카테고리별 인기 분포</h4>
+                                <div className="space-y-3">
+                                    {categoryDist.map(c => (
+                                        <div key={c.cat}>
+                                            <div className="flex justify-between text-xs font-bold mb-1 text-gray-600">
+                                                <span>{c.cat}</span>
+                                                <span>{c.percent}%</span>
+                                            </div>
+                                            <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                                                <div className={`h-full ${c.color}`} style={{ width: `${c.percent}%` }}></div>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Views Ranking */}
+                            <div>
+                                <h4 className="text-sm font-bold text-gray-600 mb-4">기사 조회수 랭킹 TOP 5</h4>
+                                <ul className="space-y-3">
+                                    {topArticles.map((article, index) => (
+                                        <li key={article.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
+                                            <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold text-white ${index === 0 ? 'bg-yellow-400' : index === 1 ? 'bg-gray-400' : 'bg-orange-400'
+                                                }`}>{index + 1}</span>
+                                            <div className="flex-1 truncate">
+                                                <div className="text-sm font-bold text-gray-900 truncate">{article.title}</div>
+                                                <div className="text-xs text-gray-500 truncate">{article.category} · 조회수 {article.views.toLocaleString()}</div>
+                                            </div>
+                                        </li>
+                                    ))}
+                                </ul>
                             </div>
                         </div>
                     </div>
-
-                    {/* Chart Visualization */}
-                    <div className="h-64 flex justify-between gap-2 px-2">
-                        {weeklyStats.map((d, i) => (
-                            <div key={i} className="h-full flex flex-col justify-end items-center gap-2 flex-1 group">
-                                <div className="text-xs font-bold text-gray-500 mb-1">{Number(d.val)}</div>
-                                <div
-                                    className={`w-full rounded-t-lg transition-colors relative ${i === 6 ? 'bg-primary' : 'bg-blue-100 group-hover:bg-blue-300'}`}
-                                    style={{ height: `${(Number(d.val) / maxVal) * 80}%`, minHeight: '4px' }}
-                                >
-                                </div>
-                                <div className="flex flex-col items-center">
-                                    <span className={`text-xs font-bold ${i === 6 ? 'text-primary' : 'text-gray-500'}`}>{d.day}</span>
-                                    <span className="text-[10px] text-gray-400">{d.date}</span>
-                                </div>
-                            </div>
-                        ))}
-                    </div>
-                </div>
-
-                {/* Article Analytics */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h3 className="text-lg font-bold text-gray-900 mb-6 flex items-center gap-2">
-                        <ArrowUpRight size={18} className="text-green-600" />
-                        기사 분석
-                    </h3>
-
-                    {/* Category Distribution */}
-                    <div className="mb-8">
-                        <h4 className="text-sm font-bold text-gray-600 mb-4">카테고리별 인기 분포</h4>
-                        <div className="space-y-3">
-                            {categoryDist.map(c => (
-                                <div key={c.cat}>
-                                    <div className="flex justify-between text-xs font-bold mb-1 text-gray-600">
-                                        <span>{c.cat}</span>
-                                        <span>{c.percent}%</span>
-                                    </div>
-                                    <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
-                                        <div className={`h-full ${c.color}`} style={{ width: `${c.percent}%` }}></div>
-                                    </div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* Views Ranking */}
-                    <div>
-                        <h4 className="text-sm font-bold text-gray-600 mb-4">기사 조회수 랭킹 TOP 5</h4>
-                        <ul className="space-y-3">
-                            {topArticles.map((article, index) => (
-                                <li key={article.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg">
-                                    <span className={`w-6 h-6 flex items-center justify-center rounded-full text-xs font-bold text-white ${index === 0 ? 'bg-yellow-400' : index === 1 ? 'bg-gray-400' : 'bg-orange-400'
-                                        }`}>{index + 1}</span>
-                                    <div className="flex-1 truncate">
-                                        <div className="text-sm font-bold text-gray-900 truncate">{article.title}</div>
-                                        <div className="text-xs text-gray-500 truncate">{article.category} · 조회수 {article.views.toLocaleString()}</div>
-                                    </div>
-                                </li>
-                            ))}
-                        </ul>
-                    </div>
-                </div>
-            </div>
+                </>
+            )}
         </>
     );
 }
@@ -193,3 +208,4 @@ function StatCard({ title, value, change, color }: { title: string, value: strin
         </div>
     );
 }
+

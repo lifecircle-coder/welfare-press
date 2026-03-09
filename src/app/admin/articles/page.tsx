@@ -3,7 +3,7 @@
 import { Plus, Search, Filter, Copy, Calendar, User, Trash2, MapPin, MessageCircle, Send, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { getArticles, deleteArticle, getComments, addComment, getArticlesWithNewComments } from '@/lib/services';
+import { getAllArticles, deleteArticle, getComments, addComment, getArticlesWithNewComments } from '@/lib/services';
 import type { Article, Comment } from '@/lib/services';
 import { useRouter } from 'next/navigation';
 import { getNationalWelfareList, getSubsidy24List, getYouthPolicyList, getMogefNewsList, getNationalWelfareDetail, getLocalGovWelfareList, getLocalGovWelfareDetail, WelfareService } from '@/lib/api/publicData';
@@ -42,7 +42,7 @@ export default function ArticleManagement() {
     const [adminReplyContent, setAdminReplyContent] = useState('');
 
     const loadArticles = async () => {
-        const data = await getArticles();
+        const data = await getAllArticles(100);
 
         // 최근 12시간 이내 새 댓글이 달린 기사 ID 조회
         const newComments = await getArticlesWithNewComments(12);
@@ -532,10 +532,16 @@ export default function ArticleManagement() {
                                 <td className="p-4 text-gray-900 font-medium truncate max-w-xs">{item.title}</td>
                                 <td className="p-4 text-gray-600">{item.author}</td>
                                 <td className="p-4"><span className="bg-blue-100 text-primary px-2 py-1 rounded text-[11px] font-bold">{item.category}</span></td>
-                                <td className="p-4">
-                                    <span className={`font-bold ${item.status === 'published' ? 'text-green-600' : 'text-gray-400'}`}>
-                                        ● {item.status === 'published' ? '게시중' : '임시저장'}
-                                    </span>
+                                <td className="px-6 py-4 whitespace-nowrap">
+                                    {item.status === 'published' ? (
+                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
+                                            게시중
+                                        </span>
+                                    ) : (
+                                        <span className="px-3 py-1 bg-gray-100 text-gray-500 text-xs rounded-full font-bold">
+                                            미게시 (임시저장)
+                                        </span>
+                                    )}
                                 </td>
                                 <td className="p-4 text-gray-400">{new Date(item.date).toLocaleDateString()}</td>
                                 <td className="p-4" onClick={(e) => e.stopPropagation()}>

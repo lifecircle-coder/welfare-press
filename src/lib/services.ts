@@ -60,6 +60,24 @@ export interface PartnershipInquiry {
 // --- Articles ---
 
 /**
+ * 관리자용 모든 기사 조회 (본문 content 제외, 페이징 지원)
+ * 상태( published, draft 등 )를 무시하고 모두 가져옵니다.
+ */
+export const getAllArticles = async (limit = 20, offset = 0): Promise<Article[]> => {
+    const { data, error } = await supabase
+        .from('articles')
+        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .order('created_at', { ascending: false })
+        .range(offset, offset + limit - 1);
+
+    if (error) {
+        console.error('Error fetching all articles:', error);
+        return [];
+    }
+    return data || [];
+};
+
+/**
  * 목록용 기사 조회 (본문 content 제외, 페이징 지원)
  */
 export const getArticles = async (limit = 20, offset = 0): Promise<Article[]> => {

@@ -4,6 +4,17 @@ import { getArticles, getArticlesByCategory, getTopArticles } from '@/lib/servic
 
 export const revalidate = 60; // 1분 단위 캐싱
 
+export async function generateStaticParams() {
+    return [
+        { category: 'all' },
+        { category: 'childcare' },
+        { category: 'jobs' },
+        { category: 'housing' },
+        { category: 'health' },
+        { category: 'safety' },
+    ];
+}
+
 export default async function CategoryNews({ params }: { params: { category: string } }) {
     const categoryName = decodeURIComponent(params.category);
 
