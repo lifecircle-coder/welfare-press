@@ -66,10 +66,8 @@ export default function Footer() {
                             onClick={() => setIsInquiryOpen(true)}
                             className="flex items-center gap-2 bg-primary hover:bg-blue-600 text-white px-8 py-3.5 rounded-full font-bold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         >
-                            <span className="text-left leading-tight">
-                                <span className="block text-lg"> <MessageCircle size={20} /> 1:1 문의하기</span>
-                                <span className="block text-[11px] font-normal opacity-70">(제보/광고/제휴/기타)</span>
-                            </span>
+                            <MessageCircle size={20} />
+                            <span>1:1 문의하기</span>
                         </button>
                         <p className="text-sm text-gray-400 mt-3 text-center">
                             평일 09:30 ~ 17:30<br />
