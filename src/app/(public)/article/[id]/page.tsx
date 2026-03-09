@@ -21,25 +21,24 @@ export async function generateStaticParams() {
 }
 
 export default async function ArticleDetail({ params }: { params: { id: string } }) {
-    const article = await getArticleById(params.id);
+    // Fetch data concurrently for maximum speed
+    const [article, allArticles, initialComments] = await Promise.all([
+        getArticleById(params.id),
+        getArticles(),
+        getComments(params.id)
+    ]);
 
     if (!article) {
         return <div className="p-20 text-center">기사를 찾을 수 없습니다.</div>;
     }
 
-    // Server-side increments should be handled carefully (avoid incrementing on every revalidation)
-    // For now, core improvement is getting the content to the user instantly.
-
-    // Fetch related news on server
-    const allArticles = await getArticles();
+    // Process related news after fetching
     const currentTags = article.hashtags || [];
     const relatedNews = allArticles.filter(a =>
         a.id !== params.id &&
         a.hashtags?.some(tag => currentTags.includes(tag))
     ).slice(0, 5);
 
-    // Initial comments for SSR (prevent layout shift)
-    const initialComments = await getComments(params.id);
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">

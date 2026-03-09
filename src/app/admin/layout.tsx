@@ -42,13 +42,13 @@ export default function AdminLayout({
         checkAuth();
     }, [router, pathname]);
 
-    if (!isAuthorized) {
-        return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-400">인증 확인 중...</div>;
-    }
-
-    // 로그인 페이지인 경우 사이드바 없이 렌더링
+    // 로그인 페이지인 경우 사이드바 없이 바로 렌더링 (인증 대기 불필요)
     if (pathname === '/admin/login') {
         return <>{children}</>;
+    }
+
+    if (!isAuthorized) {
+        return <div className="min-h-screen flex items-center justify-center bg-gray-50 text-gray-400">인증 확인 중...</div>;
     }
 
     return (

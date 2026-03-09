@@ -262,21 +262,6 @@ export default function Header() {
                 </div>
             )}
 
-            {/* Global Style for Text Size Toggle */}
-            <style jsx global>{`
-                html.text-lg-mode {
-                    font-size: 112.5%; /* 18px base */
-                }
-                @keyframes progress {
-                    0% { width: 0%; opacity: 1; }
-                    50% { width: 70%; opacity: 1; }
-                    90% { width: 90%; opacity: 1; }
-                    100% { width: 100%; opacity: 0; }
-                }
-                .animate-progress {
-                    animation: progress 2s ease-out forwards;
-                }
-            `}</style>
         </>
     );
 }
