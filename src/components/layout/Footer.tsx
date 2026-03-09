@@ -43,7 +43,7 @@ export default function Footer() {
                                 <span className="text-gray-300">|</span>
                                 <Link href="/policy/youth" className="cursor-pointer hover:underline hover:text-gray-600">청소년보호정책</Link>
                                 <span className="text-gray-300">|</span>
-                                <button onClick={() => setIsPartnershipOpen(true)} className="cursor-pointer hover:underline hover:text-gray-600 outline-none">광고/제휴문의</button>
+                                <button onClick={() => setIsPartnershipOpen(true)} className="cursor-pointer hover:underline hover:text-gray-600 outline-none">광고/제휴 문의</button>
                             </div>
                             <p className="pt-2 text-xs opacity-75">Copyright ©2026 The Bok. All rights reserved.</p>
                         </div>
