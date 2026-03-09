@@ -238,19 +238,19 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
     // If still no thumbnail, grab the first image from the refined content
     if (!finalThumbnail || finalThumbnail.startsWith('data:')) {
         let extractedSrc = null;
+
+        // 1. 브라우저 환경인 경우 DOMParser 활용 (가장 안전한 방식)
         if (typeof window !== 'undefined' && window.DOMParser) {
             try {
                 const parser = new DOMParser();
                 const doc = parser.parseFromString(finalContent, 'text/html');
                 const img = doc.querySelector('img');
-                if (img) {
-                    extractedSrc = img.getAttribute('src');
-                }
+                if (img) extractedSrc = img.getAttribute('src');
             } catch (e) {
                 console.error('DOMParser error', e);
             }
         }
-        
+
         // Fallback robust regex if DOMParser fails or server-side
         if (!extractedSrc) {
             const firstImgMatch = finalContent.match(/<img[^>]+src\s*=\s*(?:'([^']+)'|"([^"]+)")/i);
