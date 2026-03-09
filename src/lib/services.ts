@@ -72,7 +72,9 @@ export const getAllArticles = async (limit = 20, offset = 0): Promise<Article[]>
 
     if (error) {
         console.error('Error fetching all articles:', error);
-        return [];
+        // Fallback to simpler query if complex select fails
+        const { data: fallbackData } = await supabase.from('articles').select('*').limit(limit);
+        return (fallbackData as Article[]) || [];
     }
     return data || [];
 };
@@ -90,7 +92,8 @@ export const getArticles = async (limit = 20, offset = 0): Promise<Article[]> =>
 
     if (error) {
         console.error('Error fetching articles:', error);
-        return [];
+        const { data: fallbackData } = await supabase.from('articles').select('*').eq('status', 'published').limit(limit);
+        return (fallbackData as Article[]) || [];
     }
     return data || [];
 };
@@ -109,7 +112,8 @@ export const getArticlesByCategory = async (category: string, limit = 20, offset
 
     if (error) {
         console.error('Error fetching articles by category:', error);
-        return [];
+        const { data: fallbackData } = await supabase.from('articles').select('*').eq('category', category).eq('status', 'published').limit(limit);
+        return (fallbackData as Article[]) || [];
     }
     return data || [];
 };

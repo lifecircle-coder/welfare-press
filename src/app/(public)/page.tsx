@@ -6,7 +6,7 @@ export const revalidate = 60; // 1분마다 캐시 갱신 (ISR)
 
 export default async function Home() {
     // Fetch all latest articles to distribute between Hero and Latest sections
-    const allArticles = await getArticles(23); // Fetch 20+ for variety
+    const allArticles = await getArticles(100); // 총 100개까지 넉넉하게 가져옴
 
     // Top 3 for Section 1 (Hero)
     const heroArticles = allArticles.slice(0, 3);

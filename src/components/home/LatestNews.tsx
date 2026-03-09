@@ -7,16 +7,8 @@ interface LatestNewsProps {
 }
 
 export default function LatestNews({ articles }: LatestNewsProps) {
-    const targetCategories = ['건강·의료', '임신·육아', '일자리·취업', '생활·안전', '주거·금융'];
-    const selectedArticles: Article[] = [];
-
-    // For each core category, pick the latest article from the provided list
-    targetCategories.forEach(cat => {
-        const match = articles.find(a => a.category === cat);
-        if (match) {
-            selectedArticles.push(match);
-        }
-    });
+    // 기사가 있는 경우 모든 기사를 보여주도록 변경 (범주별 1개 제한 제거)
+    const selectedArticles = articles;
 
     const getCategoryColor = (cat: string) => {
         if (cat.includes('일자리')) return 'text-blue-600';
