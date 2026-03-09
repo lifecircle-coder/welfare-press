@@ -1,8 +1,13 @@
 'use client';
 
 import { useMemo, useRef, useState } from 'react';
-import ReactQuill from 'react-quill';
+import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css';
+
+const ReactQuill = dynamic(() => import('react-quill'), {
+    ssr: false,
+    loading: () => <div className="h-[400px] flex items-center justify-center text-gray-400 bg-gray-50 border border-gray-200 rounded-md">에디터 로딩 중...</div>,
+});
 
 interface ClientQuillEditorProps {
     value: string;
@@ -11,7 +16,7 @@ interface ClientQuillEditorProps {
 }
 
 export default function ClientQuillEditor({ value, onChange, articleId }: ClientQuillEditorProps) {
-    const quillRef = useRef<ReactQuill>(null);
+    const quillRef = useRef<any>(null);
     const [isUploading, setIsUploading] = useState(false);
 
     const imageHandler = () => {
