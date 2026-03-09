@@ -17,18 +17,15 @@ export default async function CategoryNews({ params }: { params: { category: str
     };
     const internalCategory = categoryMap[categoryName];
 
-    // 2. Fetch Optimized Data (Directly from DB using index)
-    let newsList = [];
-    if (categoryName === 'all' || !internalCategory) {
-        newsList = await getArticles(40);
-    } else {
-        const { getArticlesByCategory } = await import('@/lib/services');
-        newsList = await getArticlesByCategory(internalCategory, 40);
-    }
+    const { getArticles, getArticlesByCategory, getTopArticles } = await import('@/lib/services');
 
-    // 3. Top 10 by Views (Global Popular News)
-    const { getTopArticles } = await import('@/lib/services');
-    const topArticles = await getTopArticles(10);
+    // 2. Fetch Optimized Data in Parallel (Directly from DB using index)
+    const [newsList, topArticles] = await Promise.all([
+        categoryName === 'all' || !internalCategory
+            ? getArticles(40)
+            : getArticlesByCategory(internalCategory, 40),
+        getTopArticles(10)
+    ]);
 
     // UI Mapping
     const categoryTitleMap: Record<string, string> = {
