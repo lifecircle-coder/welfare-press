@@ -50,7 +50,8 @@ function WriteArticleForm() {
         prefix: '일자리', // 말머리
         author: '관리자', // Default fallback
         hashtags: '',
-        status: 'published' as 'published' | 'draft'
+        status: 'published' as 'published' | 'draft',
+        date: ''
     });
     // Load existing data if editing
     useEffect(() => {
@@ -69,7 +70,8 @@ function WriteArticleForm() {
                             hashtags: Array.isArray(article.hashtags)
                                 ? article.hashtags.join(', ')
                                 : (typeof article.hashtags === 'string' ? article.hashtags : ''),
-                            status: (article.status as 'published' | 'draft') || 'published'
+                            status: (article.status as 'published' | 'draft') || 'published',
+                            date: article.date || ''
                         });
                     } catch (e) {
                         console.error('Error loading article data:', e);
@@ -127,7 +129,7 @@ function WriteArticleForm() {
             category: formData.category,
             prefix: formData.prefix,
             author: formData.author,
-            date: new Date().toISOString(), // Use ISO string for DB consistency
+            date: formData.date || undefined,
             views: 0,
             status: formData.status,
             summary: formData.summary,

@@ -16,13 +16,14 @@ export interface Article {
     category: string;
     prefix?: string;
     author: string;
-    date: string;
+    date?: string;
     views: number;
     status: 'published' | 'draft';
     summary?: string;
     content?: string;
     hashtags?: string[];
     thumbnail?: string;
+    updated_at?: string;
 }
 
 export interface Inquiry {
@@ -57,54 +58,45 @@ export interface PartnershipInquiry {
     status: 'pending' | 'reviewing' | 'completed';
 }
 
+// --- Constants for Query Stability ---
+const ARTICLE_LIST_FIELDS = 'id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail, updated_at';
+
 // --- Articles ---
 
-/**
- * 관리자용 모든 기사 조회 (본문 content 제외, 페이징 지원)
- * 상태( published, draft 등 )를 무시하고 모두 가져옵니다.
- */
 export const getAllArticles = async (limit = 20, offset = 0): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .select(ARTICLE_LIST_FIELDS)
         .order('date', { ascending: false })
         .range(offset, offset + limit - 1);
 
     if (error) {
         console.error('Error fetching all articles:', error);
-        // Fallback to simpler query if complex select fails
-        const { data: fallbackData } = await supabase.from('articles').select('*').limit(limit);
-        return (fallbackData as Article[]) || [];
+        // NO select('*') fallback here. It crashes on production if rows are large.
+        return [];
     }
     return data || [];
 };
 
-/**
- * 목록용 기사 조회 (본문 content 제외, 페이징 지원)
- */
 export const getArticles = async (limit = 20, offset = 0): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .select(ARTICLE_LIST_FIELDS)
         .eq('status', 'published')
         .order('date', { ascending: false })
         .range(offset, offset + limit - 1);
 
     if (error) {
         console.error('Error fetching articles:', error);
-        const { data: fallbackData } = await supabase.from('articles').select('*').eq('status', 'published').limit(limit);
-        return (fallbackData as Article[]) || [];
+        return [];
     }
     return data || [];
 };
 
-/**
- * 카테고리별 기사 조회 (본문 content 제외, 페이징 지원)
- */
 export const getArticlesByCategory = async (category: string, limit = 20, offset = 0): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .select(ARTICLE_LIST_FIELDS)
         .eq('category', category)
         .eq('status', 'published')
         .order('date', { ascending: false })
@@ -112,19 +104,15 @@ export const getArticlesByCategory = async (category: string, limit = 20, offset
 
     if (error) {
         console.error('Error fetching articles by category:', error);
-        const { data: fallbackData } = await supabase.from('articles').select('*').eq('category', category).eq('status', 'published').limit(limit);
-        return (fallbackData as Article[]) || [];
+        return [];
     }
     return data || [];
 };
 
-/**
- * 히어로 섹션용 최신 기사 조회 (최신 5건)
- */
 export const getHeroArticles = async (limit = 5): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .select(ARTICLE_LIST_FIELDS)
         .eq('status', 'published')
         .order('date', { ascending: false })
         .limit(limit);
@@ -136,13 +124,10 @@ export const getHeroArticles = async (limit = 5): Promise<Article[]> => {
     return data || [];
 };
 
-/**
- * 조회수 기준 인기 기사 조회
- */
 export const getTopArticles = async (limit = 10): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .select(ARTICLE_LIST_FIELDS)
         .eq('status', 'published')
         .order('views', { ascending: false })
         .limit(limit);
@@ -207,9 +192,15 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
     }
 
     if (existing) {
+        // For existing articles, keep the original 'date' and update 'updated_at'
         const { error } = await supabase
             .from('articles')
-            .update({ ...article, thumbnail: thumbnail })
+            .update({
+                ...article,
+                date: existing.date, // Preserve original publish date
+                updated_at: new Date().toISOString(),
+                thumbnail: thumbnail
+            })
             .eq('id', article.id);
 
         if (error) {
@@ -217,9 +208,16 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
             return { success: false, error };
         }
     } else {
+        // For new articles, set both date and updated_at
+        const now = new Date().toISOString();
         const { error } = await supabase
             .from('articles')
-            .insert({ ...article, thumbnail: thumbnail });
+            .insert({
+                ...article,
+                date: article.date || now,
+                updated_at: now,
+                thumbnail: thumbnail
+            });
 
         if (error) {
             console.error('Error inserting article:', error);
@@ -230,15 +228,12 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
     return { success: true };
 };
 
-/**
- * 기사 검색 (본문 content 제외)
- */
 export const searchArticles = async (query: string): Promise<Article[]> => {
     if (!query.trim()) return [];
 
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .select(ARTICLE_LIST_FIELDS)
         .or(`title.ilike.%${query}%,content.ilike.%${query}%,summary.ilike.%${query}%`)
         .order('date', { ascending: false });
 
@@ -608,6 +603,10 @@ export const getArticlesWithNewComments = async (hours = 12): Promise<string[]> 
     if (error) {
         console.error('Error fetching new comments articles:', error);
         return [];
+    }
+
+    if (data && data.length > 0) {
+        console.log(`[Admin Notice] Found ${data.length} new comments in last ${hours}h:`, data);
     }
 
     // 중복 제거된 article_id 목록 반환

@@ -543,7 +543,20 @@ export default function ArticleManagement() {
                                         </span>
                                     )}
                                 </td>
-                                <td className="p-4 text-gray-400">{new Date(item.date).toLocaleDateString()}</td>
+                                <td className="p-4 text-xs">
+                                    <div className="flex flex-col gap-1">
+                                        <div className="flex items-center gap-1.5 text-gray-500">
+                                            <span className="bg-gray-100 px-1 rounded text-[9px] font-bold">발행</span>
+                                            {item.date ? new Date(item.date).toLocaleDateString() : '-'}
+                                        </div>
+                                        {item.updated_at && (
+                                            <div className="flex items-center gap-1.5 text-blue-500 font-medium">
+                                                <span className="bg-blue-50 px-1 rounded text-[9px] font-bold">수정</span>
+                                                {new Date(item.updated_at).toLocaleDateString()}
+                                            </div>
+                                        )}
+                                    </div>
+                                </td>
                                 <td className="p-4" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex gap-2">
                                         <button
