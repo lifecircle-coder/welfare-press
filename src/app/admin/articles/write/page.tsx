@@ -98,6 +98,63 @@ function WriteArticleForm() {
         }));
     };
 
+    // Custom Image Handler for ReactQuill
+    const imageHandler = () => {
+        const input = document.createElement('input');
+        input.setAttribute('type', 'file');
+        input.setAttribute('accept', 'image/*');
+        input.click();
+
+        input.onchange = async () => {
+            const file = input.files ? input.files[0] : null;
+            if (!file) return;
+
+            // Basic validation
+            if (!file.type.startsWith('image/')) return alert('이미지 파일만 업로드 가능합니다.');
+            if (file.size > 10 * 1024 * 1024) return alert('이미지 파일은 10MB 이하만 가능합니다.');
+
+            try {
+                // We need an article ID for the path. 
+                // If it's a new article and doesn't have an ID yet, generate one.
+                const articleId = formData.id || crypto.randomUUID();
+                if (!formData.id) {
+                    setFormData(prev => ({ ...prev, id: articleId }));
+                }
+
+                // Show loading indicator or handle it in UI
+                console.log('Uploading image to storage...');
+
+                // Using the exported service from services.ts (need to ensure it's imported)
+                const { uploadArticleImage } = await import('@/lib/services');
+                const storageUrl = await uploadArticleImage(file, articleId);
+
+                if (storageUrl) {
+                    // Get quill instance
+                    // Note: This requires a slightly different way to access quill if using dynamic import
+                    // But usually, in ReactQuill onchange handler or similar, we can get the editor
+                    const quill = (window as any).Quill ? (window as any).Quill.find(document.querySelector('.ql-editor')) : null;
+
+                    // Fallback: Using raw DOM insert if reference is tricky
+                    const editor = document.querySelector('.ql-editor');
+                    if (editor) {
+                        const img = document.createElement('img');
+                        img.src = storageUrl;
+                        editor.appendChild(img);
+
+                        // Update ReactQuill state by triggering its onChange if possible 
+                        // or just wait for the user's next input to sync. 
+                        // Better approach is often to use the ref or a handler provided by Quill.
+                        setFormData(prev => ({ ...prev, content: editor.innerHTML }));
+                    }
+                    console.log('Image uploaded and inserted:', storageUrl);
+                }
+            } catch (err) {
+                console.error('Image upload failed:', err);
+                alert('이미지 업로드 중 오류가 발생했습니다.');
+            }
+        };
+    };
+
     const modules = useMemo(() => ({
         toolbar: {
             container: [
@@ -108,8 +165,11 @@ function WriteArticleForm() {
                 [{ 'align': [] }, { 'color': [] }, { 'background': [] }],
                 ['clean']
             ],
+            handlers: {
+                image: imageHandler
+            }
         }
-    }), []);
+    }), [formData.id]);
 
     const formats = [
         'header',

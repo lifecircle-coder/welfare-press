@@ -7,13 +7,7 @@ const nextConfig = {
         ignoreBuildErrors: true,
     },
     images: {
-        // Enable Next.js image optimization
-        remotePatterns: [
-            {
-                protocol: 'https',
-                hostname: '**',
-            },
-        ],
+        unoptimized: true, // 로컬, 외부 구분 없이 원본 이미지를 그대로 렌더링. Unconfigured Host 에러 차단
     },
 };
 

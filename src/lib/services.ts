@@ -59,7 +59,7 @@ export interface PartnershipInquiry {
 }
 
 // --- Constants for Query Stability ---
-const ARTICLE_LIST_FIELDS = 'id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail, updated_at';
+export const ARTICLE_LIST_FIELDS = 'id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail, updated_at';
 
 // --- Articles ---
 
@@ -153,76 +153,147 @@ export const getArticleById = async (id: string): Promise<Article | undefined> =
     return data;
 };
 
-export const saveArticle = async (article: Article): Promise<{ success: boolean; error?: any }> => {
-    // Check if updating or inserting
-    const existing = await getArticleById(article.id);
+// --- Image Upload Helpers ---
 
-    // Auto-extract thumbnail from content if not present or if we want to ensure it's optimized
-    let thumbnail = article.thumbnail;
-    const firstImgMatch = article.content?.match(/<img[^>]+src="([^">]+)"/);
-    const firstImgUrl = firstImgMatch ? firstImgMatch[1] : null;
+/**
+ * Uploads a file or Base64 string to Supabase Storage
+ */
+export const uploadArticleImage = async (source: File | string, articleId: string): Promise<string | null> => {
+    try {
+        let body: Buffer | File;
+        let contentType: string;
+        let extension: string;
 
-    // Use the first image from content as the primary source for thumbnail
-    if (firstImgUrl) {
-        thumbnail = firstImgUrl;
-    }
+        if (typeof source === 'string' && source.startsWith('data:')) {
+            // Handle Base64
+            const matches = source.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
+            if (!matches) return null;
+            extension = matches[1] === 'jpeg' ? 'jpg' : matches[1];
+            contentType = `image/${extension}`;
+            body = Buffer.from(matches[2], 'base64');
+        } else if (source instanceof File) {
+            // Handle File object
+            body = source;
+            contentType = source.type;
+            extension = source.name.split('.').pop() || 'jpg';
+        } else {
+            return null;
+        }
 
-    // Optimization logic: If thumbnail exists and is NOT already optimized (not from our storage)
-    if (thumbnail && !thumbnail.includes('supabase.co/storage/v1/object/public/partnership_files/articles/')) {
-        try {
-            console.log('Requesting thumbnail optimization...');
-            const response = await fetch('/api/optimize-image', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ imageUrl: thumbnail, articleId: article.id })
+        const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
+        const filePath = `articles/${articleId}/${fileName}`;
+
+        const { error: uploadError } = await supabase.storage
+            .from('partnership_files')
+            .upload(filePath, body, {
+                contentType,
+                upsert: true
             });
 
-            if (response.ok) {
-                const { optimizedUrl } = await response.json();
-                if (optimizedUrl) {
-                    thumbnail = optimizedUrl;
-                    console.log('Thumbnail optimized successfully:', thumbnail);
-                }
-            } else {
-                console.warn('Thumbnail optimization failed, using original.');
+        if (uploadError) {
+            console.error('Error uploading to storage:', uploadError);
+            return null;
+        }
+
+        const { data } = supabase.storage
+            .from('partnership_files')
+            .getPublicUrl(filePath);
+
+        return data.publicUrl;
+    } catch (err) {
+        console.error('In uploadArticleImage:', err);
+        return null;
+    }
+};
+
+export const saveArticle = async (article: Article): Promise<{ success: boolean; error?: any }> => {
+    let finalContent = article.content || '';
+    let finalThumbnail = article.thumbnail || '';
+
+    // 1. Process Content: Scan and replace Base64 images with Storage URLs
+    const base64Regex = /src="(data:image\/[a-zA-Z+]+;base64,[^"]+)"/g;
+    let match;
+    const base64Images: string[] = [];
+
+    while ((match = base64Regex.exec(finalContent)) !== null) {
+        base64Images.push(match[1]);
+    }
+
+    if (base64Images.length > 0) {
+        console.log(`Found ${base64Images.length} Base64 images in content. Uploading to Storage...`);
+        for (const b64 of base64Images) {
+            const storageUrl = await uploadArticleImage(b64, article.id);
+            if (storageUrl) {
+                finalContent = finalContent.replace(b64, storageUrl);
             }
-        } catch (err) {
-            console.error('Error during thumbnail optimization:', err);
         }
     }
 
+    // 2. Process Thumbnail: If Base64 or missing, try to get from processed content or upload
+    if (finalThumbnail && finalThumbnail.startsWith('data:')) {
+        const storageUrl = await uploadArticleImage(finalThumbnail, article.id);
+        if (storageUrl) finalThumbnail = storageUrl;
+    }
+
+    // If still no thumbnail, grab the first image from the refined content
+    if (!finalThumbnail || finalThumbnail.startsWith('data:')) {
+        let extractedSrc = null;
+        if (typeof window !== 'undefined' && window.DOMParser) {
+            try {
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(finalContent, 'text/html');
+                const img = doc.querySelector('img');
+                if (img) {
+                    extractedSrc = img.getAttribute('src');
+                }
+            } catch (e) {
+                console.error('DOMParser error', e);
+            }
+        }
+        
+        // Fallback robust regex if DOMParser fails or server-side
+        if (!extractedSrc) {
+            const firstImgMatch = finalContent.match(/<img[^>]+src\s*=\s*(?:'([^']+)'|"([^"]+)")/i);
+            if (firstImgMatch) {
+                extractedSrc = firstImgMatch[1] || firstImgMatch[2];
+            }
+        }
+
+        if (extractedSrc) {
+            finalThumbnail = extractedSrc;
+        }
+    }
+
+    const existing = await getArticleById(article.id);
+    const now = new Date().toISOString();
+
+    const articleData = {
+        ...article,
+        content: finalContent,
+        thumbnail: finalThumbnail,
+        updated_at: now
+    };
+
     if (existing) {
-        // For existing articles, keep the original 'date' and update 'updated_at'
         const { error } = await supabase
             .from('articles')
             .update({
-                ...article,
-                date: existing.date, // Preserve original publish date
-                updated_at: new Date().toISOString(),
-                thumbnail: thumbnail
+                ...articleData,
+                date: existing.date // Keep original publish date
             })
             .eq('id', article.id);
 
-        if (error) {
-            console.error('Error updating article:', error);
-            return { success: false, error };
-        }
+        if (error) return { success: false, error };
     } else {
-        // For new articles, set both date and updated_at
-        const now = new Date().toISOString();
         const { error } = await supabase
             .from('articles')
             .insert({
-                ...article,
+                ...articleData,
                 date: article.date || now,
-                updated_at: now,
-                thumbnail: thumbnail
+                views: 0
             });
 
-        if (error) {
-            console.error('Error inserting article:', error);
-            return { success: false, error };
-        }
+        if (error) return { success: false, error };
     }
 
     return { success: true };
@@ -235,7 +306,8 @@ export const searchArticles = async (query: string): Promise<Article[]> => {
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
         .or(`title.ilike.%${query}%,content.ilike.%${query}%,summary.ilike.%${query}%`)
-        .order('date', { ascending: false });
+        .order('date', { ascending: false })
+        .limit(50);
 
     if (error) {
         console.error('Error searching articles:', error);
@@ -317,7 +389,8 @@ export const getInquiries = async (): Promise<Inquiry[]> => {
     const { data, error } = await supabase
         .from('inquiries')
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false })
+        .limit(100);
     if (error) return [];
     return data || [];
 };
@@ -412,7 +485,8 @@ export const getCommentsByAuthor = async (author: string): Promise<Comment[]> =>
         .from('comments')
         .select('*')
         .eq('author', author)
-        .order('date', { ascending: false });
+        .order('date', { ascending: false })
+        .limit(100);
     if (error) return [];
 
     return (data || []).map(item => ({
