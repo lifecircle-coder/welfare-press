@@ -25,7 +25,7 @@ export default function Footer() {
                     {/* Left: Info */}
                     <div className="flex-1 space-y-4 text-center md:text-left w-full">
                         <Link href="/" className="text-2xl font-bold text-gray-400 tracking-tight block hover:text-primary transition-colors">
-                            복지뉴스
+                            THE 복(福)
                         </Link>
                         <p className="text-gray-500 font-medium leading-relaxed">
                             전국민을 위한 복지 전문 뉴스,<br />
@@ -33,9 +33,9 @@ export default function Footer() {
                         </p>
 
                         <div className="text-sm text-gray-400 space-y-1.5 pt-4">
-                            <!--p>등록번호: 서울 아 12345 | 발행인/편집인: 홍길동</p>
-                            <p>주소: 서울특별시 중구 세종대로 123 복지빌딩 5층</p>
-                            <p>전화: 02-1234-5678 | 이메일: contact@welfarenews.com</p--!>
+                            <p>더복  |  서울특별시 영등포구 여의대방로35가길 19. 109-703  |  등록 : 서울 -아00000 _ 2026년 06월 00일  |</p>
+                            <p>기사제보·광고·제휴문의 : 02-6396-2114  |  wow@thebok.co.kr  |</p>
+                            <p>대표 겸 발행인·편집인 : 변·창·환  |  청소년보호책임자 : 변·창·환  |</p>
                             <div className="pt-4 flex flex-wrap gap-3 justify-center md:justify-start">
                                 <Link href="/policy/terms" className="cursor-pointer hover:underline hover:text-gray-600">이용약관</Link>
                                 <span className="text-gray-300">|</span>
@@ -70,8 +70,8 @@ export default function Footer() {
                             <span>1:1 문의하기</span>
                         </button>
                         <p className="text-sm text-gray-400 mt-3 text-center">
-                            평일 09:00 ~ 18:00<br />
-                            <span className="text-xs opacity-75">(주말/공휴일 휴무)</span>
+                            평일 09:30 ~ 17:30<br />
+                            <span className="text-xs opacity-75">(토,일요일/공휴일 휴무)</span>
                         </p>
                     </div>
 
