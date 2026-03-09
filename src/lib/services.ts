@@ -66,8 +66,8 @@ export interface PartnershipInquiry {
 export const getAllArticles = async (limit = 20, offset = 0): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
-        .order('created_at', { ascending: false })
+        .select('id, title, category, prefix, author, date, views, status, hashtags')
+        .order('date', { ascending: false })
         .range(offset, offset + limit - 1);
 
     if (error) {
@@ -83,9 +83,9 @@ export const getAllArticles = async (limit = 20, offset = 0): Promise<Article[]>
 export const getArticles = async (limit = 20, offset = 0): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .select('id, title, category, prefix, author, date, views, status, hashtags')
         .eq('status', 'published')
-        .order('created_at', { ascending: false })
+        .order('date', { ascending: false })
         .range(offset, offset + limit - 1);
 
     if (error) {
@@ -101,10 +101,10 @@ export const getArticles = async (limit = 20, offset = 0): Promise<Article[]> =>
 export const getArticlesByCategory = async (category: string, limit = 20, offset = 0): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .select('id, title, category, prefix, author, date, views, status, hashtags')
         .eq('category', category)
         .eq('status', 'published')
-        .order('created_at', { ascending: false })
+        .order('date', { ascending: false })
         .range(offset, offset + limit - 1);
 
     if (error) {
@@ -120,9 +120,9 @@ export const getArticlesByCategory = async (category: string, limit = 20, offset
 export const getHeroArticles = async (limit = 5): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .select('id, title, category, prefix, author, date, views, status, hashtags')
         .eq('status', 'published')
-        .order('created_at', { ascending: false })
+        .order('date', { ascending: false })
         .limit(limit);
 
     if (error) {
@@ -138,7 +138,7 @@ export const getHeroArticles = async (limit = 5): Promise<Article[]> => {
 export const getTopArticles = async (limit = 10): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .select('id, title, category, prefix, author, date, views, status, hashtags')
         .eq('status', 'published')
         .order('views', { ascending: false })
         .limit(limit);
@@ -234,9 +234,9 @@ export const searchArticles = async (query: string): Promise<Article[]> => {
 
     const { data, error } = await supabase
         .from('articles')
-        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .select('id, title, category, prefix, author, date, views, status, hashtags')
         .or(`title.ilike.%${query}%,content.ilike.%${query}%,summary.ilike.%${query}%`)
-        .order('created_at', { ascending: false });
+        .order('date', { ascending: false });
 
     if (error) {
         console.error('Error searching articles:', error);
