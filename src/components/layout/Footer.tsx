@@ -35,7 +35,7 @@ export default function Footer() {
                         <div className="text-sm text-gray-400 space-y-1.5 pt-4">
                             <p>제호 : The 복 | 등록번호 : 서울 - 아00000 | 등록일 : 2026년 03월 00일 | 발행일 : 2026년 03월 00일 |</p>
                             <p>발행인·편집인 : 변·창·환  |  청소년보호책임자 : 변·창·환 | 기사제보·광고·제휴문의 : 02-6396-2114 | eosr0509@gmail.com |</p>
-                            <p>주소 : 서울특별시 영등포구 신길동 4958-1. 109-703 |</p>
+                            <p>주소 : 서울특별시 영등포구 신길동 4958-1. 109-703 | 02-6396-2114 | eosr0509@gmail.com |</p>
                             <div className="pt-4 flex flex-wrap gap-3 justify-center md:justify-start">
                                 <Link href="/policy/terms" className="cursor-pointer hover:underline hover:text-gray-600">이용약관</Link>
                                 <span className="text-gray-300">|</span>
@@ -67,7 +67,7 @@ export default function Footer() {
                             className="flex items-center gap-2 bg-primary hover:bg-blue-600 text-white px-8 py-3.5 rounded-full font-bold transition-all shadow-lg hover:shadow-xl transform hover:-translate-y-0.5"
                         >
                             <MessageCircle size={20} />
-                            <span>1:1 문의하기</span>
+                            <span>1:1 문의하기<br />(제보/광고/제휴/기타)</span>
                         </button>
                         <p className="text-sm text-gray-400 mt-3 text-center">
                             평일 09:30 ~ 17:30<br />
