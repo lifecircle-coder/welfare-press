@@ -1,5 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { Newspaper } from 'lucide-react';
+import type { Article } from '@/lib/services';
+import Image from 'next/image';
 import type { Article } from '@/lib/services';
 
 interface LatestNewsProps {
@@ -61,8 +64,9 @@ export default function LatestNews({ articles }: LatestNewsProps) {
                                         />
                                     </div>
                                 ) : (
-                                    <div className="w-24 h-24 md:w-32 md:h-20 rounded-lg flex-shrink-0 flex items-center justify-center text-xs text-white font-bold bg-gray-300">
-                                        {item.category.substring(0, 2)}
+                                    <div className={`w-24 h-24 md:w-32 md:h-20 rounded-lg flex-shrink-0 flex flex-col items-center justify-center text-white bg-gray-300`}>
+                                        <Newspaper size={20} className="text-white mb-1 opacity-80" />
+                                        <span className="text-xs font-bold tracking-tight">The 복(福)</span>
                                     </div>
                                 )}
                             </div>

@@ -275,11 +275,14 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
     };
 
     if (existing) {
+        // Strictly exclude `date`, `id`, and `views` to prevent overwriting them during an update
+        const { date, id, views, ...updatePayload } = articleData;
+
         const { error } = await supabase
             .from('articles')
             .update({
-                ...articleData,
-                date: existing.date // Keep original publish date
+                ...updatePayload,
+                updated_at: now
             })
             .eq('id', article.id);
 

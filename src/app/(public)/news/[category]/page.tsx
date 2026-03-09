@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import { Newspaper } from 'lucide-react';
 import { getArticles, getArticlesByCategory, getTopArticles } from '@/lib/services';
 
 export const revalidate = 60; // 1분 단위 캐싱
@@ -95,14 +96,15 @@ export default async function CategoryNews({ params }: { params: { category: str
                                                 />
                                             </div>
                                         ) : (
-                                            <div className={`w-full md:w-48 h-32 rounded-lg flex-shrink-0 flex items-center justify-center text-white font-bold
+                                            <div className={`w-full md:w-48 h-32 rounded-lg flex-shrink-0 flex flex-col items-center justify-center text-white
                                                 ${news.category.includes('일자리') ? 'bg-blue-300' :
                                                     news.category.includes('건강') ? 'bg-green-300' :
                                                         news.category.includes('주거') ? 'bg-indigo-300' :
                                                             news.category.includes('생활') ? 'bg-orange-300' :
                                                                 news.category.includes('육아') ? 'bg-pink-300' : 'bg-gray-300'}
                                             `}>
-                                                {news.category}
+                                                <Newspaper size={32} className="text-white mb-2 opacity-80" />
+                                                <span className="text-sm font-bold tracking-tight">The 복(福)</span>
                                             </div>
                                         )}
 
