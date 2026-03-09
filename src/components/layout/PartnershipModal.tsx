@@ -76,7 +76,7 @@ export default function PartnershipModal({ isOpen, onClose }: PartnershipModalPr
                             <div className="bg-gray-50 rounded-xl p-4 border border-gray-100">
                                 <h4 className="text-sm font-bold text-gray-900 mb-2">개인정보보호를 위한 이용자 동의사항</h4>
                                 <div className="text-xs text-gray-600 space-y-2 leading-relaxed h-24 overflow-y-auto pr-2 custom-scrollbar">
-                                    <p>&apos;[THE 복]&apos;은 광고문의 등을 희망하는 기업 및 개인을 대상으로 아래와 같이 개인정보를 수집하고 있습니다.</p>
+                                    <p>&apos;[THE 복]&apos;은 광고/제휴 등의 문의를 희망하는 기업 및 개인을 대상으로 아래와 같이 개인정보를 수집하고 있습니다.</p>
                                     <p>1. 수집 개인정보 항목 : 회사명, 이름, 이메일, 전화번호</p>
                                     <p>2. 개인정보의 수집 및 이용목적 : 신청에 따른 본인확인 및 원활한 의사소통 경로 확보</p>
                                     <p>3. 개인정보의 이용기간 : 모든 검토가 완료된 후 3개월간 이용자의 조회를 위하여 보관하며, 이후 해당정보를 지체 없이 파기합니다.</p>
