@@ -176,7 +176,7 @@ export default function Header() {
 
                     {/* Logo */}
                     <Link href="/" className="text-2xl md:text-3xl font-bold text-primary tracking-tight absolute left-1/2 transform -translate-x-1/2 md:static md:transform-none md:left-auto">
-                        THE 복(福) : 복지뉴스
+                        The 복(福) : 복지뉴스
                     </Link>
 
                     {/* Desktop Search Bar */}
