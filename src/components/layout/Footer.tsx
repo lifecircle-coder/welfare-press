@@ -33,9 +33,9 @@ export default function Footer() {
                         </p>
 
                         <div className="text-sm text-gray-400 space-y-1.5 pt-4">
-                            <p>등록번호: 서울 아 12345 | 발행인/편집인: 홍길동</p>
+                            <!--p>등록번호: 서울 아 12345 | 발행인/편집인: 홍길동</p>
                             <p>주소: 서울특별시 중구 세종대로 123 복지빌딩 5층</p>
-                            <p>전화: 02-1234-5678 | 이메일: contact@welfarenews.com</p>
+                            <p>전화: 02-1234-5678 | 이메일: contact@welfarenews.com</p--!>
                             <div className="pt-4 flex flex-wrap gap-3 justify-center md:justify-start">
                                 <Link href="/policy/terms" className="cursor-pointer hover:underline hover:text-gray-600">이용약관</Link>
                                 <span className="text-gray-300">|</span>
