@@ -2,8 +2,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { Newspaper } from 'lucide-react';
 import type { Article } from '@/lib/services';
-import Image from 'next/image';
-import type { Article } from '@/lib/services';
 
 interface LatestNewsProps {
     articles: Article[];
