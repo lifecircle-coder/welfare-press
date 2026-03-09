@@ -7,9 +7,6 @@ export const revalidate = 60; // 1분 단위 캐싱
 export default async function CategoryNews({ params }: { params: { category: string } }) {
     const categoryName = decodeURIComponent(params.category);
 
-    // Server-side Data Fetching (Fetch 100 to ensure we get all recent articles for filtering)
-    const allArticles = await getArticles(100);
-
     // 1. Map URL Slug to Internal Category Name (Full names for exact matching)
     const categoryMap: Record<string, string> = {
         'childcare': '임신·육아',
@@ -20,22 +17,18 @@ export default async function CategoryNews({ params }: { params: { category: str
     };
     const internalCategory = categoryMap[categoryName];
 
-    // 2. Filter Logic (on Server)
+    // 2. Fetch Optimized Data (Directly from DB using index)
     let newsList = [];
     if (categoryName === 'all' || !internalCategory) {
-        newsList = allArticles.filter(a => a.status === 'published');
+        newsList = await getArticles(40);
     } else {
-        newsList = allArticles.filter(a =>
-            a.status === 'published' &&
-            (a.category === internalCategory || a.category.includes(internalCategory))
-        );
+        const { getArticlesByCategory } = await import('@/lib/services');
+        newsList = await getArticlesByCategory(internalCategory, 40);
     }
 
-    // 3. Top 10 by Views (Global)
-    const topArticles = [...allArticles]
-        .filter(a => a.status === 'published')
-        .sort((a, b) => b.views - a.views)
-        .slice(0, 10);
+    // 3. Top 10 by Views (Global Popular News)
+    const { getTopArticles } = await import('@/lib/services');
+    const topArticles = await getTopArticles(10);
 
     // UI Mapping
     const categoryTitleMap: Record<string, string> = {

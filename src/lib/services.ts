@@ -114,6 +114,24 @@ export const getHeroArticles = async (limit = 5): Promise<Article[]> => {
     return data || [];
 };
 
+/**
+ * 조회수 기준 인기 기사 조회
+ */
+export const getTopArticles = async (limit = 10): Promise<Article[]> => {
+    const { data, error } = await supabase
+        .from('articles')
+        .select('id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail')
+        .eq('status', 'published')
+        .order('views', { ascending: false })
+        .limit(limit);
+
+    if (error) {
+        console.error('Error fetching top articles:', error);
+        return [];
+    }
+    return data || [];
+};
+
 export const getArticleById = async (id: string): Promise<Article | undefined> => {
     const { data, error } = await supabase
         .from('articles')
@@ -551,4 +569,26 @@ export const getPendingInquiriesCount = async (): Promise<number> => {
         .eq('status', 'pending');
     if (error) return 0;
     return count || 0;
+};
+
+/**
+ * 최근 특정 시간 이내에 새로운 댓글이 달린 기사의 ID 목록을 조회합니다.
+ */
+export const getArticlesWithNewComments = async (hours = 12): Promise<string[]> => {
+    const targetDate = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+
+    // date 컬럼이 ISO 형식 문자열이므로 gte로 비교 가능
+    const { data, error } = await supabase
+        .from('comments')
+        .select('article_id')
+        .gte('date', targetDate);
+
+    if (error) {
+        console.error('Error fetching new comments articles:', error);
+        return [];
+    }
+
+    // 중복 제거된 article_id 목록 반환
+    const articleIds = Array.from(new Set(data.map(item => item.article_id)));
+    return articleIds;
 };

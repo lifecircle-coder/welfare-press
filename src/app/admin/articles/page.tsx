@@ -3,7 +3,7 @@
 import { Plus, Search, Filter, Copy, Calendar, User, Trash2, MapPin, MessageCircle, Send, X } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
-import { getArticles, deleteArticle, getComments, addComment } from '@/lib/services';
+import { getArticles, deleteArticle, getComments, addComment, getArticlesWithNewComments } from '@/lib/services';
 import type { Article, Comment } from '@/lib/services';
 import { useRouter } from 'next/navigation';
 import { getNationalWelfareList, getSubsidy24List, getYouthPolicyList, getMogefNewsList, getNationalWelfareDetail, getLocalGovWelfareList, getLocalGovWelfareDetail, WelfareService } from '@/lib/api/publicData';
@@ -15,6 +15,7 @@ export default function ArticleManagement() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('전체');
     const [currentUser, setCurrentUser] = useState<any>(null);
+    const [newCommentArticleIds, setNewCommentArticleIds] = useState<string[]>([]);
 
     // Public Data State
     const [activeApiTab, setActiveApiTab] = useState<'NATIONAL' | 'LOCAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF'>('NATIONAL');
@@ -42,6 +43,10 @@ export default function ArticleManagement() {
 
     const loadArticles = async () => {
         const data = await getArticles();
+
+        // 최근 12시간 이내 새 댓글이 달린 기사 ID 조회
+        const newComments = await getArticlesWithNewComments(12);
+        setNewCommentArticleIds(newComments);
 
         // Fetch current user and filter if reporter
         const { data: { session } } = await adminSupabase.auth.getSession();
@@ -537,8 +542,11 @@ export default function ArticleManagement() {
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => handleOpenCommentModal(item)}
-                                            className="flex items-center gap-1 text-primary hover:text-blue-700 border border-blue-100 px-2 py-1 rounded bg-blue-50/50 font-bold whitespace-nowrap"
+                                            className="relative flex items-center gap-1 text-primary hover:text-blue-700 border border-blue-100 px-2 py-1 rounded bg-blue-50/50 font-bold whitespace-nowrap"
                                         >
+                                            {newCommentArticleIds.includes(item.id) && (
+                                                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
+                                            )}
                                             <MessageCircle size={14} />
                                             댓글보기
                                         </button>
