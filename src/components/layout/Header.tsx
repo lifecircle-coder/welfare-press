@@ -67,11 +67,11 @@ export default function Header() {
 
     const menuItems = [
         { name: '종합', href: '/news/all' },
+        { name: '건강·의료', href: '/news/health' },
         { name: '임신·육아', href: '/news/childcare' },
         { name: '일자리·취업', href: '/news/jobs' },
-        { name: '주거·금융', href: '/news/housing' },
-        { name: '건강·의료', href: '/news/health' },
         { name: '생활·안전', href: '/news/safety' },
+        { name: '주거·금융', href: '/news/housing' },
     ];
 
     // Text Size Toggle

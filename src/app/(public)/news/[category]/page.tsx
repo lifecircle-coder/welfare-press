@@ -7,16 +7,16 @@ export const revalidate = 60; // 1분 단위 캐싱
 export default async function CategoryNews({ params }: { params: { category: string } }) {
     const categoryName = decodeURIComponent(params.category);
 
-    // Server-side Data Fetching (Limited to 50 for performance)
-    const allArticles = await getArticles(50);
+    // Server-side Data Fetching (Fetch 100 to ensure we get all recent articles for filtering)
+    const allArticles = await getArticles(100);
 
-    // 1. Map URL Slug to Internal Category Name
+    // 1. Map URL Slug to Internal Category Name (Full names for exact matching)
     const categoryMap: Record<string, string> = {
-        'childcare': '육아',
-        'jobs': '일자리',
-        'housing': '주거',
-        'health': '건강',
-        'safety': '생활',
+        'childcare': '임신·육아',
+        'jobs': '일자리·취업',
+        'housing': '주거·금융',
+        'health': '건강·의료',
+        'safety': '생활·안전',
     };
     const internalCategory = categoryMap[categoryName];
 
