@@ -141,7 +141,7 @@ export default function PolicyPage() {
                         </div>
                         <div>
                             <h1 className="text-3xl font-extrabold text-gray-900">{policy.title}</h1>
-                            <p className="text-gray-500 mt-1 font-medium text-sm">상호명의 공식 운영 정책을 안내해 드립니다.</p>
+                            <p className="text-gray-500 mt-1 font-medium text-sm">인터넷 복지뉴스 [The 복]의 공식 운영 정책을 안내해 드립니다.</p>
                         </div>
                     </div>
                     <div className="py-12 prose prose-slate max-w-none whitespace-pre-wrap text-gray-800 leading-8 text-[1.05rem]">
