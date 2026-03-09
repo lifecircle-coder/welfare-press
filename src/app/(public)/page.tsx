@@ -2,7 +2,7 @@ import HeroSection from '@/components/home/HeroSection';
 import LatestNews from '@/components/home/LatestNews';
 import { getArticles, getHeroArticles } from '@/lib/services';
 
-export const revalidate = 60; // 1분마다 캐시 갱신 (ISR)
+export const revalidate = 0; // 강력한 캐시 무력화 (항상 최신 데이터 유지)
 
 export default async function Home() {
     // Fetch all latest articles to distribute between Hero and Latest sections

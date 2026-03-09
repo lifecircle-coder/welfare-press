@@ -1,9 +1,9 @@
 import Link from 'next/link';
-import Image from 'next/image';
+import SafeImage from '@/components/common/SafeImage';
 import { Newspaper } from 'lucide-react';
 import { getArticles, getArticlesByCategory, getTopArticles } from '@/lib/services';
 
-export const revalidate = 60; // 1분 단위 캐싱
+export const revalidate = 0; // 강력한 갱신
 
 export async function generateStaticParams() {
     return [
@@ -85,28 +85,27 @@ export default async function CategoryNews({ params }: { params: { category: str
                                     className="block bg-white border border-gray-100 rounded-xl p-6 hover:shadow-lg transition-shadow group"
                                 >
                                     <div className="flex flex-col md:flex-row gap-6">
-                                        {news.thumbnail ? (
-                                            <div className="w-full md:w-48 h-32 relative overflow-hidden rounded-lg flex-shrink-0 bg-gray-100">
-                                                <Image
-                                                    src={news.thumbnail}
-                                                    alt={news.title}
-                                                    fill
-                                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                                    sizes="(max-width: 768px) 100vw, 192px"
-                                                />
-                                            </div>
-                                        ) : (
-                                            <div className={`w-full md:w-48 h-32 rounded-lg flex-shrink-0 flex flex-col items-center justify-center text-white
-                                                ${news.category.includes('일자리') ? 'bg-blue-300' :
-                                                    news.category.includes('건강') ? 'bg-green-300' :
-                                                        news.category.includes('주거') ? 'bg-indigo-300' :
-                                                            news.category.includes('생활') ? 'bg-orange-300' :
-                                                                news.category.includes('육아') ? 'bg-pink-300' : 'bg-gray-300'}
-                                            `}>
-                                                <Newspaper size={32} className="text-white mb-2 opacity-80" />
-                                                <span className="text-sm font-bold tracking-tight">The 복(福)</span>
-                                            </div>
-                                        )}
+                                        <div className="w-full md:w-48 h-32 relative overflow-hidden rounded-lg flex-shrink-0 bg-gray-100">
+                                            <SafeImage
+                                                src={news.thumbnail}
+                                                alt={news.title}
+                                                fill
+                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                sizes="(max-width: 768px) 100vw, 192px"
+                                                fallback={
+                                                    <div className={`w-full h-full flex flex-col items-center justify-center text-white
+                                                        ${news.category.includes('일자리') ? 'bg-blue-300' :
+                                                            news.category.includes('건강') ? 'bg-green-300' :
+                                                                news.category.includes('주거') ? 'bg-indigo-300' :
+                                                                    news.category.includes('생활') ? 'bg-orange-300' :
+                                                                        news.category.includes('육아') ? 'bg-pink-300' : 'bg-gray-300'}
+                                                    `}>
+                                                        <Newspaper size={32} className="text-white mb-2 opacity-80" />
+                                                        <span className="text-sm font-bold tracking-tight">The 복(福)</span>
+                                                    </div>
+                                                }
+                                            />
+                                        </div>
 
                                         <div className="flex-1">
                                             <div className="flex items-center gap-2 mb-2">
