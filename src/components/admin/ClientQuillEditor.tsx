@@ -1,114 +1,20 @@
 'use client';
-
-import { useMemo, useRef, useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css';
 
 const ReactQuill = dynamic(() => import('react-quill'), {
     ssr: false,
-    loading: () => <div className="h-[400px] flex items-center justify-center text-gray-400 bg-gray-50 border border-gray-200 rounded-md">에디터 로딩 중...</div>,
+    loading: () => <p>에디터 로딩 중...</p>
 });
 
-interface ClientQuillEditorProps {
-    value: string;
-    onChange: (value: string) => void;
-    articleId: string;
-}
+export default function ClientQuillEditor({ value, onChange }: any) {
+    const [mounted, setMounted] = useState(false);
+    useEffect(() => { setMounted(true); }, []);
 
-export default function ClientQuillEditor({ value, onChange, articleId }: ClientQuillEditorProps) {
-    const quillRef = useRef<any>(null);
-    const [isUploading, setIsUploading] = useState(false);
-
-    const imageHandler = () => {
-        const input = document.createElement('input');
-        input.setAttribute('type', 'file');
-        input.setAttribute('accept', 'image/*');
-        input.click();
-
-        input.onchange = async () => {
-            const file = input.files ? input.files[0] : null;
-            if (!file) return;
-
-            if (!file.type.startsWith('image/')) return alert('이미지 파일만 업로드 가능합니다.');
-            if (file.size > 10 * 1024 * 1024) return alert('이미지 파일은 10MB 이하만 가능합니다.');
-
-            setIsUploading(true);
-
-            try {
-                const { uploadArticleImage } = await import('@/lib/services');
-                // Use a generated dummy ID if articleId is empty (new article)
-                // This will be replaced by the actual ID upon saving, but Storage will store it under this dummy ID temporarily or permanently
-                const targetId = articleId || `new_${Date.now()}`;
-
-                const storageUrl = await uploadArticleImage(file, targetId);
-
-                if (storageUrl) {
-                    const reactQuill: any = quillRef.current;
-                    const editor = reactQuill?.getEditor();
-                    if (editor) {
-                        const range = editor.getSelection(true);
-                        editor.insertEmbed(range.index, 'image', storageUrl);
-                        editor.setSelection(range.index + 1, 0);
-                    }
-                }
-            } catch (err) {
-                console.error('Image upload failed:', err);
-                alert('이미지 업로드 중 오류가 발생했습니다.');
-            } finally {
-                setIsUploading(false);
-            }
-        };
-    };
-
-    const modules = useMemo(() => ({
-        toolbar: {
-            container: [
-                [{ 'header': [1, 2, 3, false] }],
-                ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-                [{ 'list': 'ordered' }, { 'list': 'bullet' }, { 'indent': '-1' }, { 'indent': '+1' }],
-                ['link', 'image'],
-                [{ 'align': [] }, { 'color': [] }, { 'background': [] }],
-                ['clean']
-            ],
-            handlers: {
-                image: imageHandler
-            }
-        }
-    }), [articleId]);
-
-    const formats = [
-        'header',
-        'bold', 'italic', 'underline', 'strike', 'blockquote',
-        'list', 'bullet', 'indent',
-        'link', 'image',
-        'align', 'color', 'background'
-    ];
+    if (!mounted) return null;
 
     return (
-        <div className="relative mb-12">
-            <style>{`
-                .ql-container {
-                    min-height: 400px !important;
-                    font-size: 16px !important;
-                }
-                .ql-editor {
-                    min-height: 400px !important;
-                }
-            `}</style>
-            {isUploading && (
-                <div className="absolute inset-0 z-10 flex items-center justify-center bg-white/50 backdrop-blur-sm rounded">
-                    <div className="text-primary font-bold">이미지 업로드 중...</div>
-                </div>
-            )}
-            <ReactQuill
-                ref={quillRef}
-                theme="snow"
-                value={value}
-                onChange={onChange}
-                modules={modules}
-                formats={formats}
-                className="bg-white"
-            />
-        </div>
+        <ReactQuill theme="snow" value={value} onChange={onChange} />
     );
 }

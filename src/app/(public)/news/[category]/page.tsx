@@ -92,18 +92,6 @@ export default async function CategoryNews({ params }: { params: { category: str
                                                 fill
                                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                                                 sizes="(max-width: 768px) 100vw, 192px"
-                                                fallback={
-                                                    <div className={`w-full h-full flex flex-col items-center justify-center text-white
-                                                        ${news.category.includes('일자리') ? 'bg-blue-300' :
-                                                            news.category.includes('건강') ? 'bg-green-300' :
-                                                                news.category.includes('주거') ? 'bg-indigo-300' :
-                                                                    news.category.includes('생활') ? 'bg-orange-300' :
-                                                                        news.category.includes('육아') ? 'bg-pink-300' : 'bg-gray-300'}
-                                                    `}>
-                                                        <Newspaper size={32} className="text-white mb-2 opacity-80" />
-                                                        <span className="text-sm font-bold tracking-tight">The 복(福)</span>
-                                                    </div>
-                                                }
                                             />
                                         </div>
 

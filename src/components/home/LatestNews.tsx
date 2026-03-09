@@ -50,20 +50,16 @@ export default function LatestNews({ articles }: LatestNewsProps) {
                             </div>
                             <div className="flex items-center gap-6">
                                 <span className="text-gray-400 text-sm hidden md:block">{new Date(item.date).toLocaleDateString()}</span>
-                                <SafeImage
-                                    src={item.thumbnail}
-                                    alt={item.title}
-                                    fill
-                                    className="object-cover"
-                                    sizes="(max-width: 768px) 96px, 128px"
-                                    loading="lazy"
-                                    fallback={
-                                        <div className={`w-24 h-24 md:w-32 md:h-20 rounded-lg flex-shrink-0 flex flex-col items-center justify-center text-white bg-gray-300`}>
-                                            <Newspaper size={20} className="text-white mb-1 opacity-80" />
-                                            <span className="text-xs font-bold tracking-tight">The 복(福)</span>
-                                        </div>
-                                    }
-                                />
+                                <div className="w-24 h-24 md:w-32 md:h-20 relative overflow-hidden rounded-lg flex-shrink-0 bg-gray-100">
+                                    <SafeImage
+                                        src={item.thumbnail}
+                                        alt={item.title}
+                                        fill
+                                        className="object-cover"
+                                        sizes="(max-width: 768px) 96px, 128px"
+                                        loading="lazy"
+                                    />
+                                </div>
                             </div>
                         </Link>
                     ))

@@ -2,10 +2,11 @@
 
 import { useState, useEffect } from 'react';
 import Image, { ImageProps } from 'next/image';
+import { Newspaper } from 'lucide-react';
 
 interface SafeImageProps extends Omit<ImageProps, 'src' | 'onError'> {
     src?: string | null;
-    fallback: React.ReactNode;
+    fallback?: React.ReactNode;
 }
 
 export default function SafeImage({ src, fallback, ...props }: SafeImageProps) {
@@ -18,7 +19,14 @@ export default function SafeImage({ src, fallback, ...props }: SafeImageProps) {
     }, [src]);
 
     if (!imgSrc || imgSrc.trim() === '' || hasError) {
-        return <>{fallback}</>;
+        if (fallback) {
+            return <>{fallback}</>;
+        }
+        return (
+            <div className={`flex flex-col items-center justify-center bg-gray-200 text-gray-400 w-full h-full ${props.className || ''}`}>
+                <Newspaper className="w-10 h-10 opacity-40" />
+            </div>
+        );
     }
 
     return (

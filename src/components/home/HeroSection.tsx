@@ -63,15 +63,6 @@ export default function HeroSection({ articles }: HeroSectionProps) {
                             priority={true} // High priority for LCP optimization
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                             sizes="(max-width: 1024px) 100vw, 66vw"
-                            fallback={
-                                <div className={`w-full h-full flex flex-col items-center justify-center text-white ${getBgColor(main.category)}`}>
-                                    <div className="p-4 bg-white/20 rounded-full mb-3 backdrop-blur-sm">
-                                        <Newspaper size={48} className="text-white" />
-                                    </div>
-                                    <span className="text-2xl font-bold tracking-tight mb-2">The 복(福)</span>
-                                    <span className="text-sm font-medium bg-black/20 px-3 py-1 rounded-full">{main.category}</span>
-                                </div>
-                            }
                         />
                         <span className="absolute top-4 left-4 bg-primary text-white px-3 py-1 rounded-full text-sm font-medium shadow-md">
                             주요 뉴스
@@ -101,15 +92,6 @@ export default function HeroSection({ articles }: HeroSectionProps) {
                                     priority={true} // High priority for sub-hero images as well
                                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
-                                    fallback={
-                                        <div className={`w-full h-full flex flex-col items-center justify-center text-white ${getSubBgColor(article.category)}`}>
-                                            <div className="p-2 bg-white/20 rounded-full mb-2 backdrop-blur-sm">
-                                                <Newspaper size={32} className="text-white" />
-                                            </div>
-                                            <span className="text-xl font-bold tracking-tight mb-1">The 복(福)</span>
-                                            <span className="text-xs font-medium bg-black/20 px-2 py-0.5 rounded-full">{article.category}</span>
-                                        </div>
-                                    }
                                 />
                                 <span className="absolute top-2 left-2 bg-gray-900 bg-opacity-50 text-white px-2 py-0.5 rounded text-xs backdrop-blur-sm">{article.category}</span>
                             </div>
