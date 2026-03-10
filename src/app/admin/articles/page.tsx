@@ -145,7 +145,6 @@ export default function ArticleManagement() {
     const handleDelete = async (id: string) => {
         if (confirm('정말 삭제하시겠습니까?')) {
             await deleteArticle(id);
-            alert('기사가 삭제되었습니다.');
             loadArticles();
         }
     };
@@ -518,7 +517,8 @@ export default function ArticleManagement() {
                             <th className="p-4 font-medium">작성자</th>
                             <th className="p-4 font-medium">분류</th>
                             <th className="p-4 font-medium">상태</th>
-                            <th className="p-4 font-medium">날짜</th>
+                            <th className="p-4 font-medium">발행일 (created_at)</th>
+                            <th className="p-4 font-medium">수정일 (updated_at)</th>
                             <th className="p-4 font-medium">관리</th>
                         </tr>
                     </thead>
@@ -543,19 +543,27 @@ export default function ArticleManagement() {
                                         </span>
                                     )}
                                 </td>
-                                <td className="p-4 text-xs">
-                                    <div className="flex flex-col gap-1">
-                                        <div className="flex items-center gap-1.5 text-gray-500">
-                                            <span className="bg-gray-100 px-1 rounded text-[9px] font-bold">발행</span>
-                                            {item.date ? new Date(item.date).toLocaleDateString() : '-'}
-                                        </div>
-                                        {item.updated_at && (
-                                            <div className="flex items-center gap-1.5 text-blue-500 font-medium">
-                                                <span className="bg-blue-50 px-1 rounded text-[9px] font-bold">수정</span>
-                                                {new Date(item.updated_at).toLocaleDateString()}
-                                            </div>
-                                        )}
-                                    </div>
+                                <td className="p-4 text-xs font-medium text-gray-600">
+                                    {(item.created_at || item.date) ? new Date(item.created_at || item.date || '').toLocaleString('ko-KR', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit',
+                                        hour12: false
+                                    }) : '-'}
+                                </td>
+                                <td className="p-4 text-xs font-medium text-blue-600">
+                                    {item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR', {
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit',
+                                        hour12: false
+                                    }) : '-'}
                                 </td>
                                 <td className="p-4" onClick={(e) => e.stopPropagation()}>
                                     <div className="flex gap-2">

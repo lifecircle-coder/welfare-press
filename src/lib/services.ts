@@ -24,6 +24,7 @@ export interface Article {
     hashtags?: string[];
     thumbnail?: string;
     updated_at?: string;
+    created_at?: string;
 }
 
 export interface Inquiry {
@@ -59,7 +60,7 @@ export interface PartnershipInquiry {
 }
 
 // --- Constants for Query Stability ---
-export const ARTICLE_LIST_FIELDS = 'id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail, updated_at';
+export const ARTICLE_LIST_FIELDS = 'id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail, updated_at, created_at';
 
 // --- Articles ---
 
@@ -67,7 +68,7 @@ export const getAllArticles = async (limit = 20, offset = 0): Promise<Article[]>
     const { data, error } = await supabase
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
-        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
     if (error) {
@@ -83,7 +84,7 @@ export const getArticles = async (limit = 20, offset = 0): Promise<Article[]> =>
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
         .eq('status', 'published')
-        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
     if (error) {
@@ -99,7 +100,7 @@ export const getArticlesByCategory = async (category: string, limit = 20, offset
         .select(ARTICLE_LIST_FIELDS)
         .eq('category', category)
         .eq('status', 'published')
-        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
     if (error) {
@@ -114,7 +115,7 @@ export const getHeroArticles = async (limit = 5): Promise<Article[]> => {
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
         .eq('status', 'published')
-        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(limit);
 
     if (error) {
@@ -282,14 +283,15 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
     const existing = await getArticleById(article.id);
     const now = new Date().toISOString();
 
-    // [의존성 전수 조사] 정렬에 핵심인 date 필드 보호
+    // [의존성 전수 조사] 정렬과 발행일의 기준이 되는 date 필드를 created_at 개념으로 정립
     let finalizedDate = article.date;
 
     if (existing) {
-        // 수정 시: 1. 전달된 date가 있으면 그것을 사용, 2. 없으면 기존 DB의 date 사용 (초 단위 보존)
+        // 수정 시: 기존의 date(발행일)를 절대적으로 유지함 (초 단위 포함)
+        // 사용자가 관리자 페이지에서 명시적으로 수정했을 경우에만 새로운 값을 적용
         finalizedDate = article.date || existing.date || now;
     } else {
-        // 신규 시: 전달된 date가 있으면 사용, 없으면 현재 시간
+        // 신규 작성 시: 현재 시간을 발행일로 설정 (초 단위 포함)
         finalizedDate = article.date || now;
     }
 
@@ -332,7 +334,7 @@ export const searchArticles = async (query: string): Promise<Article[]> => {
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
         .or(`title.ilike.%${query}%,content.ilike.%${query}%,summary.ilike.%${query}%`)
-        .order('date', { ascending: false })
+        .order('created_at', { ascending: false })
         .limit(50);
 
     if (error) {

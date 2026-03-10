@@ -22,18 +22,19 @@ export default async function CategoryNews({ params }: { params: { category: str
     // 1. Map URL Slug to Internal Category Name (Full names for exact matching)
     // [데이터 매핑 전수 조사] URL 슬러그와 DB 실제 값 일치 확인
     const categoryMap: Record<string, string> = {
-        'childcare': '임신·육아',
+        'all': '전체',
         'jobs': '일자리·취업',
         'housing': '주거·금융',
         'health': '건강·의료',
         'safety': '생활·안전',
+        'childcare': '임신·육아'
     };
     const internalCategory = categoryMap[categoryName];
 
     // 2. Fetch Optimized Data in Parallel (Directly from DB using index)
     // [호출 의존성 조사] 'all' 슬러그에 대해 필터링 없이 모든 기사 호출 보장
     const [newsList, topArticles] = await Promise.all([
-        categoryName === 'all' || params.category === 'all' || !internalCategory
+        categoryName === 'all' || !internalCategory || internalCategory === '전체'
             ? getArticles(40)
             : getArticlesByCategory(internalCategory, 40),
         getTopArticles(10)
@@ -101,7 +102,7 @@ export default async function CategoryNews({ params }: { params: { category: str
                                             <div className="flex items-center gap-2 mb-2">
                                                 <span className="text-primary text-sm font-bold">[{news.category}]</span>
                                                 <span className="text-gray-400 text-sm">
-                                                    {new Date(news.date).toLocaleString('ko-KR', {
+                                                    {new Date(news.created_at || news.date || new Date()).toLocaleString('ko-KR', {
                                                         year: 'numeric',
                                                         month: '2-digit',
                                                         day: '2-digit',

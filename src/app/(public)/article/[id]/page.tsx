@@ -59,7 +59,7 @@ export default async function ArticleDetail({ params }: { params: { id: string }
             <div className="flex items-center text-gray-500 text-sm mb-8 border-b border-gray-100 pb-6">
                 <span className="font-medium text-gray-700 mr-4">{article.author}</span>
                 <span className="mr-4">
-                    {new Date(article.date).toLocaleString('ko-KR', {
+                    {new Date(article.created_at || article.date || new Date()).toLocaleString('ko-KR', {
                         year: 'numeric',
                         month: '2-digit',
                         day: '2-digit',
@@ -105,7 +105,7 @@ export default async function ArticleDetail({ params }: { params: { id: string }
                         <li key={news.id}>
                             <Link href={`/article/${news.id}`} className="flex items-center justify-between group hover:bg-gray-50 p-3 rounded-lg transition-colors">
                                 <span className="text-lg text-gray-700 group-hover:text-primary truncate flex-1 pr-4">{news.title}</span>
-                                <span className="text-sm text-gray-400 whitespace-nowrap">{new Date(news.date).toLocaleDateString()}</span>
+                                <span className="text-sm text-gray-400 whitespace-nowrap">{new Date(news.date || new Date()).toLocaleDateString()}</span>
                             </Link>
                         </li>
                     )) : (
