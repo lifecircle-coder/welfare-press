@@ -21,15 +21,18 @@ export async function POST(req: NextRequest) {
         // 1. Optimize image
         const buffer = await optimizeImage(imageUrl);
 
-        // 2. Generate unique filename for the thumbnail
-        const fileName = `thumb-${articleId || Math.random().toString(36).substring(7)}.webp`;
-        const filePath = `articles/${fileName}`;
+        // 2. Generate unique filename
+        const timestamp = Date.now();
+        const randomString = Math.random().toString(36).substring(7);
+        const fileName = `img-${articleId || 'generic'}-${timestamp}-${randomString}.webp`;
+        const filePath = `articles/${articleId || 'misc'}/${fileName}`;
 
         // 3. Upload to Supabase Storage (partnership_files bucket)
         const { data, error: uploadError } = await supabaseAdmin.storage
             .from('partnership_files')
             .upload(filePath, buffer, {
                 contentType: 'image/webp',
+                cacheControl: '3600',
                 upsert: true
             });
 

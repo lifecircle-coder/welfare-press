@@ -210,21 +210,33 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
     let finalContent = article.content || '';
     let finalThumbnail = article.thumbnail || '';
 
-    // 1. Process Content: Scan and replace Base64 images with Storage URLs
-    const base64Regex = /src="(data:image\/[a-zA-Z+]+;base64,[^"]+)"/g;
-    let match;
-    const base64Images: string[] = [];
-
-    while ((match = base64Regex.exec(finalContent)) !== null) {
-        base64Images.push(match[1]);
-    }
+    // 1. Process Content: Scan and replace Base64 images with Storage URLs (using server-side optimization)
+    const base64Regex = /src=["'](data:image\/[a-zA-Z+]+;base64,[^"']+)["']/g;
+    const base64Matches = Array.from(finalContent.matchAll(base64Regex));
+    const base64Images = base64Matches.map(match => match[1]);
 
     if (base64Images.length > 0) {
-        console.log(`Found ${base64Images.length} Base64 images in content. Uploading to Storage...`);
+        console.log(`Found ${base64Images.length} Base64 images in content. Optimizing via server...`);
         for (const b64 of base64Images) {
-            const storageUrl = await uploadArticleImage(b64, article.id);
-            if (storageUrl) {
-                finalContent = finalContent.replace(b64, storageUrl);
+            try {
+                const response = await fetch('/api/optimize-image', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ imageUrl: b64, articleId: article.id })
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    if (data.optimizedUrl) {
+                        finalContent = finalContent.replace(b64, data.optimizedUrl);
+                        console.log(`Successfully optimized and replaced image with: ${data.optimizedUrl}`);
+                    }
+                } else {
+                    console.error('Failed to optimize image via API:', await response.text());
+                    // Fallback to original Base64 if optimization fails (though this might cause timeout)
+                }
+            } catch (err) {
+                console.error('Error calling optimize-image API:', err);
             }
         }
     }

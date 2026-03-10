@@ -15,9 +15,15 @@ export async function optimizeImage(
     let input: Buffer;
 
     if (typeof source === 'string') {
-        // Fetch from URL
-        const response = await axios.get(source, { responseType: 'arraybuffer' });
-        input = Buffer.from(response.data);
+        if (source.startsWith('data:image/')) {
+            // Handle Base64
+            const base64Data = source.split(',')[1];
+            input = Buffer.from(base64Data, 'base64');
+        } else {
+            // Fetch from URL
+            const response = await axios.get(source, { responseType: 'arraybuffer' });
+            input = Buffer.from(response.data);
+        }
     } else {
         input = source;
     }
