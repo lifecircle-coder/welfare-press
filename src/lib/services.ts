@@ -290,13 +290,18 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
     };
 
     if (existing) {
-        // Strictly exclude `date`, `id`, and `views` to prevent overwriting them during an update
-        const { date, id, views, ...updatePayload } = articleData;
+        // [IMPORTANT] Ensure original 'date' is preserved if not explicitly changed.
+        // If article.date is missing or same as a generic date, use existing.date.
+        const finalizedDate = article.date || existing.date || now;
+
+        // Strictly exclude `id` and `views` from update payload
+        const { id, views, date, ...updatePayload } = articleData;
 
         const { error } = await supabase
             .from('articles')
             .update({
                 ...updatePayload,
+                date: finalizedDate, // Keep the original or provided date
                 updated_at: now
             })
             .eq('id', article.id);

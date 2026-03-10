@@ -3,7 +3,7 @@ import SafeImage from '@/components/common/SafeImage';
 import { Newspaper } from 'lucide-react';
 import { getArticles, getArticlesByCategory, getTopArticles } from '@/lib/services';
 
-export const revalidate = 0; // 강력한 갱신
+export const revalidate = 60; // 1분 단위 캐싱으로 로딩 속도 개선
 
 export async function generateStaticParams() {
     return [
