@@ -253,14 +253,17 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
 
         // Fallback robust regex if DOMParser fails or server-side
         if (!extractedSrc) {
-            const firstImgMatch = finalContent.match(/<img[^>]+src\s*=\s*(?:'([^']+)'|"([^"]+)")/i);
+            // More robust regex to catch src with various positioning and quotes
+            const imgRegex = /<img[^>]+src=["']([^"']+)["']/i;
+            const firstImgMatch = finalContent.match(imgRegex);
             if (firstImgMatch) {
-                extractedSrc = firstImgMatch[1] || firstImgMatch[2];
+                extractedSrc = firstImgMatch[1];
             }
         }
 
         if (extractedSrc) {
             finalThumbnail = extractedSrc;
+            console.log(`Extracted new thumbnail: ${finalThumbnail}`);
         }
     }
 
