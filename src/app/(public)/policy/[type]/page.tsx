@@ -151,7 +151,7 @@ export default function PolicyPage() {
 
                 <div className="mt-16 pt-8 border-t border-gray-100 flex justify-center gap-8 text-sm font-bold text-gray-400">
                     <a href="/policy/terms" className={type === 'terms' ? 'text-primary border-b-2 border-primary pb-1' : 'hover:text-gray-600 transition-colors'}>이용약관</a>
-                    <a href="/policy/privacy" className={type === 'privacy' ? 'text-primary border-b-2 border-primary pb-1' : 'hover:text-gray-600 transition-colors'}>개인정보처리방침</a>
+                    <a href="/policy/privacy" className={type === 'privacy' ? 'text-primary border-b-2 border-primary pb-1' : 'font-bold text-gray-600 transition-colors'}>개인정보처리방침</a>
                     <a href="/policy/youth" className={type === 'youth' ? 'text-primary border-b-2 border-primary pb-1' : 'hover:text-gray-600 transition-colors'}>청소년보호정책</a>
                     <a href="/policy/copyright" className={type === 'copyright' ? 'text-primary border-b-2 border-primary pb-1' : 'hover:text-gray-600 transition-colors'}>저작권보호정책</a>
                 </div>
