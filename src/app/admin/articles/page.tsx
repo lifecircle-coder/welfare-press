@@ -42,10 +42,10 @@ export default function ArticleManagement() {
     const [adminReplyContent, setAdminReplyContent] = useState('');
 
     const loadArticles = async () => {
-        const data = await getAllArticles(100);
+        const data = await getAllArticles(100, 0, adminSupabase);
 
         // 최근 12시간 이내 새 댓글이 달린 기사 ID 조회
-        const newComments = await getArticlesWithNewComments(12);
+        const newComments = await getArticlesWithNewComments(12, adminSupabase);
         setNewCommentArticleIds(newComments);
 
         // Fetch current user and filter if reporter
@@ -152,7 +152,7 @@ export default function ArticleManagement() {
     const handleOpenCommentModal = async (article: Article) => {
         setSelectedArticle(article);
         setIsCommentModalOpen(true);
-        const comments = await getComments(article.id);
+        const comments = await getComments(article.id, adminSupabase);
         setModalComments(comments);
     };
 
@@ -170,8 +170,8 @@ export default function ArticleManagement() {
             parentId: parentId
         };
 
-        await addComment(comment);
-        const updated = await getComments(selectedArticle.id);
+        await addComment(comment, adminSupabase);
+        const updated = await getComments(selectedArticle.id, adminSupabase);
         setModalComments(updated);
 
         if (parentId) {

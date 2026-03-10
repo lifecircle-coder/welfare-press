@@ -29,7 +29,7 @@ function WriteArticleForm() {
                 setUserRole(session.user.user_metadata?.role || 'reporter');
             }
 
-            const users = await getUsers();
+            const users = await getUsers(adminSupabase);
             const filteredReporters = users.filter(u => u.role === 'reporter' || u.role === 'admin');
             setReporters(filteredReporters);
 
@@ -56,7 +56,7 @@ function WriteArticleForm() {
     // Load existing data if editing
     useEffect(() => {
         if (editId) {
-            getArticleById(editId).then(article => {
+            getArticleById(editId, adminSupabase).then(article => {
                 if (article) {
                     try {
                         setFormData({
@@ -116,7 +116,7 @@ function WriteArticleForm() {
             hashtags: formData.hashtags.split(',').map(tag => tag.trim()).filter(Boolean)
         };
 
-        const result = await saveArticle(newArticle);
+        const result = await saveArticle(newArticle, adminSupabase);
 
         if (result.success) {
             router.push('/admin/articles');

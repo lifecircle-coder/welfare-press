@@ -64,8 +64,8 @@ export const ARTICLE_LIST_FIELDS = 'id, title, category, prefix, author, date, v
 
 // --- Articles ---
 
-export const getAllArticles = async (limit = 20, offset = 0): Promise<Article[]> => {
-    const { data, error } = await supabase
+export const getAllArticles = async (limit = 20, offset = 0, client = supabase): Promise<Article[]> => {
+    const { data, error } = await client
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
         .order('created_at', { ascending: false })
@@ -79,8 +79,8 @@ export const getAllArticles = async (limit = 20, offset = 0): Promise<Article[]>
     return data || [];
 };
 
-export const getArticles = async (limit = 20, offset = 0): Promise<Article[]> => {
-    const { data, error } = await supabase
+export const getArticles = async (limit = 20, offset = 0, client = supabase): Promise<Article[]> => {
+    const { data, error } = await client
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
         .eq('status', 'published')
@@ -125,8 +125,8 @@ export const getHeroArticles = async (limit = 5): Promise<Article[]> => {
     return data || [];
 };
 
-export const getTopArticles = async (limit = 10): Promise<Article[]> => {
-    const { data, error } = await supabase
+export const getTopArticles = async (limit = 10, client = supabase): Promise<Article[]> => {
+    const { data, error } = await client
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
         .eq('status', 'published')
@@ -140,8 +140,8 @@ export const getTopArticles = async (limit = 10): Promise<Article[]> => {
     return data || [];
 };
 
-export const getArticleById = async (id: string): Promise<Article | undefined> => {
-    const { data, error } = await supabase
+export const getArticleById = async (id: string, client = supabase): Promise<Article | undefined> => {
+    const { data, error } = await client
         .from('articles')
         .select('*')
         .eq('id', id)
@@ -207,7 +207,7 @@ export const uploadArticleImage = async (source: File | string, articleId: strin
     }
 };
 
-export const saveArticle = async (article: Article): Promise<{ success: boolean; error?: any }> => {
+export const saveArticle = async (article: Article, client = supabase): Promise<{ success: boolean; error?: any }> => {
     let finalContent = article.content || '';
     let finalThumbnail = article.thumbnail || '';
 
@@ -308,14 +308,14 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
         // Strictly exclude `id` and `views` from update payload
         const { id, views, created_at: _, date: __, ...updatePayload } = articleData;
 
-        const { error } = await supabase
+        const { error } = await client
             .from('articles')
             .update(updatePayload)
             .eq('id', id);
 
         if (error) return { success: false, error };
     } else {
-        const { error } = await supabase
+        const { error } = await client
             .from('articles')
             .insert({
                 ...articleData,
@@ -355,8 +355,8 @@ export const deleteArticle = async (id: string): Promise<void> => {
 
 // --- Users ---
 
-export const getUsers = async (): Promise<User[]> => {
-    const { data, error } = await supabase
+export const getUsers = async (client = supabase): Promise<User[]> => {
+    const { data, error } = await client
         .from('users')
         .select('*')
         .order('join_date', { ascending: false });
@@ -454,8 +454,8 @@ export const createInquiry = async (inquiry: Omit<Inquiry, 'id' | 'answer' | 'da
 };
 
 // --- Comments ---
-export const getComments = async (articleId: string): Promise<Comment[]> => {
-    const { data, error } = await supabase
+export const getComments = async (articleId: string, client = supabase): Promise<Comment[]> => {
+    const { data, error } = await client
         .from('comments')
         .select('*')
         .eq('article_id', articleId)
@@ -472,9 +472,9 @@ export const getComments = async (articleId: string): Promise<Comment[]> => {
     }));
 };
 
-export const addComment = async (comment: Comment): Promise<void> => {
+export const addComment = async (comment: Comment, client = supabase): Promise<void> => {
     // Exclude ID to allow DB to auto-generate (BigInt or UUID)
-    const { error } = await supabase
+    const { error } = await client
         .from('comments')
         .insert({
             // id: comment.id, <--- Let DB handle this
@@ -628,20 +628,20 @@ export const deletePartnershipInquiry = async (id: string, client = supabase): P
 };
 
 // --- Stats & Tracking ---
-export const getStats = async () => {
+export const getStats = async (client = supabase) => {
     // 1. Total Articles
-    const { count: articleCount } = await supabase
+    const { count: articleCount } = await client
         .from('articles')
         .select('*', { count: 'exact', head: true });
 
     // 2. Pending Inquiries
-    const { count: inquiryCount } = await supabase
+    const { count: inquiryCount } = await client
         .from('inquiries')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'pending');
 
     // 3. Total Visitors (Real Data from daily_visits)
-    const { data: visits } = await supabase
+    const { data: visits } = await client
         .from('daily_visits')
         .select('count');
 
@@ -655,13 +655,13 @@ export const getStats = async () => {
     };
 };
 
-export const getWeeklyStats = async () => {
+export const getWeeklyStats = async (client = supabase) => {
     // Fetch last 7 days from daily_visits
     const today = new Date();
     const sevenDaysAgo = new Date(today);
     sevenDaysAgo.setDate(today.getDate() - 6); // Include today
 
-    const { data } = await supabase
+    const { data } = await client
         .from('daily_visits')
         .select('date, count')
         .gte('date', sevenDaysAgo.toISOString().split('T')[0])
@@ -694,11 +694,11 @@ export const getPendingInquiriesCount = async (): Promise<number> => {
 /**
  * 최근 특정 시간 이내에 새로운 댓글이 달린 기사의 ID 목록을 조회합니다.
  */
-export const getArticlesWithNewComments = async (hours = 12): Promise<string[]> => {
+export const getArticlesWithNewComments = async (hours = 12, client = supabase): Promise<string[]> => {
     const targetDate = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
     // date 컬럼이 ISO 형식 문자열이므로 gte로 비교 가능
-    const { data, error } = await supabase
+    const { data, error } = await client
         .from('comments')
         .select('article_id')
         .gte('date', targetDate);

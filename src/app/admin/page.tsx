@@ -26,9 +26,9 @@ export default function AdminDashboard() {
 
             // Fetch concurrently
             const [statsData, articlesData, weeklyData] = await Promise.all([
-                getStats(),
-                getArticles(),
-                getWeeklyStats()
+                getStats(adminSupabase),
+                getArticles(100, 0, adminSupabase),
+                getWeeklyStats(adminSupabase)
             ]);
 
             setStats(statsData);
