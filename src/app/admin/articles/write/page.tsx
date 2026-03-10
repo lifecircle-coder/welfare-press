@@ -50,7 +50,8 @@ function WriteArticleForm() {
         author: '관리자', // Default fallback
         hashtags: '',
         status: 'published' as 'published' | 'draft',
-        date: ''
+        date: '',
+        updated_at: ''
     });
     // Load existing data if editing
     useEffect(() => {
@@ -70,7 +71,8 @@ function WriteArticleForm() {
                                 ? article.hashtags.join(', ')
                                 : (typeof article.hashtags === 'string' ? article.hashtags : ''),
                             status: (article.status as 'published' | 'draft') || 'published',
-                            date: article.date || ''
+                            date: article.date || '',
+                            updated_at: article.updated_at || ''
                         });
                     } catch (e) {
                         console.error('Error loading article data:', e);

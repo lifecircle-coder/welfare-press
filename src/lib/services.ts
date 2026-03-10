@@ -282,28 +282,32 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
     const existing = await getArticleById(article.id);
     const now = new Date().toISOString();
 
+    // [의존성 전수 조사] 정렬에 핵심인 date 필드 보호
+    let finalizedDate = article.date;
+
+    if (existing) {
+        // 수정 시: 1. 전달된 date가 있으면 그것을 사용, 2. 없으면 기존 DB의 date 사용 (초 단위 보존)
+        finalizedDate = article.date || existing.date || now;
+    } else {
+        // 신규 시: 전달된 date가 있으면 사용, 없으면 현재 시간
+        finalizedDate = article.date || now;
+    }
+
     const articleData = {
         ...article,
         content: finalContent,
         thumbnail: finalThumbnail,
+        date: finalizedDate,
         updated_at: now
     };
 
     if (existing) {
-        // [IMPORTANT] Ensure original 'date' is preserved if not explicitly changed.
-        // If article.date is missing or same as a generic date, use existing.date.
-        const finalizedDate = article.date || existing.date || now;
-
         // Strictly exclude `id` and `views` from update payload
-        const { id, views, date, ...updatePayload } = articleData;
+        const { id, views, ...updatePayload } = articleData;
 
         const { error } = await supabase
             .from('articles')
-            .update({
-                ...updatePayload,
-                date: finalizedDate, // Keep the original or provided date
-                updated_at: now
-            })
+            .update(updatePayload)
             .eq('id', article.id);
 
         if (error) return { success: false, error };
@@ -312,7 +316,6 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
             .from('articles')
             .insert({
                 ...articleData,
-                date: article.date || now,
                 views: 0
             });
 

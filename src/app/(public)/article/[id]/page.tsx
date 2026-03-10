@@ -58,7 +58,17 @@ export default async function ArticleDetail({ params }: { params: { id: string }
             {/* Metadata */}
             <div className="flex items-center text-gray-500 text-sm mb-8 border-b border-gray-100 pb-6">
                 <span className="font-medium text-gray-700 mr-4">{article.author}</span>
-                <span className="mr-4">{new Date(article.date).toLocaleDateString('ko-KR')}</span>
+                <span className="mr-4">
+                    {new Date(article.date).toLocaleString('ko-KR', {
+                        year: 'numeric',
+                        month: '2-digit',
+                        day: '2-digit',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                        second: '2-digit',
+                        hour12: false
+                    })}
+                </span>
                 <span>조회 {article.views}</span>
             </div>
 
