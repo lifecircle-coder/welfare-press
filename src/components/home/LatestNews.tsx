@@ -79,10 +79,6 @@ export default function LatestNews({ articles }: LatestNewsProps) {
                                         sizes="(max-width: 768px) 96px, 128px"
                                         loading="lazy"
                                     />
-                                    {/* 썸네일 라벨링 추가 */}
-                                    <span className={`absolute top-1 left-1 ${getCategoryStyles(item.category)} px-1.5 py-0.5 rounded text-[10px] font-bold backdrop-blur-sm shadow-sm z-10 opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity`}>
-                                        {item.category}
-                                    </span>
                                 </div>
                             </div>
                         </Link>

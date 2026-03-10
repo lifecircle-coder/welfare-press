@@ -28,12 +28,12 @@ export default function HeroSection({ articles }: HeroSectionProps) {
     if (!main) return null;
 
     const getCategoryStyles = (cat: string) => {
-        if (cat.includes('일자리')) return 'bg-cat-job/80 text-cat-job';
-        if (cat.includes('건강')) return 'bg-cat-health/80 text-cat-health';
-        if (cat.includes('주거')) return 'bg-cat-house/80 text-cat-house';
-        if (cat.includes('생활')) return 'bg-cat-living/80 text-cat-living';
-        if (cat.includes('육아')) return 'bg-cat-child/80 text-cat-child';
-        return 'bg-cat-etc/80 text-cat-etc';
+        if (cat.includes('일자리')) return 'bg-cat-job/30 text-cat-job';
+        if (cat.includes('건강')) return 'bg-cat-health/30 text-cat-health';
+        if (cat.includes('주거')) return 'bg-cat-house/30 text-cat-house';
+        if (cat.includes('생활')) return 'bg-cat-living/30 text-cat-living';
+        if (cat.includes('육아')) return 'bg-cat-child/30 text-cat-child';
+        return 'bg-cat-etc/30 text-cat-etc';
     };
 
     return (
@@ -55,8 +55,8 @@ export default function HeroSection({ articles }: HeroSectionProps) {
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                             sizes="(max-width: 1024px) 100vw, 66vw"
                         />
-                        <span className="absolute top-4 left-4 bg-primary text-white px-3 py-1 rounded-full text-sm font-medium shadow-md">
-                            주요 뉴스
+                        <span className={`absolute top-4 left-4 ${getCategoryStyles(main.category)} px-3 py-1 rounded-full text-sm font-bold shadow-md backdrop-blur-sm`}>
+                            {main.category}
                         </span>
                     </div>
                     <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 group-hover:text-primary transition-colors leading-tight">
