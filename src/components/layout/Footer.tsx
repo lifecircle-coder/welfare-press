@@ -39,7 +39,7 @@ export default function Footer() {
                             <div className="pt-4 flex flex-wrap gap-3 justify-center md:justify-start">
                                 <Link href="/policy/terms" className="cursor-pointer hover:underline hover:text-gray-600">이용약관</Link>
                                 <span className="text-gray-300">|</span>
-                                <Link href="/policy/privacy" className="cursor-pointer hover:underline hover:text-gray-600">개인정보처리방침</Link>
+                                <Link href="/policy/privacy" className="cursor-pointer hover:underline font-bold text-gray-600">개인정보처리방침</Link>
                                 <span className="text-gray-300">|</span>
                                 <Link href="/policy/youth" className="cursor-pointer hover:underline hover:text-gray-600">청소년보호정책</Link>
                                 <span className="text-gray-300">|</span>
