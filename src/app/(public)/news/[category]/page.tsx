@@ -61,93 +61,101 @@ export default async function CategoryNews({ params }: { params: { category: str
             case 'childcare': return 'border-pink-600 text-pink-900';
             default: return 'border-primary text-gray-900';
         }
-    };
+        // Helper for Dynamic Category Color
+        const getCategoryTextColor = (cat: string) => {
+            if (cat.includes('일자리')) return 'text-cat-job';
+            if (cat.includes('건강')) return 'text-cat-health';
+            if (cat.includes('주거')) return 'text-cat-house';
+            if (cat.includes('생활')) return 'text-cat-living';
+            if (cat.includes('육아')) return 'text-cat-child';
+            return 'text-cat-etc';
+        };
 
-    return (
-        <div className="container mx-auto px-4 py-8">
-            {/* Page Title with Dynamic Color */}
-            <h1 className={`text-3xl font-bold mb-8 border-b-4 pb-4 inline-block ${getBorderColor(categoryName)}`}>
-                {displayName} 뉴스
-            </h1>
+        return (
+            <div className="container mx-auto px-4 py-8">
+                {/* Page Title with Dynamic Color */}
+                <h1 className={`text-3xl font-bold mb-8 border-b-4 pb-4 inline-block ${getBorderColor(categoryName)}`}>
+                    {displayName} 뉴스
+                </h1>
 
-            <div className="flex flex-col lg:flex-row gap-8">
-                {/* Main News List (Left) */}
-                <div className="flex-1">
-                    <div className="space-y-6">
-                        {!newsList || newsList.length === 0 ? (
-                            <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
-                                <div className="text-4xl mb-4">📢</div>
-                                <p className="text-gray-500 font-medium">등록된 기사가 없습니다.</p>
-                                <p className="text-gray-400 text-sm mt-2">곧 새로운 소식으로 찾아뵙겠습니다.</p>
-                            </div>
-                        ) : (
-                            newsList.map((news) => (
-                                <Link
-                                    key={news.id}
-                                    href={`/article/${news.id}`}
-                                    className="block bg-white border border-gray-100 rounded-xl p-6 hover:shadow-lg transition-shadow group"
-                                >
-                                    <div className="flex flex-col md:flex-row gap-6">
-                                        <div className="w-full md:w-48 h-32 relative overflow-hidden rounded-lg flex-shrink-0 bg-gray-100">
-                                            <SafeImage
-                                                src={news.thumbnail}
-                                                alt={news.title}
-                                                fill
-                                                className="object-cover group-hover:scale-105 transition-transform duration-500"
-                                                sizes="(max-width: 768px) 100vw, 192px"
-                                            />
-                                        </div>
-
-                                        <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className="text-primary text-sm font-bold">[{news.category}]</span>
-                                                <span className="text-gray-400 text-sm">
-                                                    {new Date(news.created_at || news.date || new Date()).toLocaleString('ko-KR', {
-                                                        year: 'numeric',
-                                                        month: '2-digit',
-                                                        day: '2-digit',
-                                                        hour: '2-digit',
-                                                        minute: '2-digit',
-                                                        second: '2-digit',
-                                                        hour12: false
-                                                    })}
-                                                </span>
+                <div className="flex flex-col lg:flex-row gap-8">
+                    {/* Main News List (Left) */}
+                    <div className="flex-1">
+                        <div className="space-y-6">
+                            {!newsList || newsList.length === 0 ? (
+                                <div className="text-center py-20 bg-gray-50 rounded-2xl border border-dashed border-gray-200">
+                                    <div className="text-4xl mb-4">📢</div>
+                                    <p className="text-gray-500 font-medium">등록된 기사가 없습니다.</p>
+                                    <p className="text-gray-400 text-sm mt-2">곧 새로운 소식으로 찾아뵙겠습니다.</p>
+                                </div>
+                            ) : (
+                                newsList.map((news) => (
+                                    <Link
+                                        key={news.id}
+                                        href={`/article/${news.id}`}
+                                        className="block bg-white border border-gray-100 rounded-xl p-6 hover:shadow-lg transition-shadow group"
+                                    >
+                                        <div className="flex flex-col md:flex-row gap-6">
+                                            <div className="w-full md:w-48 h-32 relative overflow-hidden rounded-lg flex-shrink-0 bg-gray-100 border border-gray-100">
+                                                <SafeImage
+                                                    src={news.thumbnail}
+                                                    alt={news.title}
+                                                    fill
+                                                    className="object-cover group-hover:scale-105 transition-transform duration-500"
+                                                    sizes="(max-width: 768px) 100vw, 192px"
+                                                />
                                             </div>
-                                            <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary leading-tight">
-                                                {news.title}
-                                            </h3>
-                                            <p className="text-gray-600 line-clamp-2">
-                                                {news.summary}
-                                            </p>
-                                        </div>
-                                    </div>
-                                </Link>
-                            ))
-                        )}
-                    </div>
-                </div>
 
-                {/* Sidebar: Weekly Top 10 (Right) */}
-                <aside className="w-full lg:w-80 flex-shrink-0">
-                    <div className="bg-gray-50 rounded-xl p-6 sticky top-8">
-                        <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
-                            🏆 주간 조회수 TOP 10
-                        </h3>
-                        <ul className="space-y-4">
-                            {topArticles.map((item, index) => (
-                                <li key={item.id} className="flex items-start gap-3 pb-3 border-b border-gray-200 last:border-0">
-                                    <span className={`w-6 flex-shrink-0 text-lg font-bold ${index < 3 ? 'text-primary' : 'text-gray-400'}`}>
-                                        {index + 1}
-                                    </span>
-                                    <Link href={`/article/${item.id}`} className="text-gray-700 hover:text-primary text-sm font-medium line-clamp-2">
-                                        {item.title}
+                                            <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                    <span className={`text-sm font-bold ${getCategoryTextColor(news.category)}`}>[{news.category}]</span>
+                                                    <span className="text-gray-400 text-sm">
+                                                        {new Date(news.created_at || news.date || new Date()).toLocaleString('ko-KR', {
+                                                            year: 'numeric',
+                                                            month: '2-digit',
+                                                            day: '2-digit',
+                                                            hour: '2-digit',
+                                                            minute: '2-digit',
+                                                            second: '2-digit',
+                                                            hour12: false
+                                                        })}
+                                                    </span>
+                                                </div>
+                                                <h3 className="text-xl font-bold text-gray-900 mb-3 group-hover:text-primary leading-tight">
+                                                    {news.title}
+                                                </h3>
+                                                <p className="text-gray-600 line-clamp-2">
+                                                    {news.summary}
+                                                </p>
+                                            </div>
+                                        </div>
                                     </Link>
-                                </li>
-                            ))}
-                        </ul>
+                                ))
+                            )}
+                        </div>
                     </div>
-                </aside>
+
+                    {/* Sidebar: Weekly Top 10 (Right) */}
+                    <aside className="w-full lg:w-80 flex-shrink-0">
+                        <div className="bg-gray-50 rounded-xl p-6 sticky top-8">
+                            <h3 className="text-xl font-bold text-gray-900 mb-6 flex items-center gap-2">
+                                🏆 주간 조회수 TOP 10
+                            </h3>
+                            <ul className="space-y-4">
+                                {topArticles.map((item, index) => (
+                                    <li key={item.id} className="flex items-start gap-3 pb-3 border-b border-gray-200 last:border-0">
+                                        <span className={`w-6 flex-shrink-0 text-lg font-bold ${index < 3 ? 'text-primary' : 'text-gray-400'}`}>
+                                            {index + 1}
+                                        </span>
+                                        <Link href={`/article/${item.id}`} className="text-gray-700 hover:text-primary text-sm font-medium line-clamp-2">
+                                            {item.title}
+                                        </Link>
+                                    </li>
+                                ))}
+                            </ul>
+                        </div>
+                    </aside>
+                </div>
             </div>
-        </div>
-    );
-}
+        );
+    }
