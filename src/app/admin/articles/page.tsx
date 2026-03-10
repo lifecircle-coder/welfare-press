@@ -544,7 +544,8 @@ export default function ArticleManagement() {
                                     )}
                                 </td>
                                 <td className="p-4 text-xs font-medium text-gray-600">
-                                    {(item.created_at || item.date) ? new Date(item.created_at || item.date || '').toLocaleString('ko-KR', {
+                                    {item.created_at ? new Date(item.created_at).toLocaleString('ko-KR', {
+                                        timeZone: 'Asia/Seoul',
                                         year: 'numeric',
                                         month: '2-digit',
                                         day: '2-digit',
@@ -552,10 +553,20 @@ export default function ArticleManagement() {
                                         minute: '2-digit',
                                         second: '2-digit',
                                         hour12: false
-                                    }) : '-'}
+                                    }) : (item.date ? new Date(item.date).toLocaleString('ko-KR', {
+                                        timeZone: 'Asia/Seoul',
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit',
+                                        hour12: false
+                                    }) : '-')}
                                 </td>
                                 <td className="p-4 text-xs font-medium text-blue-600">
                                     {item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR', {
+                                        timeZone: 'Asia/Seoul',
                                         year: 'numeric',
                                         month: '2-digit',
                                         day: '2-digit',

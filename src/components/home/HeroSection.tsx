@@ -76,7 +76,16 @@ export default function HeroSection({ articles }: HeroSectionProps) {
                     </p>
                     <div className="mt-4 flex items-center text-sm text-gray-500 gap-4">
                         <span>{main.author}</span>
-                        <span>{new Date(main.date).toLocaleDateString()}</span>
+                        <span>{new Date(main.created_at || main.date || new Date()).toLocaleString('ko-KR', {
+                            timeZone: 'Asia/Seoul',
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        })}</span>
                     </div>
                 </Link>
 

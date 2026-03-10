@@ -299,18 +299,19 @@ export const saveArticle = async (article: Article): Promise<{ success: boolean;
         ...article,
         content: finalContent,
         thumbnail: finalThumbnail,
-        date: finalizedDate,
+        date: finalizedDate || article.created_at, // date와 created_at 동기화
+        created_at: article.created_at || finalizedDate, // 명시적으로 created_at 포함
         updated_at: now
     };
 
     if (existing) {
         // Strictly exclude `id` and `views` from update payload
-        const { id, views, ...updatePayload } = articleData;
+        const { id, views, created_at: _, date: __, ...updatePayload } = articleData;
 
         const { error } = await supabase
             .from('articles')
             .update(updatePayload)
-            .eq('id', article.id);
+            .eq('id', id);
 
         if (error) return { success: false, error };
     } else {

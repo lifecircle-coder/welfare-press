@@ -49,7 +49,18 @@ export default function LatestNews({ articles }: LatestNewsProps) {
                                 </h3>
                             </div>
                             <div className="flex items-center gap-6">
-                                <span className="text-gray-400 text-sm hidden md:block">{new Date(item.date).toLocaleDateString()}</span>
+                                <span className="text-gray-400 text-sm hidden md:block">
+                                    {new Date(item.created_at || item.date || new Date()).toLocaleString('ko-KR', {
+                                        timeZone: 'Asia/Seoul',
+                                        year: 'numeric',
+                                        month: '2-digit',
+                                        day: '2-digit',
+                                        hour: '2-digit',
+                                        minute: '2-digit',
+                                        second: '2-digit',
+                                        hour12: false
+                                    })}
+                                </span>
                                 <div className="w-24 h-24 md:w-32 md:h-20 relative overflow-hidden rounded-lg flex-shrink-0 bg-gray-100">
                                     <SafeImage
                                         src={item.thumbnail}

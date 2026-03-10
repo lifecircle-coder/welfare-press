@@ -102,13 +102,13 @@ function WriteArticleForm() {
         if (!formData.title || !formData.content) return alert('제목과 본문을 입력해주세요.');
 
         // Use crypto.randomUUID() for new articles to match Supabase UUID type
-        const newArticle = {
+        const newArticle: any = {
             id: formData.id || crypto.randomUUID(),
             title: formData.title,
             category: formData.category,
             prefix: formData.prefix,
             author: formData.author,
-            date: formData.date || undefined,
+            created_at: formData.id ? undefined : (formData.date || undefined), // 수정 시에는 명시적 전달 안 함 (DB 유지)
             views: 0,
             status: formData.status,
             summary: formData.summary,
@@ -225,20 +225,23 @@ function WriteArticleForm() {
                 {/* Date & Updated At (Read-only/Edit) */}
                 <div className="grid grid-cols-2 gap-6 bg-blue-50/30 p-4 rounded-lg border border-blue-100">
                     <div>
-                        <label className="block text-sm font-bold text-blue-900 mb-2">발행일 (시/분/초 포함)</label>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">발행일 (기사 정렬 기준)</label>
                         <input
-                            type="datetime-local"
-                            step="1"
-                            className="w-full border border-blue-200 rounded-lg p-3 outline-none font-medium"
-                            value={formData.date ? new Date(new Date(formData.date).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 19) : ''}
-                            onChange={e => {
-                                const val = e.target.value;
-                                if (val) {
-                                    setFormData(prev => ({ ...prev, date: new Date(val).toISOString() }));
-                                }
-                            }}
+                            type="text"
+                            readOnly
+                            className="w-full border border-gray-200 bg-gray-50 rounded-lg p-3 outline-none text-gray-400 font-medium"
+                            value={formData.date ? new Date(formData.date).toLocaleString('ko-KR', {
+                                timeZone: 'Asia/Seoul',
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: false
+                            }) : '작성 시 자동 생성'}
                         />
-                        <p className="text-xs text-blue-600 mt-1">※ 기사 정렬의 기준이 되는 시간입니다. (시:분:초 단위 관리)</p>
+                        <p className="text-xs text-blue-500 mt-1">※ 발행일(최초 생성일)은 기사 정렬의 기준이며, 수정이 불가능합니다.</p>
                     </div>
                     <div>
                         <label className="block text-sm font-bold text-gray-700 mb-2">최종 수정일 (자동 기록)</label>
@@ -246,7 +249,16 @@ function WriteArticleForm() {
                             type="text"
                             readOnly
                             className="w-full border border-gray-200 bg-gray-50 rounded-lg p-3 outline-none text-gray-400 font-medium"
-                            value={formData.updated_at ? new Date(formData.updated_at).toLocaleString('ko-KR') : '신규 기사'}
+                            value={formData.updated_at ? new Date(formData.updated_at).toLocaleString('ko-KR', {
+                                timeZone: 'Asia/Seoul',
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit',
+                                hour: '2-digit',
+                                minute: '2-digit',
+                                second: '2-digit',
+                                hour12: false
+                            }) : '신규 기사'}
                         />
                     </div>
                 </div>
