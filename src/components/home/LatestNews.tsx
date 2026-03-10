@@ -11,13 +11,22 @@ export default function LatestNews({ articles }: LatestNewsProps) {
     // 기사가 있는 경우 모든 기사를 보여주도록 변경 (범주별 1개 제한 제거)
     const selectedArticles = articles;
 
-    const getCategoryColor = (cat: string) => {
-        if (cat.includes('일자리')) return 'text-blue-600';
-        if (cat.includes('건강')) return 'text-green-600';
-        if (cat.includes('주거')) return 'text-indigo-600';
-        if (cat.includes('생활')) return 'text-orange-600';
-        if (cat.includes('육아')) return 'text-pink-600';
-        return 'text-gray-600';
+    const getCategoryStyles = (cat: string) => {
+        if (cat.includes('일자리')) return 'bg-cat-job/80 text-cat-job';
+        if (cat.includes('건강')) return 'bg-cat-health/80 text-cat-health';
+        if (cat.includes('주거')) return 'bg-cat-house/80 text-cat-house';
+        if (cat.includes('생활')) return 'bg-cat-living/80 text-cat-living';
+        if (cat.includes('육아')) return 'bg-cat-child/80 text-cat-child';
+        return 'bg-cat-etc/80 text-cat-etc';
+    };
+
+    const getCategoryTextColor = (cat: string) => {
+        if (cat.includes('일자리')) return 'text-cat-job';
+        if (cat.includes('건강')) return 'text-cat-health';
+        if (cat.includes('주거')) return 'text-cat-house';
+        if (cat.includes('생활')) return 'text-cat-living';
+        if (cat.includes('육아')) return 'text-cat-child';
+        return 'text-cat-etc';
     };
 
     return (
@@ -42,7 +51,7 @@ export default function LatestNews({ articles }: LatestNewsProps) {
                         >
                             <div className="flex-1 pr-4">
                                 <div className="flex items-center gap-2 mb-2 md:mb-1">
-                                    <span className={`font-bold text-sm ${getCategoryColor(item.category)}`}>[{item.category}]</span>
+                                    <span className={`font-bold text-sm ${getCategoryTextColor(item.category)}`}>[{item.category}]</span>
                                 </div>
                                 <h3 className="text-lg md:text-xl font-medium text-gray-800 group-hover:text-primary">
                                     {item.title}
@@ -61,15 +70,19 @@ export default function LatestNews({ articles }: LatestNewsProps) {
                                         hour12: false
                                     })}
                                 </span>
-                                <div className="w-24 h-24 md:w-32 md:h-20 relative overflow-hidden rounded-lg flex-shrink-0 bg-gray-100">
+                                <div className="w-24 h-24 md:w-32 md:h-20 relative overflow-hidden rounded-lg flex-shrink-0 bg-gray-100 border border-gray-100">
                                     <SafeImage
                                         src={item.thumbnail}
                                         alt={item.title}
                                         fill
-                                        className="object-cover"
+                                        className="object-cover group-hover:scale-110 transition-transform duration-500"
                                         sizes="(max-width: 768px) 96px, 128px"
                                         loading="lazy"
                                     />
+                                    {/* 썸네일 라벨링 추가 */}
+                                    <span className={`absolute top-1 left-1 ${getCategoryStyles(item.category)} px-1.5 py-0.5 rounded text-[10px] font-bold backdrop-blur-sm shadow-sm z-10 opacity-0 group-hover:opacity-100 md:opacity-100 transition-opacity`}>
+                                        {item.category}
+                                    </span>
                                 </div>
                             </div>
                         </Link>

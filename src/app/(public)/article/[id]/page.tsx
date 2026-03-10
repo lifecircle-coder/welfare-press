@@ -39,14 +39,22 @@ export default async function ArticleDetail({ params }: { params: { id: string }
         a.hashtags?.some(tag => currentTags.includes(tag))
     ).slice(0, 5);
 
+    const getCategoryStyles = (cat: string) => {
+        if (cat.includes('일자리')) return 'bg-cat-job/80 text-cat-job';
+        if (cat.includes('건강')) return 'bg-cat-health/80 text-cat-health';
+        if (cat.includes('주거')) return 'bg-cat-house/80 text-cat-house';
+        if (cat.includes('생활')) return 'bg-cat-living/80 text-cat-living';
+        if (cat.includes('육아')) return 'bg-cat-child/80 text-cat-child';
+        return 'bg-cat-etc/80 text-cat-etc';
+    };
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
             {/* Handle view increment on client side */}
             <ViewCounter articleId={params.id} />
 
-            {/* Category Badge */}
-            <span className="inline-block bg-blue-100 text-primary px-3 py-1 rounded-full text-sm font-bold mb-4">
+            {/* Category Badge - Unified with thumbnail labels */}
+            <span className={`inline-block ${getCategoryStyles(article.category)} px-3 py-1 rounded-full text-sm font-bold mb-4 shadow-sm backdrop-blur-sm`}>
                 {article.category}
             </span>
 

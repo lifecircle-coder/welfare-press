@@ -27,22 +27,13 @@ export default function HeroSection({ articles }: HeroSectionProps) {
 
     if (!main) return null;
 
-    const getBgColor = (cat: string) => {
-        if (cat.includes('일자리')) return 'bg-blue-400';
-        if (cat.includes('건강')) return 'bg-green-400';
-        if (cat.includes('주거')) return 'bg-indigo-400';
-        if (cat.includes('생활')) return 'bg-orange-400';
-        if (cat.includes('육아')) return 'bg-pink-400';
-        return 'bg-gray-400';
-    };
-
-    const getSubBgColor = (cat: string) => {
-        if (cat.includes('일자리')) return 'bg-blue-300';
-        if (cat.includes('건강')) return 'bg-green-300';
-        if (cat.includes('주거')) return 'bg-indigo-300';
-        if (cat.includes('생활')) return 'bg-orange-300';
-        if (cat.includes('육아')) return 'bg-pink-300';
-        return 'bg-gray-300';
+    const getCategoryStyles = (cat: string) => {
+        if (cat.includes('일자리')) return 'bg-cat-job/80 text-cat-job';
+        if (cat.includes('건강')) return 'bg-cat-health/80 text-cat-health';
+        if (cat.includes('주거')) return 'bg-cat-house/80 text-cat-house';
+        if (cat.includes('생활')) return 'bg-cat-living/80 text-cat-living';
+        if (cat.includes('육아')) return 'bg-cat-child/80 text-cat-child';
+        return 'bg-cat-etc/80 text-cat-etc';
     };
 
     return (
@@ -102,7 +93,9 @@ export default function HeroSection({ articles }: HeroSectionProps) {
                                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                 />
-                                <span className="absolute top-2 left-2 bg-gray-900 bg-opacity-50 text-white px-2 py-0.5 rounded text-xs backdrop-blur-sm">{article.category}</span>
+                                <span className={`absolute top-2 left-2 ${getCategoryStyles(article.category)} px-2 py-0.5 rounded text-xs font-bold backdrop-blur-sm transition-all shadow-sm`}>
+                                    {article.category}
+                                </span>
                             </div>
                             <div className="p-4 flex-1">
                                 <h4 className="text-lg font-bold text-gray-900 mb-2 leading-tight group-hover:text-primary line-clamp-2">
