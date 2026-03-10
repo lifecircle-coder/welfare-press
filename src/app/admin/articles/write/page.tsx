@@ -223,6 +223,35 @@ function WriteArticleForm() {
                     </div>
                 </div>
 
+                {/* Date & Updated At (Read-only/Edit) */}
+                <div className="grid grid-cols-2 gap-6 bg-blue-50/30 p-4 rounded-lg border border-blue-100">
+                    <div>
+                        <label className="block text-sm font-bold text-blue-900 mb-2">발행일 (시/분/초 포함)</label>
+                        <input
+                            type="datetime-local"
+                            step="1"
+                            className="w-full border border-blue-200 rounded-lg p-3 outline-none font-medium"
+                            value={formData.date ? new Date(new Date(formData.date).getTime() - (new Date().getTimezoneOffset() * 60000)).toISOString().slice(0, 19) : ''}
+                            onChange={e => {
+                                const val = e.target.value;
+                                if (val) {
+                                    setFormData(prev => ({ ...prev, date: new Date(val).toISOString() }));
+                                }
+                            }}
+                        />
+                        <p className="text-xs text-blue-600 mt-1">※ 기사 정렬의 기준이 되는 시간입니다. (시:분:초 단위 관리)</p>
+                    </div>
+                    <div>
+                        <label className="block text-sm font-bold text-gray-700 mb-2">최종 수정일 (자동 기록)</label>
+                        <input
+                            type="text"
+                            readOnly
+                            className="w-full border border-gray-200 bg-gray-50 rounded-lg p-3 outline-none text-gray-400 font-medium"
+                            value={formData.updated_at ? new Date(formData.updated_at).toLocaleString('ko-KR') : '신규 기사'}
+                        />
+                    </div>
+                </div>
+
                 {/* Publish Status - Restricted to Admin */}
                 {userRole === 'admin' ? (
                     <div className="bg-gray-50 p-4 rounded-lg flex items-center justify-between">
