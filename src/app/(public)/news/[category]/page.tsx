@@ -157,5 +157,6 @@ export default async function CategoryNews({ params }: { params: { category: str
                     </aside>
                 </div>
             </div>
-        );
-    }
+        </div >
+    );
+}
