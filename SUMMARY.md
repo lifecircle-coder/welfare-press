@@ -48,8 +48,11 @@
 - **Date Integrity (중요)**: 
     - `date` 필드는 기사 발행 시점의 고유값으로, 기사 수정 시 절대 변하지 않아야 합니다.
     - 관리자 UI에서 발행일은 `readOnly` 상태를 유지합니다.
+- **Session Isolation (세션 격리)**:
+    - 홈페이지(Public)와 관리자(Admin) 세션의 충돌을 방지하기 위해 `lib/services.ts`는 반드시 '클라이언트 주입(Client Injection)' 패턴을 사용합니다.
+    - 관리자 페이지 및 기능 호출 시에는 항상 명시적으로 `adminSupabase` 클라이언트를 주입하여 공용 세션과의 오염을 차단합니다.
 - **Performance**: `created_at` 인덱스(`idx_articles_created_at`)가 생성되어 있으며, 대량 Base64 이미지 본문 삽입은 지양합니다.
 - **UI Standard**: 모든 날짜와 시간은 초 단위(`toLocaleString('ko-KR')`)까지 명확히 표시합니다.
 
 ---
-*현재 가장 완벽하게 작동하는 최종 커밋 지점 (롤백 포인트): `1501112` (feat: optimize article sorting...)*
+*현재 가장 완벽하게 작동하는 최종 커밋 지점 (롤백 포인트): `e66b784` (Fix: isolation admin session...)*
