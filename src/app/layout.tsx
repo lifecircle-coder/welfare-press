@@ -9,8 +9,8 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "THE 복(福) : 복지신문 - 전국민을 위한 복지 전문 뉴스",
-  description: "어르신, 육아, 일자리 등 다양한 복지 정보를 제공합니다.",
+  title: "THE 복(福)지 : 복지신문 - 전국민을 위한 복지 전문 뉴스",
+  description: "어르신, 청년, 육아, 일자리 등 다양한 복지 정보를 제공합니다.",
 };
 
 import VisitorTracker from "@/components/VisitorTracker";

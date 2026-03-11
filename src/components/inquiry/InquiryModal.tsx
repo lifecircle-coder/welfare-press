@@ -81,7 +81,6 @@ export default function InquiryModal({ isOpen, onClose }: Props) {
                             <option>일반 문의</option>
                             <option>제보</option>
                             <option>기사 정정 요청</option>
-                            <option>광고 문의</option>
                         </select>
                     </div>
 

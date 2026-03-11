@@ -49,7 +49,7 @@ export default function LoginPage() {
                 <div className="p-8 text-center">
                     {/* Logo area */}
                     <div className="mb-6">
-                        <span className="text-3xl font-bold text-primary tracking-tight">THE 복(福) : 복지신문</span>
+                        <span className="text-3xl font-bold text-primary tracking-tight">THE 복(福)지 : 복지신문</span>
                         <p className="text-gray-500 mt-2 font-medium">전국민을 위한 맞춤형 복지 정보</p>
                     </div>
 
