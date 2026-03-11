@@ -33,7 +33,7 @@ export default function Footer() {
                         </p>
 
                         <div className="text-sm text-gray-400 space-y-1.5 pt-4">
-                            <p>제호 : THE 복지 | 등록번호 : 서울 - 아00000 | 등록일 : 2026년 03월 00일 | 발행일 : 2026년 03월 00일 |</p>
+                            <p>제호 : THE 복지 | 등록번호 : 등록예정 | 등록일 : 2026년 03월 00일 | 발행일 : 2026년 03월 00일 |</p>
                             <p>발행인·편집인 : 변·창·환  |  청소년보호책임자 : 변·창·환 | 02-6396-2114 | eosr0509@gmail.com |</p>
                             <p>주소 : 서울특별시 영등포구 신길동 4958-1. 109-703  |</p>
                             <div className="pt-4 flex flex-wrap gap-3 justify-center md:justify-start">
