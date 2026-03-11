@@ -1,0 +1,37 @@
+<svg width="640" height="640" viewBox="0 0 640 640" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <!-- 프리미엄 블루 톤온톤 그라데이션 -->
+    <linearGradient id="sym_grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#8AB4F7;stop-opacity:1" />
+      <stop offset="50%" style="stop-color:#3B82E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A5FB4;stop-opacity:1" />
+    </linearGradient>
+    <linearGradient id="fold_grad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#3B82E5;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1A5FB4;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+
+  <!-- 심볼 디자인 (5차 최종 보정: x-1, y-3 넛지 적용) -->
+  <g id="symbol" transform="translate(4, 117)">
+    <!-- 왼쪽 리본 훅 (기초 레이어) -->
+    <path d="M110 240 C60 230 20 180 20 130 C20 70 70 60 100 100 L120 160" 
+          stroke="url(#sym_grad)" stroke-width="32" stroke-linecap="round" fill="none" />
+          
+    <!-- 오른쪽 리본 훅 (오버랩 레이어) -->
+    <path d="M110 240 C160 230 200 180 200 130 C200 65 150 50 125 100 C110 130 100 170 80 185" 
+          stroke="url(#fold_grad)" stroke-width="32" stroke-linecap="round" fill="none" />
+
+    <!-- 상단 점 (Floating Dot) -->
+    <circle cx="50" cy="55" r="18" fill="#3B82E5" />
+  </g>
+
+  <!-- 텍스트 디자인 (Identity Focus Two-tone: x-1, y-3 넛지 적용) -->
+  <g id="text" transform="translate(234, 317)">
+    <text font-family="'Pretendard', sans-serif" font-weight="900" font-size="100" letter-spacing="-5">
+      <tspan fill="#137fec">THE</tspan>
+      <tspan fill="#1e293b" dx="20">복지</tspan>
+    </text>
+    <text y="70" font-family="'Pretendard', sans-serif" font-weight="500" font-size="36" fill="#64748b" letter-spacing="10">MEDIA PRESS</text>
+  </g>
+</svg>

@@ -175,8 +175,8 @@ export default function Header() {
                     </button>
 
                     {/* Logo */}
-                    <Link href="/" className="text-2xl md:text-3xl font-bold text-primary tracking-tight absolute left-1/2 transform -translate-x-1/2 md:static md:transform-none md:left-auto">
-                        THE 복
+                    <Link href="/" className="absolute left-1/2 transform -translate-x-1/2 md:static md:transform-none md:left-auto">
+                        <img src="/logo.svg" alt="THE 복지" className="h-10 md:h-12 w-auto" />
                     </Link>
 
                     {/* Desktop Search Bar */}
