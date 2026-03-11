@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { supabase } from '@/lib/supabaseClient';
+import { adminSupabase } from '@/lib/supabaseClient';
 import { Lock, CheckCircle, AlertCircle } from 'lucide-react';
 
 interface Props {
@@ -31,21 +31,21 @@ export default function ForcePasswordChangeModal({ onSuccess }: Props) {
         setIsLoading(true);
         try {
             // 1. Update password
-            const { error: updateError } = await supabase.auth.updateUser({
+            const { error: updateError } = await adminSupabase.auth.updateUser({
                 password: newPassword
             });
 
             if (updateError) throw updateError;
 
             // 2. Clear the flag in metadata
-            const { error: metaError } = await supabase.auth.updateUser({
+            const { error: metaError } = await adminSupabase.auth.updateUser({
                 data: { needs_password_change: false }
             });
 
             if (metaError) throw metaError;
 
             alert('비밀번호가 성공적으로 변경되었습니다. 다시 로그인 해주세요.');
-            await supabase.auth.signOut();
+            await adminSupabase.auth.signOut();
             window.location.reload();
             onSuccess();
         } catch (err: any) {
