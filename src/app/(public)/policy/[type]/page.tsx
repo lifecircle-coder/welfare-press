@@ -9,7 +9,7 @@ const POLICY_CONTENT: Record<string, { title: string, icon: any, content: string
         icon: <Book className="text-blue-500" />,
         content: `
 제 1 조 (목적)
-본 약관은 [이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복](이하 '서비스')의 이용조건 및 절차, '회사'와 회원 간의 권리와 의무 등 기본적인 사항을 규정함을 목적으로 합니다.
+본 약관은 [이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복지](이하 '서비스')의 이용조건 및 절차, '회사'와 회원 간의 권리와 의무 등 기본적인 사항을 규정함을 목적으로 합니다.
 
 제 2 조 (용어의 정의)
 1. '서비스'란 '회사'가 이용자에게 제공하는 뉴스, 정보, 커뮤니티 등의 온라인 '서비스'를 의미합니다.
@@ -49,7 +49,7 @@ const POLICY_CONTENT: Record<string, { title: string, icon: any, content: string
         title: '개인정보처리방침',
         icon: <Shield className="text-green-500" />,
         content: `
-[이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복](이하 '서비스')는 이용자의 개인정보를 매우 중요하게 생각하며, 개인정보 보호법에 의거하여 다음과 같은 개인정보 처리방침을 운영하고 있습니다.
+[이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복지](이하 '서비스')는 이용자의 개인정보를 매우 중요하게 생각하며, 개인정보 보호법에 의거하여 다음과 같은 개인정보 처리방침을 운영하고 있습니다.
 
 제 1 조 (수집하는 개인정보의 항목)
 '회사'는 '서비스' 제공을 위하여 필요한 최소한의 범위 내에서 아래와 같은 개인정보를 수집하고 있습니다.
@@ -80,7 +80,7 @@ const POLICY_CONTENT: Record<string, { title: string, icon: any, content: string
         title: '청소년보호정책',
         icon: <UserCheck className="text-orange-500" />,
         content: `
-[이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복](이하 '서비스')은 청소년이 건전한 인격체로 성장할 수 있도록 정보통신망 이용촉진 및 정보보호 등에 관한 법률에 따라 청소년 보호 정책을 수립하여 시행하고 있습니다.
+[이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복지](이하 '서비스')은 청소년이 건전한 인격체로 성장할 수 있도록 정보통신망 이용촉진 및 정보보호 등에 관한 법률에 따라 청소년 보호 정책을 수립하여 시행하고 있습니다.
 
 제 1 조 (청소년 유해 정보로부터의 보호)
 '회사'는 청소년이 유해한 환경에 노출되지 않도록 청소년 유해 매체물에 대하여 별도의 성인 인증 장치를 마련하는 등 엄격한 접근 제한 조치를 취하고 있습니다.
@@ -101,7 +101,7 @@ const POLICY_CONTENT: Record<string, { title: string, icon: any, content: string
         title: '저작권보호정책',
         icon: <Copyright className="text-red-500" />,
         content: `
-[이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복](이하 '서비스')이 제공하는 모든 뉴스, 정보 등의 저작권은 '회사'에 있으며, 이용자들이 이를 무단으로 사용하는 것을 금지합니다.
+[이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복지](이하 '서비스')이 제공하는 모든 뉴스, 정보 등의 저작권은 '회사'에 있으며, 이용자들이 이를 무단으로 사용하는 것을 금지합니다.
 
 제 1 조 (뉴스 저작권의 귀속)
 '회사'가 직접 작성한 기사, 사진, 영상 등 모든 콘텐츠에 대한 저작권은 저작권법의 보호를 받으며 '회사'에 독점적으로 귀속됩니다.
@@ -141,7 +141,7 @@ export default function PolicyPage() {
                         </div>
                         <div>
                             <h1 className="text-3xl font-extrabold text-gray-900">{policy.title}</h1>
-                            <p className="text-gray-500 mt-1 font-medium text-sm">인터넷 복지신문 [THE 복]의 공식 운영 정책을 안내해 드립니다.</p>
+                            <p className="text-gray-500 mt-1 font-medium text-sm">인터넷 복지신문 [THE 복지]의 공식 운영 정책을 안내해 드립니다.</p>
                         </div>
                     </div>
                     <div className="py-12 prose prose-slate max-w-none whitespace-pre-wrap text-gray-800 leading-8 text-[1.05rem]">
