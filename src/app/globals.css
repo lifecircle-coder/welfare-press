@@ -41,6 +41,35 @@ html.text-lg-mode {
   animation: progress 2s ease-out forwards;
 }
 
+/* Quill Editor Content Styles - High Specificity Overrides */
+.prose .ql-align-center {
+  text-align: center !important;
+}
+.prose .ql-align-right {
+  text-align: right !important;
+}
+.prose .ql-align-justify {
+  text-align: justify !important;
+}
+
+/* Quill Size Classes */
+.prose .ql-size-12px { font-size: 12px !important; }
+.prose .ql-size-24px { font-size: 24px !important; }
+.prose .ql-size-36px { font-size: 36px !important; }
+
+/* Image alignment within prose - Force override Tailwind defaults */
+.prose img.ql-align-center,
+.prose .ql-align-center img {
+  margin-left: auto !important;
+  margin-right: auto !important;
+  display: block !important;
+}
+.prose img.ql-align-right,
+.prose .ql-align-right img {
+  margin-left: auto !important;
+  display: block !important;
+}
+
 /* Quill Editor Content Styles */
 .prose .ql-align-center {
   text-align: center;

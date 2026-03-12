@@ -5,16 +5,16 @@ import 'react-quill/dist/quill.snow.css';
 
 const ReactQuill = dynamic(async () => {
     const { default: RQ } = await import('react-quill');
-    const ReactQuillWithQuill = RQ as any;
-    const Quill = ReactQuillWithQuill.Quill;
+    const Quill = (RQ as any).Quill;
     
     // Register Attributors for Inline Styles
     const AlignStyle = Quill.import('attributors/style/align');
     const SizeStyle = Quill.import('attributors/style/size');
     const ColorStyle = Quill.import('attributors/style/color');
     
-    // Whitelist specific sizes to ensure they map to desired pixel/em values
-    SizeStyle.whitelist = ['0.75em', '1em', '1.5em', '2.5em']; 
+    // Whitelist values MUST match what the toolbar sends.
+    // We use concrete values that will be written into the style attribute.
+    SizeStyle.whitelist = ['12px', '16px', '24px', '36px']; 
     
     Quill.register(AlignStyle, true);
     Quill.register(SizeStyle, true);
@@ -29,7 +29,7 @@ const ReactQuill = dynamic(async () => {
 const modules = {
     toolbar: [
         [{ 'header': [1, 2, 3, false] }],
-        [{ 'size': ['small', false, 'large', 'huge'] }],
+        [{ 'size': ['12px', false, '24px', '36px'] }], // Match with whitelist. 'false' is default (16px)
         [{ 'color': [] }],
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
@@ -55,32 +55,34 @@ export default function ClientQuillEditor({ value, onChange }: any) {
     return (
         <div className="quill-editor-container h-full">
             <style jsx global>{`
-                /* Editor Visual Feedback */
-                .ql-editor .ql-size-small { font-size: 0.75em; }
-                .ql-editor .ql-size-large { font-size: 1.5em; }
-                .ql-editor .ql-size-huge { font-size: 2.5em; }
+                /* High-Specificity Editor Overrides */
+                .ql-editor {
+                    font-size: 16px;
+                }
+                .ql-editor .ql-size-12px { font-size: 12px !important; }
+                .ql-editor .ql-size-24px { font-size: 24px !important; }
+                .ql-editor .ql-size-36px { font-size: 36px !important; }
                 
                 .ql-editor img {
                     display: inline-block;
                     max-width: 100%;
                 }
-                .ql-editor p[style*="text-align: center"], 
-                .ql-editor div[style*="text-align: center"],
+                
+                /* Alignment Overrides */
                 .ql-editor .ql-align-center {
-                    text-align: center;
+                    text-align: center !important;
                 }
-                .ql-editor p[style*="text-align: center"] img,
                 .ql-editor .ql-align-center img {
-                    display: block;
-                    margin-left: auto;
-                    margin-right: auto;
+                    display: block !important;
+                    margin-left: auto !important;
+                    margin-right: auto !important;
                 }
                 .ql-editor .ql-align-right {
-                    text-align: right;
+                    text-align: right !important;
                 }
                 .ql-editor .ql-align-right img {
-                    display: block;
-                    margin-left: auto;
+                    display: block !important;
+                    margin-left: auto !important;
                 }
             `}</style>
             <ReactQuill
