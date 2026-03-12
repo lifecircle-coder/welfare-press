@@ -19,9 +19,9 @@ export async function GET(request: NextRequest) {
                     serviceKey: decodedKey,
                     callTp: 'L',
                     pageNo: 1,
-                    numOfRows: 1000, // 더 많은 데이터를 가져와서 날짜 공백 최소화
+                    numOfRows: 500, // 전체 복지서비스(약 360여건)를 한 번에 가져와서 정렬
                     srchKeyCode: '003',
-                    searchWrd: searchKeyword || ' ',
+                    searchWrd: '', // 키워드 제한 없이 전체 호출
                 }
             });
             return new NextResponse(response.data, {
