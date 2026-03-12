@@ -11,12 +11,21 @@ const ReactQuill = dynamic(() => import('react-quill'), {
 const modules = {
     toolbar: [
         [{ 'header': [1, 2, 3, false] }],
+        [{ 'size': ['small', false, 'large', 'huge'] }],
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+        [{ 'align': [] }],
         ['link', 'image'],
         ['clean']
     ],
 };
+
+const formats = [
+    'header', 'size',
+    'bold', 'italic', 'underline', 'strike',
+    'list', 'bullet', 'align',
+    'link', 'image'
+];
 
 export default function ClientQuillEditor({ value, onChange }: any) {
     const [mounted, setMounted] = useState(false);
@@ -31,6 +40,7 @@ export default function ClientQuillEditor({ value, onChange }: any) {
                 value={value}
                 onChange={onChange}
                 modules={modules}
+                formats={formats}
                 className="h-[400px] mb-12"
             />
         </div>

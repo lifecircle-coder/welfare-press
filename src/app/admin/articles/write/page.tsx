@@ -119,6 +119,7 @@ function WriteArticleForm() {
         const result = await saveArticle(newArticle, adminSupabase);
 
         if (result.success) {
+            alert(editId ? '기사가 수정되었습니다.' : '기사가 등록되었습니다.');
             router.push('/admin/articles');
         } else {
             alert(`기사 저장에 실패했습니다.\n\n오류 내용: ${result.error?.message || JSON.stringify(result.error)}`);
