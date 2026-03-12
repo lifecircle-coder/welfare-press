@@ -231,7 +231,7 @@ function WriteArticleForm() {
                             type="text"
                             readOnly
                             className="w-full border border-gray-200 bg-gray-50 rounded-lg p-3 outline-none text-gray-400 font-medium"
-                            value={formData.date ? new Date(formData.date).toLocaleString('ko-KR', {
+                            value={formData.date || formData.updated_at ? new Date(formData.date || formData.updated_at).toLocaleString('ko-KR', {
                                 timeZone: 'Asia/Seoul',
                                 year: 'numeric',
                                 month: '2-digit',

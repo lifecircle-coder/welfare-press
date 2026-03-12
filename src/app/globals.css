@@ -40,3 +40,25 @@ html.text-lg-mode {
 .animate-progress {
   animation: progress 2s ease-out forwards;
 }
+
+/* Quill Editor Content Styles */
+.prose .ql-align-center {
+  text-align: center;
+}
+.prose .ql-align-right {
+  text-align: right;
+}
+.prose .ql-align-justify {
+  text-align: justify;
+}
+
+/* Image alignment within prose */
+.prose img.ql-align-center {
+  margin-left: auto;
+  margin-right: auto;
+  display: block;
+}
+.prose img.ql-align-right {
+  margin-left: auto;
+  display: block;
+}
