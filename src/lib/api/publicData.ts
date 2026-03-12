@@ -82,9 +82,9 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
                     serviceKey: decodeURIComponent(API_KEY),
                     callTp: 'L',
                     pageNo: 1,
-                    numOfRows: 500,
-                    srchKeyCode: '003',
-                    searchWrd: searchKeyword || '지원금',
+                    numOfRows: 500, // 최신 데이터를 충분히 확보하기 위해 500건 조회
+                    srchKeyCode: '003', // 전체 검색 코드 필수
+                    searchWrd: ' ', // 공백으로 전체 검색 유도
                 }
             });
             data = response.data;
@@ -175,7 +175,7 @@ export const getLocalGovWelfareList = async (pageNo = 1, numOfRows = 50): Promis
                     callTp: 'L',
                     pageNo,
                     numOfRows,
-                    arrgOrd: '001',
+                    // arrgOrd: '001' 제거 (0건 반환 이슈 해결)
                 }
             });
             data = response.data;
@@ -193,7 +193,7 @@ export const getLocalGovWelfareList = async (pageNo = 1, numOfRows = 50): Promis
             jurMnofNm: `${item.ctpvNm || ''} ${item.sggNm || ''}`.trim() || item.bizChrDeptNm || '지자체',
             servDgst: item.servDgst,
             servDtlLink: '',
-            svcfrstRegTs: '',
+            svcfrstRegTs: item.lastModYmd || '', // 최신 수정일 매핑
             apiSource: 'LOCAL'
         }));
 

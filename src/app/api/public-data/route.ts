@@ -21,7 +21,7 @@ export async function GET(request: NextRequest) {
                     pageNo: 1,
                     numOfRows: 500,
                     srchKeyCode: '003',
-                    searchWrd: searchKeyword || '지원금',
+                    searchWrd: searchKeyword || ' ',
                 }
             });
             return new NextResponse(response.data, {
@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
                     callTp: 'L',
                     pageNo,
                     numOfRows,
-                    arrgOrd: '001',
                 }
             });
             return new NextResponse(response.data, {
