@@ -57,17 +57,39 @@ html.text-lg-mode {
 .prose .ql-size-24px { font-size: 24px !important; }
 .prose .ql-size-36px { font-size: 36px !important; }
 
+/* Admin Editor Toolbar Label Fix - Show Korean labels instead of 'Normal' */
+.ql-snow .ql-picker.ql-size .ql-picker-label::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item::before {
+  content: '보통' !important;
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
+  content: '작게' !important;
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
+  content: '크게' !important;
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="36px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="36px"]::before {
+  content: '아주 크게' !important;
+}
+
 /* Image alignment within prose - Force override Tailwind defaults */
 /* IMPORTANT: For centered images, the image itself must have margin: auto and display: block to override Tailwind's block/left-align defaults */
 .prose .ql-align-center img,
-.prose img.ql-align-center {
+.prose img.ql-align-center,
+.prose [style*="text-align: center"] img,
+.prose [style*="text-align:center"] img {
   margin-left: auto !important;
   margin-right: auto !important;
   display: block !important;
 }
 
 .prose .ql-align-right img,
-.prose img.ql-align-right {
+.prose img.ql-align-right,
+.prose [style*="text-align: right"] img,
+.prose [style*="text-align:right"] img {
   margin-left: auto !important;
   margin-right: 0 !important;
   display: block !important;

@@ -63,44 +63,36 @@ export default function ClientQuillEditor({ value, onChange }: any) {
                 .ql-editor .ql-size-24px { font-size: 24px !important; }
                 .ql-editor .ql-size-36px { font-size: 36px !important; }
                 
-                /* Toolbar Label Fix: Show '작게', '크게' instead of 'Normal' */
-                .ql-snow .ql-picker.ql-size .ql-picker-label::before,
-                .ql-snow .ql-picker.ql-size .ql-picker-item::before {
-                    content: '보통' !important;
-                }
-                .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
-                .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
-                    content: '작게' !important;
-                }
-                .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
-                .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
-                    content: '크게' !important;
-                }
-                .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="36px"]::before,
-                .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="36px"]::before {
-                    content: '아주 크게' !important;
-                }
-
                 .ql-editor img {
                     display: inline-block;
                     max-width: 100%;
                 }
                 
-                /* Alignment Overrides */
-                .ql-editor .ql-align-center {
+                /* Alignment Overrides inside Editor */
+                .ql-editor .ql-align-center,
+                .ql-editor [style*="text-align: center"],
+                .ql-editor [style*="text-align:center"] {
                     text-align: center !important;
                 }
-                .ql-editor .ql-align-center img {
+                .ql-editor .ql-align-center img,
+                .ql-editor [style*="text-align: center"] img,
+                .ql-editor [style*="text-align:center"] img {
                     display: block !important;
                     margin-left: auto !important;
                     margin-right: auto !important;
                 }
-                .ql-editor .ql-align-right {
+                
+                .ql-editor .ql-align-right,
+                .ql-editor [style*="text-align: right"],
+                .ql-editor [style*="text-align:right"] {
                     text-align: right !important;
                 }
-                .ql-editor .ql-align-right img {
+                .ql-editor .ql-align-right img,
+                .ql-editor [style*="text-align: right"] img,
+                .ql-editor [style*="text-align:right"] img {
                     display: block !important;
                     margin-left: auto !important;
+                    margin-right: 0 !important;
                 }
             `}</style>
             <ReactQuill
