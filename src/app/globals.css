@@ -53,12 +53,14 @@ html.text-lg-mode {
 }
 
 /* Image alignment within prose */
-.prose img.ql-align-center {
+.prose img.ql-align-center,
+.prose .ql-align-center img {
   margin-left: auto;
   margin-right: auto;
   display: block;
 }
-.prose img.ql-align-right {
+.prose img.ql-align-right,
+.prose .ql-align-right img {
   margin-left: auto;
   display: block;
 }

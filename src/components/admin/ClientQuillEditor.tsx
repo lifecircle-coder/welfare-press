@@ -8,8 +8,10 @@ const ReactQuill = dynamic(async () => {
     const Quill = RQ.Quill;
     const Align = Quill.import('attributors/style/align');
     const Size = Quill.import('attributors/style/size');
+    const Color = Quill.import('attributors/style/color');
     Quill.register(Align, true);
     Quill.register(Size, true);
+    Quill.register(Color, true);
     return RQ;
 }, {
     ssr: false,
@@ -20,6 +22,7 @@ const modules = {
     toolbar: [
         [{ 'header': [1, 2, 3, false] }],
         [{ 'size': ['small', false, 'large', 'huge'] }],
+        [{ 'color': [] }],
         ['bold', 'italic', 'underline', 'strike'],
         [{ 'list': 'ordered' }, { 'list': 'bullet' }],
         [{ 'align': [] }],
@@ -29,7 +32,7 @@ const modules = {
 };
 
 const formats = [
-    'header', 'size',
+    'header', 'size', 'color',
     'bold', 'italic', 'underline', 'strike',
     'list', 'bullet', 'align',
     'link', 'image'
@@ -48,11 +51,21 @@ export default function ClientQuillEditor({ value, onChange }: any) {
                     display: inline-block;
                     max-width: 100%;
                 }
+                .ql-editor p[style*="text-align: center"], 
+                .ql-editor div[style*="text-align: center"] {
+                    text-align: center;
+                }
+                .ql-editor p[style*="text-align: center"] img,
                 .ql-editor .ql-align-center {
+                    display: block;
+                    margin-left: auto;
+                    margin-right: auto;
                     text-align: center;
                 }
                 .ql-editor .ql-align-right {
                     text-align: right;
+                    display: block;
+                    margin-left: auto;
                 }
                 .ql-editor .ql-align-justify {
                     text-align: justify;

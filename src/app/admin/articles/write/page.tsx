@@ -51,6 +51,7 @@ function WriteArticleForm() {
         hashtags: '',
         status: 'published' as 'published' | 'draft',
         date: '',
+        created_at: '',
         updated_at: ''
     });
     // Load existing data if editing
@@ -72,6 +73,7 @@ function WriteArticleForm() {
                                 : (typeof article.hashtags === 'string' ? article.hashtags : ''),
                             status: (article.status as 'published' | 'draft') || 'published',
                             date: article.date || '',
+                            created_at: article.created_at || '',
                             updated_at: article.updated_at || ''
                         });
                     } catch (e) {
@@ -231,7 +233,7 @@ function WriteArticleForm() {
                             type="text"
                             readOnly
                             className="w-full border border-gray-200 bg-gray-50 rounded-lg p-3 outline-none text-gray-400 font-medium"
-                            value={formData.date || formData.updated_at ? new Date(formData.date || formData.updated_at).toLocaleString('ko-KR', {
+                            value={formData.created_at || formData.date ? new Date(formData.created_at || formData.date).toLocaleString('ko-KR', {
                                 timeZone: 'Asia/Seoul',
                                 year: 'numeric',
                                 month: '2-digit',
