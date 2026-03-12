@@ -82,7 +82,7 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
                     serviceKey: decodeURIComponent(API_KEY),
                     callTp: 'L',
                     pageNo: 1,
-                    numOfRows: 500, // 최신 데이터를 충분히 확보하기 위해 500건 조회
+                    numOfRows: 1000, // 최신 데이터를 충분히 확보하기 위해 1000건 조회
                     srchKeyCode: '003', // 전체 검색 코드 필수
                     searchWrd: ' ', // 공백으로 전체 검색 유도
                 }

@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
                     serviceKey: decodedKey,
                     callTp: 'L',
                     pageNo: 1,
-                    numOfRows: 500,
+                    numOfRows: 1000, // 더 많은 데이터를 가져와서 날짜 공백 최소화
                     srchKeyCode: '003',
                     searchWrd: searchKeyword || ' ',
                 }
@@ -52,7 +52,7 @@ export async function GET(request: NextRequest) {
                 }
             });
             return new NextResponse(response.data, {
-                headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+                headers: { 'Content-Type': 'application/json; charset=utf-8' }
             });
         }
 
@@ -65,7 +65,7 @@ export async function GET(request: NextRequest) {
                 }
             });
             return new NextResponse(response.data, {
-                headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+                headers: { 'Content-Type': 'application/json; charset=utf-8' }
             });
         }
 
