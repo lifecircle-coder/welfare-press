@@ -63,6 +63,24 @@ export default function ClientQuillEditor({ value, onChange }: any) {
                 .ql-editor .ql-size-24px { font-size: 24px !important; }
                 .ql-editor .ql-size-36px { font-size: 36px !important; }
                 
+                /* Toolbar Label Fix: Show '작게', '크게' instead of 'Normal' */
+                .ql-snow .ql-picker.ql-size .ql-picker-label::before,
+                .ql-snow .ql-picker.ql-size .ql-picker-item::before {
+                    content: '보통' !important;
+                }
+                .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
+                .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
+                    content: '작게' !important;
+                }
+                .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
+                .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
+                    content: '크게' !important;
+                }
+                .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="36px"]::before,
+                .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="36px"]::before {
+                    content: '아주 크게' !important;
+                }
+
                 .ql-editor img {
                     display: inline-block;
                     max-width: 100%;

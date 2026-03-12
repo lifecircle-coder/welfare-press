@@ -58,15 +58,18 @@ html.text-lg-mode {
 .prose .ql-size-36px { font-size: 36px !important; }
 
 /* Image alignment within prose - Force override Tailwind defaults */
-.prose img.ql-align-center,
-.prose .ql-align-center img {
+/* IMPORTANT: For centered images, the image itself must have margin: auto and display: block to override Tailwind's block/left-align defaults */
+.prose .ql-align-center img,
+.prose img.ql-align-center {
   margin-left: auto !important;
   margin-right: auto !important;
   display: block !important;
 }
-.prose img.ql-align-right,
-.prose .ql-align-right img {
+
+.prose .ql-align-right img,
+.prose img.ql-align-right {
   margin-left: auto !important;
+  margin-right: 0 !important;
   display: block !important;
 }
 
