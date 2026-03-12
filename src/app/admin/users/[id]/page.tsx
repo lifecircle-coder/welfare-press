@@ -21,11 +21,14 @@ export default function UserDetailPage() {
 
     // Edit states
     const [isEditing, setIsEditing] = useState(false);
+    const [isEditingName, setIsEditingName] = useState(false);
     const [editGrade, setEditGrade] = useState('');
+    const [editName, setEditName] = useState('');
 
     // Password change states
     const [showPwModal, setShowPwModal] = useState(false);
     const [newPassword, setNewPassword] = useState('');
+
 
     useEffect(() => {
         const loadDetail = async () => {
@@ -52,6 +55,8 @@ export default function UserDetailPage() {
             if (dbUser) {
                 setUser(dbUser);
                 setEditGrade(dbUser.grade || 'Lv.1');
+                setEditName(dbUser.name);
+
 
                 // Parallel fetch for stats
                 const [articles, comments, inquiries] = await Promise.all([
@@ -70,7 +75,12 @@ export default function UserDetailPage() {
                     ...articles.map(a => ({ type: '기사 작성', title: a.title, date: a.date, id: a.id })),
                     ...comments.map(c => ({ type: '댓글 작성', title: c.content, date: c.date, id: c.id })),
                     ...inquiries.map(i => ({ type: '문의 등록', title: i.title, date: i.date, id: i.id }))
-                ].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                ].filter(act => !!act.date).sort((a, b) => {
+                    const timeA = a.date ? new Date(a.date).getTime() : 0;
+                    const timeB = b.date ? new Date(b.date).getTime() : 0;
+                    return timeB - timeA;
+                });
+
 
                 setRecentActivity(activity);
 
@@ -90,6 +100,53 @@ export default function UserDetailPage() {
         setIsEditing(false);
         alert('등급이 수정되었습니다.');
     };
+
+    const getByteLength = (str: string) => {
+        return new TextEncoder().encode(str).length;
+    };
+
+    const handleSaveName = async () => {
+        if (!user) return;
+        if (!editName.trim()) return alert('이름을 입력해주세요.');
+        
+        const byteLen = getByteLength(editName);
+        if (byteLen > 50) {
+            return alert(`이름은 최대 50byte(한글 약 25자)를 초과할 수 없습니다. (현재: ${byteLen}byte)`);
+        }
+
+        if (confirm(`이름을 "${editName}"(으)로 수정하시겠습니까? \n수정 시 기사, 댓글, 문의의 작성자 명도 함께 변경됩니다.`)) {
+            const { updateUserAction } = await import('../actions');
+            const result = await updateUserAction({
+                userId: user.id,
+                oldName: user.name,
+                newName: editName
+            });
+
+            if (result.success) {
+                setUser({ ...user, name: editName });
+                setIsEditingName(false);
+                alert('이름이 성공적으로 수정되었습니다.');
+                router.refresh(); // 전역 반영을 위해 새로고침 유도
+            } else {
+                alert('수정 실패: ' + result.error);
+            }
+        }
+    };
+
+    const handleDeleteUser = async () => {
+        if (!user) return;
+        if (confirm('정말로 이 계정을 삭제하시겠습니까? \n삭제된 정보는 복구할 수 없습니다.')) {
+            const { deleteUserAction } = await import('../actions');
+            const result = await deleteUserAction(user.id);
+            if (result.success) {
+                alert('계정이 삭제되었습니다.');
+                router.push('/admin/users');
+            } else {
+                alert('삭제 실패: ' + result.error);
+            }
+        }
+    };
+
 
     const handleUpdatePassword = async () => {
         if (!newPassword || newPassword.length < 6) {
@@ -131,7 +188,35 @@ export default function UserDetailPage() {
                         <div className="w-24 h-24 bg-gray-100 rounded-full mx-auto mb-4 flex items-center justify-center text-3xl font-bold text-primary border-4 border-white shadow-inner">
                             {user.name[0]}
                         </div>
-                        <h3 className="text-xl font-bold text-gray-900">{user.name}</h3>
+                        <div className="flex items-center justify-center gap-2 mb-1">
+                            {isEditingName ? (
+                                <div className="flex gap-1 items-center">
+                                    <input 
+                                        type="text" 
+                                        className="border rounded px-2 py-1 text-sm focus:ring-1 focus:ring-primary outline-none"
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        autoFocus
+                                    />
+                                    <button onClick={handleSaveName} className="p-1 text-primary hover:bg-blue-50 rounded"><Save size={16}/></button>
+                                    <button onClick={() => { setIsEditingName(false); setEditName(user.name); }} className="p-1 text-gray-400 hover:bg-gray-50 rounded"><ArrowLeft size={16}/></button>
+                                </div>
+                            ) : (
+                                <>
+                                    <h3 className="text-xl font-bold text-gray-900">{user.name}</h3>
+                                    {isAdmin && (
+                                        <button 
+                                            onClick={() => setIsEditingName(true)}
+                                            className="p-1 text-gray-400 hover:text-primary transition-colors"
+                                            title="이름 수정"
+                                        >
+                                            <Edit size={14} />
+                                        </button>
+                                    )}
+                                </>
+                            )}
+                        </div>
+
                         <p className="text-gray-500 text-sm mb-4">
                             {user.email.replace('@welfare-press.admin', '')}
                         </p>
@@ -225,8 +310,24 @@ export default function UserDetailPage() {
                                 )}
                             </div>
                         )}
+
+                        {/* Delete User Section - Admin only */}
+                        {isAdmin && user.id !== currentUser?.id && (
+                            <div className="pt-4 border-t border-gray-50">
+                                <h4 className="font-bold text-gray-900 mb-4 flex items-center gap-2 text-sm border-b pb-2">
+                                    <Trash2 size={16} className="text-red-500" /> 위험 구역
+                                </h4>
+                                <button
+                                    onClick={handleDeleteUser}
+                                    className="w-full border border-red-100 text-red-600 py-2.5 rounded-lg font-bold text-sm hover:bg-red-50 flex items-center justify-center gap-2 transition-colors uppercase tracking-wider"
+                                >
+                                    <Trash2 size={14} /> 계정 영구 삭제
+                                </button>
+                            </div>
+                        )}
                     </div>
                 </div>
+
 
                 {/* Right Column: Activity & Stats */}
                 <div className="md:col-span-2 space-y-6">

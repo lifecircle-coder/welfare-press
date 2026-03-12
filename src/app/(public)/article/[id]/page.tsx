@@ -64,8 +64,9 @@ export default async function ArticleDetail({ params }: { params: { id: string }
             </h1>
 
             {/* Metadata */}
-            <div className="flex items-center text-gray-500 text-sm mb-8 border-b border-gray-100 pb-6">
-                <span className="font-medium text-gray-700 mr-4">{article.author}</span>
+            <div className="flex flex-wrap items-center text-gray-500 text-sm mb-8 border-b border-gray-100 pb-6 gap-y-2">
+                <span className="font-medium text-gray-700 mr-4 whitespace-nowrap">{article.author}</span>
+
                 <span className="mr-4">
                     {(() => {
                         const date = new Date(article.created_at || article.date || new Date());

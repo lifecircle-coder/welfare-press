@@ -78,3 +78,59 @@ export async function createReporterAction({ name, loginId, password, specialty 
         return { success: false, error: error.message };
     }
 }
+
+/**
+ * 기자의 정보를 수정하고 전역적으로 반영합니다. (Auth 메타데이터 포함)
+ */
+export async function updateUserAction({ userId, oldName, newName }: { userId: string, oldName: string, newName: string }) {
+    try {
+        const admin = getSupabaseAdmin();
+
+        // 1. Auth 메타데이터 업데이트
+        const { error: authError } = await admin.auth.admin.updateUserById(userId, {
+            user_metadata: {
+                name: newName,
+                full_name: newName
+            }
+        });
+        if (authError) throw authError;
+
+        // 2. DB 정보 및 관련 콘텐츠 일괄 업데이트
+        const { updateUserWithContent } = await import('@/lib/services');
+        const result = await updateUserWithContent(userId, oldName, newName, admin);
+        
+        if (!result.success) throw result.error;
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('updateUserAction failed:', error);
+        return { success: false, error: error.message };
+    }
+}
+
+/**
+ * 기자 계정을 삭제합니다.
+ */
+export async function deleteUserAction(userId: string) {
+    try {
+        const admin = getSupabaseAdmin();
+
+        // 1. Auth 계정 삭제
+        const { error: authError } = await admin.auth.admin.deleteUser(userId);
+        if (authError) throw authError;
+
+        // 2. DB users 레코드 삭제 (Cascade 설정에 의해 하위 데이터가 영향을 받을 수 있으므로 주의)
+        const { error: dbError } = await admin
+            .from('users')
+            .delete()
+            .eq('id', userId);
+        
+        if (dbError) throw dbError;
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('deleteUserAction failed:', error);
+        return { success: false, error: error.message };
+    }
+}
+

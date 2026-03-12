@@ -396,6 +396,62 @@ export const updateUser = async (user: User): Promise<void> => {
     if (error) console.error('Error updating user:', error);
 };
 
+/**
+ * 기자의 이름을 수정하고, 해당 기자가 작성한 모든 기사, 댓글, 문의의 작성자 명을 일괄 업데이트합니다.
+ * @param userId 수정할 사용자의 ID
+ * @param oldName 기준 이름 (검색용)
+ * @param newName 새 이름
+ * @param client Supabase 클라이언트
+ */
+export const updateUserWithContent = async (
+    userId: string,
+    oldName: string,
+    newName: string,
+    client = supabase
+): Promise<{ success: boolean; error?: any }> => {
+    try {
+        // 1. users 테이블 업데이트
+        const { error: userError } = await client
+            .from('users')
+            .update({ name: newName })
+            .eq('id', userId);
+        
+        if (userError) throw userError;
+
+        // 이름이 변경된 경우에만 관련 콘텐츠 업데이트 진행
+        if (oldName !== newName) {
+            console.log(`Synchronizing content creator name from [${oldName}] to [${newName}]...`);
+            
+            // 2. articles 테이블 업데이트
+            const { error: artError } = await client
+                .from('articles')
+                .update({ author: newName })
+                .eq('author', oldName);
+            if (artError) console.error('Error updating articles author:', artError);
+
+            // 3. comments 테이블 업데이트
+            const { error: cmtError } = await client
+                .from('comments')
+                .update({ author: newName })
+                .eq('author', oldName);
+            if (cmtError) console.error('Error updating comments author:', cmtError);
+
+            // 4. inquiries 테이블 업데이트
+            const { error: inqError } = await client
+                .from('inquiries')
+                .update({ author: newName })
+                .eq('author', oldName);
+            if (inqError) console.error('Error updating inquiries author:', inqError);
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('updateUserWithContent failed:', error);
+        return { success: false, error };
+    }
+};
+
+
 export const saveUser = async (user: User): Promise<void> => {
     const { error } = await supabase
         .from('users')
