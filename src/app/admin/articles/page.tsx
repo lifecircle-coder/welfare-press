@@ -440,8 +440,8 @@ export default function ArticleManagement() {
             </div>
 
             {/* Article Management List Area */}
-            <div className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden mt-12">
-                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-blue-50/20">
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
                     <h3 className="text-xl font-extrabold text-gray-900 flex items-center gap-3">
                         <div className="bg-blue-600 p-2 rounded-lg text-white">
                             <Calendar size={20} />
@@ -468,12 +468,12 @@ export default function ArticleManagement() {
                         </thead>
                         <tbody className="divide-y divide-gray-50 text-sm">
                             {filteredArticles.map((item) => (
-                                <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
+                                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="p-4 pl-6">
-                                        <div className="font-bold text-gray-900 group-hover:text-blue-600 cursor-pointer" onClick={() => router.push(`/admin/articles/write?id=${item.id}`)}>{item.title}</div>
+                                        <div className="font-medium text-gray-900 cursor-pointer" onClick={() => router.push(`/admin/articles/write?id=${item.id}`)}>{item.title}</div>
                                         <div className="text-[10px] text-gray-400 mt-1">{item.category}</div>
                                     </td>
-                                    <td className="p-4 text-gray-600 font-medium">{item.author}</td>
+                                    <td className="p-4 text-gray-600">{item.author}</td>
                                     <td className="p-4 text-gray-500 text-xs">{new Date(item.created_at || item.date || Date.now()).toLocaleDateString('ko-KR')}</td>
                                     <td className="p-4">
                                         <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${item.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
@@ -482,12 +482,12 @@ export default function ArticleManagement() {
                                     </td>
                                     <td className="p-4">
                                         <div className="flex justify-center gap-2">
-                                            <button onClick={() => handleOpenCommentModal(item)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all relative">
+                                            <button onClick={() => handleOpenCommentModal(item)} className="p-2 text-gray-400 hover:text-blue-600 transition-all relative">
                                                 <MessageCircle size={18} />
                                                 {newCommentArticleIds.includes(item.id) && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>}
                                             </button>
-                                            <button onClick={() => router.push(`/admin/articles/write?id=${item.id}`)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg"><Plus size={18} /></button>
-                                            <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18} /></button>
+                                            <button onClick={() => router.push(`/admin/articles/write?id=${item.id}`)} className="p-2 text-gray-400 hover:text-gray-600"><Plus size={18} /></button>
+                                            <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-red-600"><Trash2 size={18} /></button>
                                         </div>
                                     </td>
                                 </tr>
