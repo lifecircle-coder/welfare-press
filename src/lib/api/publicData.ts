@@ -102,7 +102,7 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
             data = response.data;
         }
 
-        const jsonObj = typeof data === 'object' ? data : parser.parse(data);
+        const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
         const servList = jsonObj.wantedList?.servList || jsonObj.response?.body?.items?.item || jsonObj.servList || jsonObj.data;
 
         if (!servList) {
@@ -112,7 +112,12 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
         let arrayList = Array.isArray(servList) ? servList : [servList];
 
         let mappedList = arrayList.map(item => ({
-            ...item,
+            servId: item.servId || '',
+            servNm: item.servNm || '',
+            jurMnofNm: item.jurMnofNm || '',
+            servDgst: item.servDgst || '',
+            servDtlLink: item.servDtlLink || '',
+            svcfrstRegTs: item.svcfrstRegTs ? String(item.svcfrstRegTs) : '',
             apiSource: 'NATIONAL' as const,
             priority: 3,
             isNews: false
@@ -198,7 +203,7 @@ export const getLocalGovWelfareList = async (pageNo = 1, numOfRows = 50): Promis
             data = response.data;
         }
 
-        const jsonObj = typeof data === 'object' ? data : parser.parse(data);
+        const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
         const servList = jsonObj.wantedList?.servList || jsonObj.servList || jsonObj.data;
 
         if (!servList) return [];
@@ -438,10 +443,10 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             servNm: item.title || item.articleTitle,
             jurMnofNm: item.deptNm || '여성가족부',
             servDgst: '',
-            servDtlLink: item.viewUrl,
-            svcfrstRegTs: item.regDt ? item.regDt.replace(/-/g, '') : '',
+            servDtlLink: item.viewUrl || '',
+            svcfrstRegTs: item.regDt ? String(item.regDt).replace(/-/g, '').substring(0, 8) : '',
             apiSource: 'MOGEF',
-            priority: 2, // 여가부 정책뉴스도 뉴스 소스로 분류
+            priority: 2,
             isNews: true
         }));
 
@@ -470,7 +475,7 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
             });
             data = response.data;
         }
-        const jsonObj = parser.parse(data);
+        const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
         const list = jsonObj.response?.body?.items?.item;
         if (!list) return [];
         const arrayList = Array.isArray(list) ? list : [list];
@@ -510,7 +515,7 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
             });
             data = response.data;
         }
-        const jsonObj = parser.parse(data);
+        const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
         const list = jsonObj.response?.body?.items?.item;
         if (!list) return [];
         const arrayList = Array.isArray(list) ? list : [list];
@@ -550,7 +555,7 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             });
             data = response.data;
         }
-        const jsonObj = parser.parse(data);
+        const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
         const list = jsonObj.response?.body?.items?.item;
         if (!list) return [];
         const arrayList = Array.isArray(list) ? list : [list];
@@ -590,7 +595,7 @@ export const getMoisStatsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             });
             data = response.data;
         }
-        const jsonObj = parser.parse(data);
+        const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
         const list = jsonObj.response?.body?.items?.item;
         if (!list) return [];
         const arrayList = Array.isArray(list) ? list : [list];

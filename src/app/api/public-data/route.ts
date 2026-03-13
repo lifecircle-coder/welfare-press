@@ -108,53 +108,32 @@ export async function GET(request: NextRequest) {
             });
         }
         if (type === 'MCST_PRESS_LIST') {
-            const response = await axios.get('http://apis.data.go.kr/1312000/PolicyBriefingService/getPressReleaseList', {
-                params: {
-                    serviceKey: decodedKey,
-                    pageNo,
-                    numOfRows,
-                }
-            });
+            const url = `http://apis.data.go.kr/1312000/PolicyBriefingService/getPressReleaseList?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+            const response = await axios.get(url);
             return new NextResponse(response.data, {
                 headers: { 'Content-Type': 'application/xml; charset=utf-8' }
             });
         }
 
         if (type === 'MCST_NEWS_LIST') {
-            const response = await axios.get('http://apis.data.go.kr/1312000/PolicyBriefingService/getNewsList', {
-                params: {
-                    serviceKey: decodedKey,
-                    pageNo,
-                    numOfRows,
-                }
-            });
+            const url = `http://apis.data.go.kr/1312000/PolicyBriefingService/getNewsList?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+            const response = await axios.get(url);
             return new NextResponse(response.data, {
                 headers: { 'Content-Type': 'application/xml; charset=utf-8' }
             });
         }
 
         if (type === 'MCST_PHOTO_LIST') {
-            const response = await axios.get('http://apis.data.go.kr/1312000/PolicyBriefingService/getPhotoList', {
-                params: {
-                    serviceKey: decodedKey,
-                    pageNo,
-                    numOfRows,
-                }
-            });
+            const url = `http://apis.data.go.kr/1312000/PolicyBriefingService/getPhotoList?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+            const response = await axios.get(url);
             return new NextResponse(response.data, {
                 headers: { 'Content-Type': 'application/xml; charset=utf-8' }
             });
         }
 
         if (type === 'MOIS_STATS_LIST') {
-            const response = await axios.get('http://apis.data.go.kr/1741000/Subsidy24/getStatsInfo', {
-                params: {
-                    serviceKey: decodedKey,
-                    pageNo,
-                    numOfRows,
-                    year: '2024' // 최신 통계 우선
-                }
-            });
+            const url = `http://apis.data.go.kr/1741000/Subsidy24/getStatsInfo?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&year=2024`;
+            const response = await axios.get(url);
             return new NextResponse(response.data, {
                 headers: { 'Content-Type': 'application/xml; charset=utf-8' }
             });
@@ -163,7 +142,15 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
 
     } catch (err: any) {
-        console.error('Proxy Error:', err.message);
-        return NextResponse.json({ error: 'Failed to fetch data' }, { status: 500 });
+        if (err.response) {
+            console.error('Proxy Error Response:', err.response.status, err.response.data);
+        } else {
+            console.error('Proxy Error Message:', err.message);
+        }
+        return NextResponse.json({ 
+            error: 'Failed to fetch data', 
+            details: err.message,
+            status: err.response?.status
+        }, { status: 500 });
     }
 }
