@@ -6,8 +6,14 @@ import { useState, useEffect } from 'react';
 import { getAllArticles, deleteArticle, getComments, addComment, getArticlesWithNewComments } from '@/lib/services';
 import type { Article, Comment } from '@/lib/services';
 import { useRouter } from 'next/navigation';
-import { getNationalWelfareList, getSubsidy24List, getYouthPolicyList, getMogefNewsList, getNationalWelfareDetail, getLocalGovWelfareList, getLocalGovWelfareDetail, WelfareService } from '@/lib/api/publicData';
+import { getNationalWelfareList, getSubsidy24List, getYouthPolicyList, getMogefNewsList, getNationalWelfareDetail, getLocalGovWelfareList, getLocalGovWelfareDetail, getMcstPressReleaseList, getMcstNewsList, getMcstPhotoList, getMoisStatsList, WelfareService } from '@/lib/api/publicData';
 import { adminSupabase } from '@/lib/supabaseClient';
+import { XMLParser } from 'fast-xml-parser';
+
+const parser = new XMLParser({
+    ignoreAttributes: false,
+    textNodeName: '_text',
+});
 
 export default function ArticleManagement() {
     const router = useRouter();
@@ -18,7 +24,9 @@ export default function ArticleManagement() {
     const [newCommentArticleIds, setNewCommentArticleIds] = useState<string[]>([]);
 
     // Public Data State
-    const [activeApiTab, setActiveApiTab] = useState<'NATIONAL' | 'LOCAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF'>('NATIONAL');
+    const [activeApiTab, setActiveApiTab] = useState<'NATIONAL' | 'LOCAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF' | 'MCST_PRESS' | 'MCST_NEWS' | 'MCST_PHOTO' | 'MOIS_STATS' | 'NEWS_ALL'>('MCST_PRESS');
+    const [apiSearchTerm, setApiSearchTerm] = useState('');
+    const [selectedApiItem, setSelectedApiItem] = useState<WelfareService | null>(null);
 
     // National (MOHW + MOGEF + SUBSIDY + YOUTH)
     const [apiData, setApiData] = useState<WelfareService[]>([]);
@@ -90,7 +98,7 @@ export default function ArticleManagement() {
         }
     }, []);
 
-    const loadApiData = async (tab: 'NATIONAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF') => {
+    const loadApiData = async (tab: 'NATIONAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF' | 'MCST_PRESS' | 'MCST_NEWS' | 'MCST_PHOTO' | 'MOIS_STATS' | 'NEWS_ALL') => {
         setIsFetchingApi(true);
         try {
             let list: WelfareService[] = [];
@@ -102,15 +110,36 @@ export default function ArticleManagement() {
                 list = await getYouthPolicyList(1, 100);
             } else if (tab === 'MOGEF') {
                 list = await getMogefNewsList(1, 100);
+            } else if (tab === 'MCST_PRESS') {
+                list = await getMcstPressReleaseList(1, 100);
+            } else if (tab === 'MCST_NEWS') {
+                list = await getMcstNewsList(1, 100);
+            } else if (tab === 'MCST_PHOTO') {
+                list = await getMcstPhotoList(1, 100);
+            } else if (tab === 'MOIS_STATS') {
+                list = await getMoisStatsList(1, 100);
+            } else if (tab === 'NEWS_ALL') {
+                const results = await Promise.all([
+                    getMcstPressReleaseList(1, 30),
+                    getMcstNewsList(1, 30),
+                    getMogefNewsList(1, 30)
+                ]);
+                list = results.flat();
             }
 
             list.sort((a, b) => {
+                // 우선순위 가중치 정렬 (1: 보도자료, 2: 정책뉴스/일반, 3: 복지정보, ...)
+                const priorityA = a.priority || 99;
+                const priorityB = b.priority || 99;
+                if (priorityA !== priorityB) {
+                    return priorityA - priorityB;
+                }
                 const dateA = String(a.svcfrstRegTs || '');
                 const dateB = String(b.svcfrstRegTs || '');
                 return dateB.localeCompare(dateA);
             });
 
-            setApiData(list.slice(0, 50));
+            setApiData(list.slice(0, 100));
         } catch (error) {
             console.error('Failed to fetch public data', error);
         } finally {
@@ -143,7 +172,7 @@ export default function ArticleManagement() {
     }, []);
 
     const handleDelete = async (id: string) => {
-        if (confirm('정말 삭제하시겠습니까?')) {
+        if (confirm('정말로 삭제하시겠습니까?')) {
             await deleteArticle(id);
             loadArticles();
         }
@@ -185,520 +214,320 @@ export default function ArticleManagement() {
     const handleCopySource = async (api: WelfareService) => {
         try {
             let prompt = '';
+            const sourceName = api.jurMnofNm || '정부 부처';
+            const title = api.servNm;
+            const summary = api.servDgst;
+            const link = api.servDtlLink || '상세 페이지 참조';
+            const keywords = (api.keywords || []).join(', ');
 
-            if (api.apiSource === 'LOCAL') {
-                const detail = await getLocalGovWelfareDetail(api.servId);
-                prompt = `[왕기자 기사 작성용 소스]
-아래 공공데이터포털(한국사회보장정보원)에서 수집된 지자체 특화 복지 정책 데이터를 바탕으로, 해당 지역 주민들이 이해하기 쉽고 친절한 안내 기사를 작성해주세요.
+            // 왕 기자(AI Persona) 전용 지능형 프롬프트 템플릿
+            if (api.apiSource === 'MCST_PRESS') {
+                prompt = `[왕 기자 전용: 보도자료 기반 기사 작성 지침]
 
---- [수집된 원본 데이터] ---
-* 지자체명: ${api.jurMnofNm}
-* 정책명: ${api.servNm}
-* 정책 요약: ${api.servDgst}
-* 지원 대상: ${detail?.trgterIndvdlArray || '상세 정보 참조'}
-* 선정 기준: ${detail?.slctCritCn || '상세 정보 참조'}
-* 상세 혜택: ${detail?.alwServCn || '상세 정보 참조'}
-* 업데이트일: ${detail?.svcfrstRegTs || '미상'}
+핵심 소스: 문화체육관광부 보도자료
+기관명: ${sourceName}
+기사 제목 후보: ${title}
+데이터 요약: ${summary}
+상세 URL: ${link}
+키워드: ${keywords}
 
---- [작성 가이드] ---
-1. 기사 제목: 핵심 혜택과 지자체명(${api.jurMnofNm})을 직관적으로 알 수 있는 매력적인 제목
-2. 요약본: 1~2줄의 핵심 요약
-3. 카테고리/말머리 제안: (예: 카테고리-일자리•취업, 말머리-창업)
-**카테고리별 말머리
-**1) 건강•의료 : 건강, 의료, 보험, 운동
-**2) 임신•육아 : 임신, 육아, 보육, 지원
-**3) 일자리•취업 : 일자리, 취업, 창업, 교육
-**4) 생활•안전 : 생활, 안전, 교통, 환경
-**5) 주거•금융 : 주거, 금융, 청약, 대출
-4. 본문 내용: '지원 대상', '선정 기준', '지원 내용' 등을 가독성 있게 작성하되 실제 주민들에게 와닿는 혜택 위주로 정리해주세요. **(중요) 없는 내용을 지어내지 마세요.**
-5. 지역 특화 연출: 기사 서두에 해당 지역 주민들에게 반가운 소식임을 강조
-6. 해시태그 : 기사에 부합되는 해시태그 3~7개 작성
-7. 썸네일 이미지 : 기사에 부합되는 실사 스타일의 가로형 한국 배경 이미지 제작 (외국인 제외)
-8. 표기 유의 사항 : AI스러운 기호(:, **) 사용을 자제하고 자연스럽게 작성.
-`;
-            } else if (api.apiSource === 'MOGEF') {
-                prompt = `[왕기자 기사 작성용 소스]
-아래 공공데이터포털에서 수집된 신규 여성가족부 정책(뉴스) 데이터를 바탕으로, 국민들이 이해하기 쉽고 친절한 안내 기사를 작성해주세요.
+작성 지침:
+1. 보도자료의 팩트를 기반으로 객관적이고 신뢰감 있는 신문사 톤앤매너를 유지하세요.
+2. 독자가 혜택을 쉽게 이해할 수 있도록 'Q&A' 또는 '핵심 요약 3가지' 섹션을 포함하세요.
+3. 전문 용어는 쉽게 풀어서 설명하고, 시행 일시와 장소를 명확히 강조해 주세요.`;
+            } else if (api.apiSource === 'MCST_NEWS' || api.apiSource === 'MCST_PHOTO') {
+                prompt = `[왕 기자 전용: 정책 뉴스 기반 기사 작성 지침]
 
---- [수집된 원본 데이터] ---
-* 기관명: ${api.jurMnofNm}
-* 정책 뉴스 제목: ${api.servNm}
-* 등록일: ${api.svcfrstRegTs || '미상'}
-* 상세 링크: ${api.servDtlLink || '미상'}
+뉴스 소스: 대한민국 정책뉴스
+제목: ${title}
+내용 요약: ${summary}
+참고 URL: ${link}
 
---- [작성 가이드] ---
-왕 기자, 이 소스에 있는 '상세 링크'의 본문 내용을 읽고 아래 지시사항대로 기사를 써와!
+작성 지침:
+1. 최신 트렌드와 연결하여 독자들의 관심을 끌 수 있는 흥미로운 헤드라인을 뽑아주세요.
+2. 정책이 우리 삶에 미치는 영향을 중심으로 '친근한 해설' 톤으로 작성하세요.
+3. 정책 관련 댓글이나 소셜 미디어의 반응을 예상하여 보완하는 내용을 추가해 주세요.`;
+            } else if (api.apiSource === 'NATIONAL' || api.apiSource === 'LOCAL' || api.apiSource === 'SUBSIDY') {
+                prompt = `[왕 기자 전용: 복지/혜택 안내 기사 작성 지침]
 
-1. 기사 제목: 정책의 핵심을 직관적으로 보여주는 매력적인 제목
-2. 요약본: 1~2줄의 핵심 요약
-3. 본문 내용: 뉴스 브리핑 포맷으로 가독성 있게 작성. 국민들이 얻을 수 있는 혜택이나 변화된 점을 강조. **(중요) 팩트에 기반해 작성하세요.**
-4. 해시태그: 3~7개 제안
-5. 썸네일 이미지: 한국적인 느낌의 실사 혹은 깔끔한 일러스트 이미지 제작
-6. 표기 유의 사항: 특수문자(:, **) 사용 자제, 자연스러운 구어체 사용.
-`;
-            } else if (api.apiSource === 'SUBSIDY' || api.apiSource === 'YOUTH') {
-                prompt = `[왕기자 기사 작성용 소스]
-아래 공공데이터포털에서 수집된 ${api.apiSource === 'SUBSIDY' ? '보조금24' : '청년정책'} 데이터를 바탕으로, 국민의 수혜 중심 안내 기사를 작성해주세요.
+지원 정책명: ${title}
+소관 기관: ${sourceName}
+주요 내용: ${summary}
+신청 방법/링크: ${link}
 
---- [수집된 원본 데이터] ---
-* 출처: ${api.apiSource === 'SUBSIDY' ? '행정안전부(보조금24)' : '온라인청년센터(청년정책)'}
-* 정책명: ${api.servNm}
-* 주요 내용: ${api.servDgst}
-* 소관기관: ${api.jurMnofNm}
-* 업데이트일: ${api.svcfrstRegTs || '미상'}
-
---- [작성 가이드] ---
-왕 기자, 이 기사의 핵심은 **'독자가 놓치고 있는 혜택'**을 짚어주는 거야!
-
-1. 기사 제목: 금액이나 구체적 혜택을 강조한 파격적인 제목
-2. 요약본: 1~2줄의 핵심 요약 (이 기사를 읽고 무엇을 신청해야 하는지)
-3. 본문 내용: '대상', '혜택', '방법'을 중심으로 친절하게 설명. 옆집 이웃에게 알려주듯 작성. **(중요) 사실 기반 작성.**
-4. 해시태그: 3~7개 제안
-5. 썸네일 이미지: 혜택의 느낌이 살아있는 실사 스타일 이미지 제작 (한국인 모델)
-6. 표기 유의 사항: 자연스러운 문장 사용, 특수 기호 자제.
-`;
+작성 지침:
+1. '신청 안 하면 손해!'라는 느낌의 실생활 체감형 복지 안내 기사로 작성하세요.
+2. 신청 자격, 지원 금액, 신청 방법을 블렛 포인트로 선명하게 정리해 주세요.
+3. 비슷한 다른 복지 제도와 비교하여 어떤 점이 좋은지 언급해 주면 좋습니다.`;
             } else {
-                const detail = await getNationalWelfareDetail(api.servId);
-                prompt = `[왕기자 기사 작성용 소스]
-아래 공공데이터포털에서 수집된 신규 복지 정책 데이터를 바탕으로, 국민들이 이해하기 쉽고 친절한 안내 기사를 작성해주세요.
+                prompt = `[왕 기자 전용: 일반 정보 브리핑 지침]
 
---- [수집된 원본 데이터] ---
-* 기관명: ${api.jurMnofNm}
-* 정책명: ${api.servNm}
-* 정책 요약: ${api.servDgst || '상세 내용 참조'}
-* 지원 대상: ${detail?.trgterIndvdlArray || '상세 정보 참조'}
-* 선정 기준: ${detail?.slctCritCn || '상세 정보 참조'}
-* 상세 혜택: ${detail?.alwServCn || '상세 정보 참조'}
-* 등록일: ${api.svcfrstRegTs || '미상'}
+제목: ${title}
+내용: ${summary}
+출처: ${sourceName}
 
---- [작성 가이드] ---
-1. 기사 제목: 핵심 혜택과 대상을 직관적으로 알 수 있는 매력적인 제목
-2. 요약본: 1~2줄의 핵심 요약
-3. 본문 내용: '누가', '어떻게', '무엇을' 받는지 가독성 있게 정리. **(중요) 팩트체크 필수.**
-4. 해시태그: 3~7개 제안
-5. 썸네일 이미지: 기사에 어울리는 따뜻한 분위기의 실사 이미지 제작 (한국 배경)
-6. 표기 유의 사항: AI 티가 나지 않도록 자연스러운 어휘 사용.
-`;
+작성 지침:
+1. 위 정보를 토대로 독자들에게 유익한 정보성 블로그/뉴스 기사를 작성하세요.
+2. 가독성 좋게 단락을 나누고 적절한 소제목을 붙여주세요.`;
             }
 
             await navigator.clipboard.writeText(prompt);
-            const newCopiedState = { ...copiedState, [api.servId]: Date.now() };
-            setCopiedState(newCopiedState);
-            localStorage.setItem('copiedPublicData', JSON.stringify(newCopiedState));
-            alert('기사 작성용 소스가 복사되었습니다. 왕기자에게 전달하세요!');
+            const now = Date.now();
+            const newCopied = { ...copiedState, [api.servId]: now };
+            setCopiedState(newCopied);
+            localStorage.setItem('copiedPublicData', JSON.stringify(newCopied));
+            alert('왕 기자 전용 지능형 프롬프트가 복사되었습니다!\nAI 기자 창에 붙여넣기 하여 기사를 완성하세요.');
         } catch (error) {
-            console.error(error);
-            alert('소스 복사 중 오류가 발생했습니다.');
+            console.error('Failed to copy', error);
         }
     };
 
     const handleHidePublicData = (servId: string) => {
-        const newDeletedState = { ...deletedState, [servId]: true };
-        setDeletedState(newDeletedState);
-        localStorage.setItem('deletedPublicData', JSON.stringify(newDeletedState));
+        const newDeleted = { ...deletedState, [servId]: true };
+        setDeletedState(newDeleted);
+        localStorage.setItem('deletedPublicData', JSON.stringify(newDeleted));
     };
 
-    const filterApiData = (sourceArray: WelfareService[]) => {
-        return sourceArray.filter(api => {
-            if (deletedState[api.servId]) return false;
-            const copyTime = copiedState[api.servId];
-            if (copyTime && Date.now() - copyTime >= 24 * 60 * 60 * 1000) return false;
-            return true;
-        });
-    };
+    const displayApiData = apiData.filter(api => !deletedState[api.servId]);
+    const displayLocalApiData = localApiData.filter(api => !deletedState[api.servId]);
 
-    const displayApiData = filterApiData(apiData);
-    const displayLocalApiData = filterApiData(localApiData);
-
-    const filteredArticles = articles.filter(article => {
-        const matchesSearch = article.title.includes(searchTerm) || article.content?.includes(searchTerm);
-        const matchesCategory = filterCategory === '전체' || article.category === filterCategory;
+    const filteredArticles = articles.filter(a => {
+        const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                             (a.content || '').toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesCategory = filterCategory === '전체' || a.category === filterCategory;
         return matchesSearch && matchesCategory;
     });
 
     return (
-        <div className="p-8">
+        <div className="p-8 max-w-7xl mx-auto bg-gray-50 min-h-screen">
             <div className="flex justify-between items-center mb-8">
-                <h2 className="text-2xl font-bold text-gray-900">기사 관리</h2>
+                <div>
+                    <h1 className="text-3xl font-black text-gray-900 mb-2 tracking-tight">기사 관리 대시보드</h1>
+                    <p className="text-gray-500 font-medium">실시간 정책 뉴스 및 복지 정보 브리핑</p>
+                </div>
                 <Link
                     href="/admin/articles/write"
-                    className="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg font-bold hover:bg-blue-600 transition-colors shadow-sm"
+                    className="bg-primary text-white px-6 py-3 rounded-xl flex items-center gap-2 hover:bg-blue-700 transition-all font-bold shadow-lg shadow-blue-100"
                 >
-                    <Plus size={18} />
-                    기사 작성
+                    <Plus size={20} />
+                    새 기사 작성
                 </Link>
             </div>
 
-            {/* Public Data API Source List */}
-            <div className="bg-blue-50 p-6 rounded-xl border border-blue-100 mb-8 shadow-sm">
-                <div className="flex flex-col mb-4 gap-4">
-                    <div className="flex justify-between items-center">
-                        <h3 className="text-lg font-bold text-gray-900 flex items-center gap-2">
-                            <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-xs tracking-wider">NEW</span>
-                            공공데이터 포털 소스 검색
-                        </h3>
-                        <button
-                            onClick={() => activeApiTab === 'LOCAL' ? loadLocalApiData() : loadApiData(activeApiTab)}
-                            disabled={activeApiTab === 'LOCAL' ? isFetchingLocal : isFetchingApi}
-                            className="text-sm text-blue-600 hover:text-blue-800 font-bold underline"
-                        >
-                            {(activeApiTab === 'LOCAL' ? isFetchingLocal : isFetchingApi) ? '동기화 중...' : '수동 동기화'}
-                        </button>
-                    </div>
-
-                    {/* 도움말 박스 */}
-                    <div className="bg-blue-100/50 border border-blue-200 p-3 rounded-lg text-[13px] text-blue-800 leading-relaxed shadow-inner">
-                        <p className="font-bold mb-1 flex items-center gap-1.5 text-blue-900"><Search size={14} /> 어떻게 사용하나요?</p>
-                        <ul className="list-disc list-inside space-y-0.5 opacity-90 pl-1">
-                            <li>하단의 탭(여성가족부, 보조금24 등)을 선택해 최신 정책 정보를 찾으세요.</li>
-                            <li>기사화하고 싶은 항목의 <strong>[소스 복사]</strong> 버튼을 누르세요.</li>
-                            <li>복사된 내용을 <strong>왕 기자</strong>(기사 작성 페이지)에게 전달하면 기사가 완성됩니다.</li>
-                        </ul>
+            {/* API News Briefing Area */}
+            <div className="mb-10 bg-gradient-to-br from-blue-50 to-indigo-50 p-6 rounded-2xl border border-blue-100 shadow-sm">
+                <div className="flex items-center justify-between mb-6">
+                    <div className="flex items-center gap-3">
+                        <div className="bg-blue-600 p-2 rounded-lg text-white">
+                            <Filter size={20} />
+                        </div>
+                        <h2 className="text-xl font-bold text-gray-800">실시간 데이터 소스</h2>
                     </div>
                 </div>
 
-                {/* Tabs */}
-                <div className="flex border-b border-blue-200 overflow-x-auto no-scrollbar mb-4 gap-1">
-                    {[
-                        { id: 'NATIONAL', label: '전국 통합 (복지로)', color: 'blue' },
-                        { id: 'MOGEF', label: '여성가족부', color: 'pink' },
-                        { id: 'SUBSIDY', label: '보조금24 (행안부)', color: 'green' },
-                        { id: 'YOUTH', label: '청년정책', color: 'purple' },
-                        { id: 'LOCAL', label: '지자체 특화', color: 'orange' }
-                    ].map((tab) => (
-                        <button
-                            key={tab.id}
-                            onClick={() => setActiveApiTab(tab.id as any)}
-                            className={`py-2 px-4 font-bold text-sm border-b-2 whitespace-nowrap transition-colors ${activeApiTab === tab.id
-                                ? `border-${tab.color}-600 text-${tab.color}-700`
-                                : 'border-transparent text-gray-400 hover:text-gray-600'
-                                }`}
-                        >
-                            {tab.label}
-                        </button>
-                    ))}
+                <div className="flex flex-wrap items-center gap-3 mb-6 bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
+                    <select
+                        className="bg-transparent font-bold text-sm text-gray-700 outline-none cursor-pointer px-2"
+                        value={activeApiTab}
+                        onChange={(e) => setActiveApiTab(e.target.value as any)}
+                    >
+                        <optgroup label="뉴스 및 보도자료">
+                            <option value="MCST_PRESS">정책브리핑 (보도자료)</option>
+                            <option value="MCST_NEWS">정책뉴스 (브리핑)</option>
+                            <option value="MCST_PHOTO">뉴스포토</option>
+                            <option value="NEWS_ALL">종합 뉴스 브리핑</option>
+                        </optgroup>
+                        <optgroup label="정책 정보">
+                            <option value="NATIONAL">중앙부처 통합 (복지로)</option>
+                            <option value="MOGEF">여성가족부</option>
+                            <option value="SUBSIDY">보조금24</option>
+                            <option value="LOCAL">지자체 특화</option>
+                            <option value="MOIS_STATS">통계 데이터</option>
+                        </optgroup>
+                    </select>
+                    <div className="h-4 w-px bg-gray-200 mx-2" />
+                    <div className="flex-1 flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
+                        <Search size={16} className="text-gray-400" />
+                        <input 
+                            type="text" 
+                            placeholder="소스 내 키워드 검색..."
+                            className="bg-transparent border-none outline-none text-sm w-full"
+                            value={apiSearchTerm}
+                            onChange={(e) => setApiSearchTerm(e.target.value)}
+                        />
+                    </div>
                 </div>
 
-                <div className="space-y-3 max-h-[420px] overflow-y-auto pr-2 custom-scrollbar">
-                    {activeApiTab === 'LOCAL' ? (
-                        /* LOCAL Tab Rendering */
-                        isFetchingLocal ? (
-                            <div className="p-8 text-center text-orange-600 font-bold animate-pulse bg-white rounded-lg border border-orange-100">
-                                지자체 맞춤형 복지 정책을 수집하고 있습니다...
-                            </div>
-                        ) : localApiData.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500 bg-white rounded-lg border border-gray-200">
-                                수집된 지자체 목록이 없습니다.
-                            </div>
-                        ) : (
-                            displayLocalApiData.map(api => {
-                                const isCopied = !!copiedState[api.servId];
-                                return (
-                                    <div key={api.servId} className="bg-white p-4 rounded-lg border border-orange-100 flex justify-between items-center shadow-sm hover:border-orange-400 hover:shadow transition-all group">
-                                        <div className="flex-1 pr-6">
-                                            <div className="text-xs text-orange-600 font-bold mb-1 flex items-center gap-2">
-                                                <span className="bg-orange-100 text-orange-700 px-1.5 py-0.5 rounded text-[10px] flex items-center gap-0.5">
-                                                    <MapPin size={10} /> 지자체API
-                                                </span>
-                                                {api.jurMnofNm}
-                                                <span className="text-gray-400 font-normal">|</span>
-                                                <span className="text-gray-500 font-normal text-[11px]">{api.servId}</span>
-                                            </div>
-                                            <div className={`font-bold text-lg mb-1 leading-tight ${isCopied ? 'text-gray-400' : 'text-gray-900'}`}>{api.servNm}</div>
-                                            <div className={`text-sm line-clamp-1 ${isCopied ? 'text-gray-400' : 'text-gray-600'}`}>{api.servDgst}</div>
-                                        </div>
-                                        <div className="flex gap-2 shrink-0">
-                                            <button
-                                                onClick={() => !isCopied && handleCopySource(api)}
-                                                disabled={isCopied}
-                                                className={`flex items-center justify-center gap-1.5 text-sm px-4 py-2 rounded-lg transition-colors font-bold shadow-sm ${isCopied ? 'bg-gray-100 text-gray-400' : 'bg-orange-500 hover:bg-orange-600 text-white'}`}
-                                            >
-                                                {isCopied ? '복사 완료' : <><Copy size={16} /> 상세복사</>}
-                                            </button>
-                                            <button onClick={() => handleHidePublicData(api.servId)} className="text-gray-400 hover:text-red-500 bg-white px-3 py-2 rounded-lg border border-gray-200"><Trash2 size={16} /></button>
-                                        </div>
-                                    </div>
-                                )
-                            })
-                        )
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                    {((activeApiTab === 'LOCAL' ? displayLocalApiData : displayApiData)
+                        .filter(api => !apiSearchTerm || api.servNm.includes(apiSearchTerm) || api.servDgst.includes(apiSearchTerm))
+                    ).length === 0 ? (
+                        <div className="col-span-full p-12 text-center text-gray-400 bg-white rounded-xl border border-dashed">
+                            {isFetchingApi || isFetchingLocal ? '데이터를 불러오는 중입니다...' : '검색된 항목이 없습니다.'}
+                        </div>
                     ) : (
-                        /* Other Tabs (NATIONAL, MOGEF, SUBSIDY, YOUTH) */
-                        isFetchingApi ? (
-                            <div className="p-8 text-center text-blue-800 font-bold animate-pulse bg-white rounded-lg border border-blue-100">
-                                데이터를 불러오는 중입니다...
-                            </div>
-                        ) : apiData.length === 0 ? (
-                            <div className="p-8 text-center text-gray-500 bg-white rounded-lg border border-gray-200">
-                                검색된 목록이 없습니다.
-                            </div>
-                        ) : (
-                            displayApiData.map(api => {
-                                const isCopied = !!copiedState[api.servId];
-                                const formatRegDate = (ds?: string | number) => {
-                                    const raw = String(ds || '');
-                                    if (raw.length !== 8) return '';
-                                    return `${raw.substring(0, 4)}.${raw.substring(4, 6)}.${raw.substring(6, 8)}`;
-                                };
-                                const sourceColors: any = {
-                                    'SUBSIDY': 'bg-green-600 hover:bg-green-700',
-                                    'YOUTH': 'bg-purple-600 hover:bg-purple-700',
-                                    'MOGEF': 'bg-pink-600 hover:bg-pink-700',
-                                    'NATIONAL': 'bg-blue-600 hover:bg-blue-700'
-                                };
-                                return (
-                                    <div key={api.servId} className="bg-white p-4 rounded-lg border border-blue-100 flex justify-between items-center shadow-sm hover:border-blue-400 hover:shadow transition-all group">
-                                        <div className="flex-1 pr-6">
-                                            <div className="text-xs text-blue-600 font-bold mb-1 flex items-center gap-2">
-                                                <span className={`px-1.5 py-0.5 rounded text-[10px] ${api.apiSource === 'SUBSIDY' ? 'bg-green-100 text-green-700' :
-                                                    api.apiSource === 'YOUTH' ? 'bg-purple-100 text-purple-700' :
-                                                        api.apiSource === 'MOGEF' ? 'bg-pink-100 text-pink-700' : 'bg-blue-100 text-blue-700'
-                                                    }`}>{api.apiSource || '보건복지부'}</span>
-                                                {api.jurMnofNm}
-                                                <span className="text-gray-400 font-normal">|</span>
-                                                <span className="text-gray-500 font-normal flex items-center gap-1"><Calendar size={12} /> {api.svcfrstRegTs ? formatRegDate(api.svcfrstRegTs) : '최근'}</span>
-                                            </div>
-                                            <div className={`font-bold text-lg mb-1 leading-tight ${isCopied ? 'text-gray-400' : 'text-gray-900'}`}>{api.servNm}</div>
-                                            <div className={`text-sm line-clamp-1 ${isCopied ? 'text-gray-400' : 'text-gray-600'}`}>{api.servDgst}</div>
+                        (activeApiTab === 'LOCAL' ? displayLocalApiData : displayApiData)
+                        .filter(api => !apiSearchTerm || api.servNm.includes(apiSearchTerm) || api.servDgst.includes(apiSearchTerm))
+                        .map(api => {
+                            const isCopied = !!copiedState[api.servId];
+                            const getRelativeTime = (ds?: string) => {
+                                if (!ds || ds.length < 8) return '최근';
+                                const year = parseInt(ds.substring(0, 4));
+                                const month = parseInt(ds.substring(4, 6)) - 1;
+                                const day = parseInt(ds.substring(6, 8));
+                                const date = new Date(year, month, day);
+                                const now = new Date();
+                                const diff = now.getTime() - date.getTime();
+                                const days = Math.floor(diff / (1000 * 60 * 60 * 24));
+                                if (days === 0) return '오늘';
+                                if (days === 1) return '어제';
+                                return `${days}일 전`;
+                            };
+
+                            const isNew = getRelativeTime(api.svcfrstRegTs).includes('오늘') || getRelativeTime(api.svcfrstRegTs).includes('어제');
+                            const sourceLabels: any = {
+                                'MCST_PRESS': { label: '보도자료', color: 'bg-blue-600', text: 'text-blue-700', bg: 'bg-blue-50' },
+                                'MCST_NEWS': { label: '정책뉴스', color: 'bg-indigo-600', text: 'text-indigo-700', bg: 'bg-indigo-50' },
+                                'MCST_PHOTO': { label: '뉴스포토', color: 'bg-purple-600', text: 'text-purple-700', bg: 'bg-purple-50' },
+                                'NATIONAL': { label: '중앙부처', color: 'bg-sky-600', text: 'text-sky-700', bg: 'bg-sky-50' },
+                                'LOCAL': { label: '지자체', color: 'bg-orange-600', text: 'text-orange-700', bg: 'bg-orange-50' },
+                                'SUBSIDY': { label: '보조금24', color: 'bg-green-600', text: 'text-green-700', bg: 'bg-green-50' },
+                                'YOUTH': { label: '청년정책', color: 'bg-violet-600', text: 'text-violet-700', bg: 'bg-violet-50' },
+                                'MOGEF': { label: '여가부', color: 'bg-pink-600', text: 'text-pink-700', bg: 'bg-pink-50' },
+                                'MOIS_STATS': { label: '통계자료', color: 'bg-gray-600', text: 'text-gray-700', bg: 'bg-gray-50' }
+                            };
+                            const s = sourceLabels[api.apiSource || 'NATIONAL'];
+
+                            return (
+                                <div key={api.servId} className={`bg-white p-5 rounded-2xl border flex gap-4 transition-all group ${isCopied ? 'opacity-60 grayscale-[0.5]' : 'border-white hover:border-blue-200 hover:shadow-md'}`}>
+                                    {(api.thumbnail || api.apiSource === 'MCST_PHOTO') && (
+                                        <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-gray-50 border">
+                                            <img src={api.thumbnail || '/assets/images/placeholder.png'} alt="thumb" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
                                         </div>
-                                        <div className="flex gap-2 shrink-0">
-                                            <button
-                                                onClick={() => !isCopied && handleCopySource(api)}
-                                                disabled={isCopied}
-                                                className={`flex items-center justify-center gap-1.5 text-sm px-4 py-2 rounded-lg transition-colors font-bold shadow-sm ${isCopied ? 'bg-gray-100 text-gray-400' : `${sourceColors[api.apiSource || 'NATIONAL']} text-white`
-                                                    }`}
-                                            >
-                                                {isCopied ? '복사 완료' : <><Copy size={16} /> 소스 복사</>}
-                                            </button>
-                                            <button onClick={() => handleHidePublicData(api.servId)} className="text-gray-400 hover:text-red-500 bg-white px-3 py-2 rounded-lg border border-gray-200"><Trash2 size={16} /></button>
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                            {isNew && <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[9px] font-black animate-pulse">NEW</span>}
+                                            {api.priority === 1 && <span className="border border-amber-200 bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-bold">중요</span>}
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${s.bg} ${s.text}`}>{s.label}</span>
+                                            <span className="text-[10px] text-gray-500 font-medium">{api.jurMnofNm}</span>
+                                        </div>
+                                        <h4 className="font-bold text-gray-900 mb-1 truncate group-hover:text-blue-600 cursor-pointer" onClick={() => setSelectedApiItem(api)}>{api.servNm}</h4>
+                                        <p className="text-xs text-gray-500 line-clamp-2 mb-3 leading-relaxed">{api.servDgst}</p>
+                                        <div className="flex items-center justify-between">
+                                            <div className="flex gap-1">
+                                                {(api.keywords || []).slice(0, 2).map((kw, i) => (
+                                                    <span key={i} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded leading-none">#{kw}</span>
+                                                ))}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => !isCopied && handleCopySource(api)} className={`p-2 rounded-lg transition-colors ${isCopied ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white'}`}>
+                                                    <Copy size={16} />
+                                                </button>
+                                                <button onClick={() => setSelectedApiItem(api)} className="p-2 rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
+                                                    <Plus size={16} />
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
-                                )
-                            })
-                        )
+                                </div>
+                            );
+                        })
                     )}
                 </div>
             </div>
 
-            {/* Advanced Filters */}
-            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-100 mb-6 flex flex-wrap gap-4">
-                <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-3 py-2 flex-1 focus-within:ring-2 focus-within:ring-primary min-w-[200px]">
-                    <Search size={18} className="text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="제목, 내용 검색"
-                        className="outline-none text-sm w-full"
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                    />
-                </div>
-                <select
-                    className="border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-600 bg-white outline-none"
-                    value={filterCategory}
-                    onChange={(e) => setFilterCategory(e.target.value)}
-                >
-                    <option value="전체">전체 카테고리</option>
-                    <option value="일자리·취업">일자리·취업</option>
-                    <option value="주거·금융">주거·금융</option>
-                    <option value="건강·의료">건강·의료</option>
-                    <option value="생활·안전">생활·안전</option>
-                    <option value="임신·육아">임신·육아</option>
-                </select>
-                <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-4 py-2 text-sm text-gray-600 bg-white">
-                    <Calendar size={16} /> 기간 설정
-                </div>
-            </div>
-
-            {/* Article List */}
-            <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
-                <table className="w-full text-left">
-                    <thead className="bg-gray-50 text-gray-500 text-sm">
-                        <tr>
-                            <th className="p-4 font-medium">제목</th>
-                            <th className="p-4 font-medium">작성자</th>
-                            <th className="p-4 font-medium">분류</th>
-                            <th className="p-4 font-medium">상태</th>
-                            <th className="p-4 font-medium">발행일 (created_at)</th>
-                            <th className="p-4 font-medium">수정일 (updated_at)</th>
-                            <th className="p-4 font-medium">관리</th>
-                        </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100 text-sm">
-                        {filteredArticles.map((item) => (
-                            <tr
-                                key={item.id}
-                                className="hover:bg-gray-50 transition-colors cursor-pointer"
-                                onClick={() => router.push(`/admin/articles/write?id=${item.id}`)}
-                            >
-                                <td className="p-4 text-gray-900 font-medium truncate max-w-xs">{item.title}</td>
-                                <td className="p-4 text-gray-600">{item.author}</td>
-                                <td className="p-4"><span className="bg-blue-100 text-primary px-2 py-1 rounded text-[11px] font-bold">{item.category}</span></td>
-                                <td className="px-6 py-4 whitespace-nowrap">
-                                    {item.status === 'published' ? (
-                                        <span className="px-3 py-1 bg-green-100 text-green-700 rounded-full text-xs font-bold">
-                                            게시중
-                                        </span>
-                                    ) : (
-                                        <span className="px-3 py-1 bg-gray-100 text-gray-500 text-xs rounded-full font-bold">
-                                            미게시 (임시저장)
-                                        </span>
-                                    )}
-                                </td>
-                                <td className="p-4 text-xs font-medium text-gray-600">
-                                    {item.created_at ? new Date(item.created_at).toLocaleString('ko-KR', {
-                                        timeZone: 'Asia/Seoul',
-                                        year: 'numeric',
-                                        month: '2-digit',
-                                        day: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        second: '2-digit',
-                                        hour12: false
-                                    }) : (item.date ? new Date(item.date).toLocaleString('ko-KR', {
-                                        timeZone: 'Asia/Seoul',
-                                        year: 'numeric',
-                                        month: '2-digit',
-                                        day: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        second: '2-digit',
-                                        hour12: false
-                                    }) : '-')}
-                                </td>
-                                <td className="p-4 text-xs font-medium text-blue-600">
-                                    {item.updated_at ? new Date(item.updated_at).toLocaleString('ko-KR', {
-                                        timeZone: 'Asia/Seoul',
-                                        year: 'numeric',
-                                        month: '2-digit',
-                                        day: '2-digit',
-                                        hour: '2-digit',
-                                        minute: '2-digit',
-                                        second: '2-digit',
-                                        hour12: false
-                                    }) : '-'}
-                                </td>
-                                <td className="p-4" onClick={(e) => e.stopPropagation()}>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => handleOpenCommentModal(item)}
-                                            className="relative flex items-center gap-1 text-primary hover:text-blue-700 border border-blue-100 px-2 py-1 rounded bg-blue-50/50 font-bold whitespace-nowrap"
-                                        >
-                                            {newCommentArticleIds.includes(item.id) && (
-                                                <span className="absolute -top-1 -right-1 w-2.5 h-2.5 bg-red-500 rounded-full border-2 border-white animate-pulse"></span>
-                                            )}
-                                            <MessageCircle size={14} />
-                                            댓글보기
-                                        </button>
-                                        <button onClick={() => router.push(`/admin/articles/write?id=${item.id}`)} className="text-gray-400 hover:text-gray-600 border px-2 py-1 rounded">수정</button>
-                                        <button onClick={() => handleDelete(item.id)} className="text-red-400 hover:text-red-600 border border-red-100 px-2 py-1 rounded"><Trash2 size={16} /></button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-                {filteredArticles.length === 0 && (
-                    <div className="p-12 text-center text-gray-500">등록된 기사가 없습니다.</div>
-                )}
-            </div>
-
-            {/* Comment Management Modal */}
-            {isCommentModalOpen && selectedArticle && (
-                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col overflow-hidden animate-in fade-in zoom-in duration-200">
-                        {/* Header */}
-                        <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
-                            <div>
-                                <h3 className="text-xl font-bold text-gray-900 truncate max-w-md">{selectedArticle.title}</h3>
-                                <p className="text-xs text-gray-500 mt-1">기사 댓글 관리 ({modalComments.length})</p>
-                            </div>
-                            <button onClick={() => setIsCommentModalOpen(false)} className="text-gray-400 hover:text-gray-600 p-2 rounded-full hover:bg-white transition-colors">
-                                <X size={24} />
-                            </button>
+            {/* Article Management List Area */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+                <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
+                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                        <Calendar size={18} className="text-blue-500" />
+                        작성된 기사 목록
+                    </h3>
+                    <div className="flex gap-4">
+                        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-100 text-xs shadow-sm">
+                            <Search size={14} className="text-gray-400" />
+                            <input type="text" placeholder="기사 제목 검색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="outline-none" />
                         </div>
-
-                        {/* Content */}
-                        <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-white custom-scrollbar">
-                            {modalComments.length === 0 ? (
-                                <div className="text-center py-12 text-gray-400">등록된 댓글이 없습니다. 독자와 소통을 시작해보세요!</div>
-                            ) : (
-                                modalComments.filter(c => !c.parentId).map(comment => (
-                                    <div key={comment.id} className="space-y-3">
-                                        <div className="bg-gray-50 p-4 rounded-xl border border-gray-100">
-                                            <div className="flex justify-between items-start mb-2">
-                                                <div className="flex items-center gap-2">
-                                                    <span className="font-bold text-gray-900 text-sm">{comment.author}</span>
-                                                    <span className="text-[10px] text-gray-400">{comment.date}</span>
-                                                </div>
-                                                <button
-                                                    onClick={() => setReplyingToId(replyingToId === comment.id ? null : comment.id)}
-                                                    className="text-[11px] font-bold text-primary hover:underline"
-                                                >
-                                                    답글달기
-                                                </button>
-                                            </div>
-                                            <p className="text-gray-700 text-sm leading-relaxed">{comment.content}</p>
+                    </div>
+                </div>
+                <div className="overflow-x-auto">
+                    <table className="w-full text-left">
+                        <thead className="bg-gray-50/50 text-gray-500 text-xs font-bold uppercase tracking-wider">
+                            <tr>
+                                <th className="p-4 pl-6">제목</th>
+                                <th className="p-4">작성자</th>
+                                <th className="p-4">등록일</th>
+                                <th className="p-4">상태</th>
+                                <th className="p-4 text-center">관리</th>
+                            </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-50 text-sm">
+                            {filteredArticles.map((item) => (
+                                <tr key={item.id} className="hover:bg-blue-50/30 transition-colors group">
+                                    <td className="p-4 pl-6">
+                                        <div className="font-bold text-gray-900 group-hover:text-blue-600 cursor-pointer" onClick={() => router.push(`/admin/articles/write?id=${item.id}`)}>{item.title}</div>
+                                        <div className="text-[10px] text-gray-400 mt-1">{item.category}</div>
+                                    </td>
+                                    <td className="p-4 text-gray-600 font-medium">{item.author}</td>
+                                    <td className="p-4 text-gray-500 text-xs">{new Date(item.created_at || item.date || Date.now()).toLocaleDateString('ko-KR')}</td>
+                                    <td className="p-4">
+                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${item.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                                            {item.status === 'published' ? '게시중' : '여벌'}
+                                        </span>
+                                    </td>
+                                    <td className="p-4">
+                                        <div className="flex justify-center gap-2">
+                                            <button onClick={() => handleOpenCommentModal(item)} className="p-2 text-gray-400 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all relative">
+                                                <MessageCircle size={18} />
+                                                {newCommentArticleIds.includes(item.id) && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>}
+                                            </button>
+                                            <button onClick={() => router.push(`/admin/articles/write?id=${item.id}`)} className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-50 rounded-lg"><Plus size={18} /></button>
+                                            <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg"><Trash2 size={18} /></button>
                                         </div>
+                                    </td>
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
 
-                                        {/* Nested Replies */}
-                                        <div className="ml-8 space-y-3 border-l-2 border-gray-100 pl-4">
-                                            {modalComments.filter(c => c.parentId === comment.id).map(reply => (
-                                                <div key={reply.id} className="bg-blue-50/30 p-3 rounded-lg border border-blue-50">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="font-bold text-gray-900 text-[13px]">{reply.author}</span>
-                                                        <span className="bg-primary/10 text-primary px-1.5 py-0.5 rounded text-[9px] font-bold">작성자</span>
-                                                        <span className="text-[10px] text-gray-400">{reply.date}</span>
-                                                    </div>
-                                                    <p className="text-gray-700 text-[13px] leading-relaxed">{reply.content}</p>
-                                                </div>
-                                            ))}
-
-                                            {/* Reply Input for this parent */}
-                                            {replyingToId === comment.id && (
-                                                <div className="flex gap-2">
-                                                    <input
-                                                        type="text"
-                                                        value={adminReplyContent}
-                                                        onChange={(e) => setAdminReplyContent(e.target.value)}
-                                                        placeholder="답글 내용을 입력하세요..."
-                                                        className="flex-1 border border-gray-200 rounded-lg px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary/20"
-                                                        onKeyDown={(e) => e.key === 'Enter' && handlePostAdminComment(comment.id)}
-                                                    />
-                                                    <button
-                                                        onClick={() => handlePostAdminComment(comment.id)}
-                                                        className="bg-primary text-white p-2 rounded-lg hover:bg-blue-600 transition-colors"
-                                                    >
-                                                        <Send size={16} />
-                                                    </button>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-                                ))
+            {/* Detail View Modal for API Item */}
+            {selectedApiItem && (
+                <div className="fixed inset-0 z-[110] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md">
+                    <div className="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
+                        <div className="relative h-48 bg-gray-900">
+                            <img src={selectedApiItem.thumbnail || '/assets/images/placeholder.png'} className="w-full h-full object-cover opacity-60" />
+                            <div className="absolute inset-0 bg-gradient-to-t from-black/80 to-transparent" />
+                            <div className="absolute bottom-6 left-8 right-16">
+                                <div className="flex gap-2 mb-2">
+                                    <span className="bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold">SOURCE</span>
+                                    <span className="text-blue-200 text-xs font-medium">{selectedApiItem.jurMnofNm}</span>
+                                </div>
+                                <h3 className="text-2xl font-bold text-white line-clamp-2">{selectedApiItem.servNm}</h3>
+                            </div>
+                            <button onClick={() => setSelectedApiItem(null)} className="absolute top-6 right-6 p-2 bg-white/10 hover:bg-white/20 text-white rounded-full transition-colors"><X size={24} /></button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto p-8 space-y-8 custom-scrollbar">
+                            <section>
+                                <h4 className="text-sm font-black text-gray-900 mb-3 flex items-center gap-2">
+                                    <div className="w-1 h-4 bg-blue-600 rounded-full" />
+                                    정책 요약
+                                </h4>
+                                <p className="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-2xl">{selectedApiItem.servDgst || '요약 정보가 없습니다.'}</p>
+                            </section>
+                            {selectedApiItem.servDtlLink && (
+                                <section>
+                                    <h4 className="text-sm font-black text-gray-900 mb-3">원본 링크</h4>
+                                    <a href={selectedApiItem.servDtlLink} target="_blank" className="text-blue-600 text-sm hover:underline break-all">{selectedApiItem.servDtlLink}</a>
+                                </section>
                             )}
                         </div>
-
-                        {/* Footer (Main Input) */}
-                        <div className="p-6 border-t border-gray-100 bg-gray-50/30">
-                            <div className="flex gap-3">
-                                <div className="flex-1 relative">
-                                    <textarea
-                                        value={newAdminComment}
-                                        onChange={(e) => setNewAdminComment(e.target.value)}
-                                        placeholder="새 댓글을 작성하세요... (기자/관리자 명의)"
-                                        className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm outline-none focus:ring-2 focus:ring-primary/20 resize-none h-20"
-                                    />
-                                    <div className="absolute bottom-2 left-4 text-[10px] text-gray-400 font-medium">
-                                        작성자: <span className="text-primary font-bold">{currentUser?.name || '관리자'}</span>
-                                    </div>
-                                </div>
-                                <button
-                                    onClick={() => handlePostAdminComment()}
-                                    className="px-6 bg-primary text-white rounded-xl font-bold hover:bg-blue-600 transition-all flex flex-col items-center justify-center gap-1 shadow-lg shadow-blue-500/20"
-                                >
-                                    <Send size={20} />
-                                    <span className="text-xs">등록</span>
-                                </button>
-                            </div>
+                        <div className="p-6 border-t bg-gray-50 flex gap-3">
+                            <button onClick={() => handleCopySource(selectedApiItem)} className="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black text-sm shadow-xl shadow-blue-200 hover:bg-blue-700 transition-all flex items-center justify-center gap-2">
+                                <Copy size={18} /> 기사 소스 복사 (프롬프트 추출)
+                            </button>
                         </div>
                     </div>
                 </div>

@@ -22,6 +22,12 @@ const MOGEF_API_URL = 'http://apis.data.go.kr/1383000/mogefNew';
 // 4. 한국사회보장정보원_지자체복지서비스
 const LOCAL_API_URL = 'http://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations';
 
+// 6. 문화체육관광부_정책브리핑
+const MCST_API_URL = 'http://apis.data.go.kr/1312000/PolicyBriefingService';
+
+// 7. 행정안전부_보조금24_통계
+const MOIS_STATS_API_URL = 'http://apis.data.go.kr/1741000/Subsidy24';
+
 const parser = new XMLParser({
     ignoreAttributes: false,
     textNodeName: '_text',
@@ -42,7 +48,13 @@ export interface WelfareService {
     slctCritCn?: string;     // 선정기준 (핵심)
     alwServCn?: string;      // 급여서비스 내용
     svcfrstRegTs?: string;   // 서비스 등록 일자 (YYYYMMDD 형식 등)
-    apiSource?: 'NATIONAL' | 'LOCAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF'; // 출처 배지
+    apiSource?: 'NATIONAL' | 'LOCAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF' | 'MCST_PRESS' | 'MCST_NEWS' | 'MCST_PHOTO' | 'MOIS_STATS'; // 출처 배지
+    // 신규 추가 필드
+    isNews?: boolean;        // 뉴스/보도자료 여부
+    priority?: number;       // 정렬 우선순위
+    thumbnail?: string;      // 썸네일 이미지 URL
+    deptNm?: string;         // 상세 부서명
+    keywords?: string[];     // 추출 키워드
 }
 
 export interface ResourceService {
@@ -98,7 +110,9 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
 
         let mappedList = arrayList.map(item => ({
             ...item,
-            apiSource: 'NATIONAL' as const
+            apiSource: 'NATIONAL' as const,
+            priority: 3,
+            isNews: false
         }));
 
         mappedList.sort((a, b) => {
@@ -194,7 +208,9 @@ export const getLocalGovWelfareList = async (pageNo = 1, numOfRows = 50): Promis
             servDgst: item.servDgst,
             servDtlLink: '',
             svcfrstRegTs: item.lastModYmd || '', // 최신 수정일 매핑
-            apiSource: 'LOCAL'
+            apiSource: 'LOCAL',
+            priority: 3,
+            isNews: false
         }));
 
         return mappedList;
@@ -318,7 +334,9 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
             servDgst: item.svcContent || '',
             servDtlLink: '',
             svcfrstRegTs: item.regDt?.replace(/-/g, '') || '',
-            apiSource: 'SUBSIDY'
+            apiSource: 'SUBSIDY',
+            priority: 4,
+            isNews: false
         }));
     } catch (error) {
         console.error('API Fetch Error (Subsidy24):', error);
@@ -365,7 +383,9 @@ export const getYouthPolicyList = async (pageNo = 1, numOfRows = 50): Promise<We
             servDgst: item.polyItcnCn || '',
             servDtlLink: '',
             svcfrstRegTs: '',
-            apiSource: 'YOUTH'
+            apiSource: 'YOUTH',
+            priority: 4,
+            isNews: false
         }));
     } catch (error) {
         console.error('API Fetch Error (Youth Policy):', error);
@@ -412,7 +432,9 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             servDgst: '',
             servDtlLink: item.viewUrl,
             svcfrstRegTs: item.regDt ? item.regDt.replace(/-/g, '') : '',
-            apiSource: 'MOGEF'
+            apiSource: 'MOGEF',
+            priority: 2, // 여가부 정책뉴스도 뉴스 소스로 분류
+            isNews: true
         }));
 
         return mappedList;
@@ -422,6 +444,165 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
     }
 };
 
+
+/**
+ * [신규] 문화체육관광부 정책브리핑 보도자료 조회
+ */
+export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
+    try {
+        let data;
+        if (typeof window !== 'undefined') {
+            const response = await axios.get('/api/public-data', {
+                params: { type: 'MCST_PRESS_LIST', pageNo, numOfRows }
+            });
+            data = response.data;
+        } else {
+            const response = await axios.get(`${MCST_API_URL}/getPressReleaseList`, {
+                params: { serviceKey: decodeURIComponent(API_KEY), pageNo, numOfRows }
+            });
+            data = response.data;
+        }
+        const jsonObj = parser.parse(data);
+        const list = jsonObj.response?.body?.items?.item;
+        if (!list) return [];
+        const arrayList = Array.isArray(list) ? list : [list];
+
+        return arrayList.map(item => ({
+            servId: `MCST_PR_${item.articleId}`,
+            servNm: item.title,
+            jurMnofNm: item.deptNm || '문화체육관광부',
+            servDgst: item.subTitle || '',
+            servDtlLink: item.articleUrl || '',
+            svcfrstRegTs: item.approveDate ? item.approveDate.replace(/-/g, '').substring(0, 8) : '',
+            apiSource: 'MCST_PRESS',
+            isNews: true,
+            priority: 1, // 보도자료는 최상위 우선순위
+            deptNm: item.deptNm
+        }));
+    } catch (error) {
+        console.error('API Fetch Error (MCST Press):', error);
+        return [];
+    }
+};
+
+/**
+ * [신규] 문화체육관광부 정책뉴스 조회
+ */
+export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
+    try {
+        let data;
+        if (typeof window !== 'undefined') {
+            const response = await axios.get('/api/public-data', {
+                params: { type: 'MCST_NEWS_LIST', pageNo, numOfRows }
+            });
+            data = response.data;
+        } else {
+            const response = await axios.get(`${MCST_API_URL}/getNewsList`, {
+                params: { serviceKey: decodeURIComponent(API_KEY), pageNo, numOfRows }
+            });
+            data = response.data;
+        }
+        const jsonObj = parser.parse(data);
+        const list = jsonObj.response?.body?.items?.item;
+        if (!list) return [];
+        const arrayList = Array.isArray(list) ? list : [list];
+
+        return arrayList.map(item => ({
+            servId: `MCST_NW_${item.articleId}`,
+            servNm: item.title,
+            jurMnofNm: '정책브리핑',
+            servDgst: item.subTitle || '',
+            servDtlLink: item.articleUrl || '',
+            svcfrstRegTs: item.approveDate ? item.approveDate.replace(/-/g, '').substring(0, 8) : '',
+            apiSource: 'MCST_NEWS',
+            isNews: true,
+            priority: 1,
+            thumbnail: item.thumbnailUrl
+        }));
+    } catch (error) {
+        console.error('API Fetch Error (MCST News):', error);
+        return [];
+    }
+};
+
+/**
+ * [신규] 문화체육관광부 정책포토 조회
+ */
+export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
+    try {
+        let data;
+        if (typeof window !== 'undefined') {
+            const response = await axios.get('/api/public-data', {
+                params: { type: 'MCST_PHOTO_LIST', pageNo, numOfRows }
+            });
+            data = response.data;
+        } else {
+            const response = await axios.get(`${MCST_API_URL}/getPhotoList`, {
+                params: { serviceKey: decodeURIComponent(API_KEY), pageNo, numOfRows }
+            });
+            data = response.data;
+        }
+        const jsonObj = parser.parse(data);
+        const list = jsonObj.response?.body?.items?.item;
+        if (!list) return [];
+        const arrayList = Array.isArray(list) ? list : [list];
+
+        return arrayList.map(item => ({
+            servId: `MCST_PH_${item.articleId}`,
+            servNm: item.title,
+            jurMnofNm: '정책포토',
+            servDgst: '',
+            servDtlLink: item.articleUrl || '',
+            svcfrstRegTs: item.approveDate ? item.approveDate.replace(/-/g, '').substring(0, 8) : '',
+            apiSource: 'MCST_PHOTO',
+            isNews: true,
+            priority: 2,
+            thumbnail: item.thumbnailUrl
+        }));
+    } catch (error) {
+        console.error('API Fetch Error (MCST Photo):', error);
+        return [];
+    }
+};
+
+/**
+ * [신규] 행정안전부 보조금24 통계 정보 조회
+ */
+export const getMoisStatsList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
+    try {
+        let data;
+        if (typeof window !== 'undefined') {
+            const response = await axios.get('/api/public-data', {
+                params: { type: 'MOIS_STATS_LIST', pageNo, numOfRows }
+            });
+            data = response.data;
+        } else {
+            const response = await axios.get(`${MOIS_STATS_API_URL}/getStatsInfo`, {
+                params: { serviceKey: decodeURIComponent(API_KEY), pageNo, numOfRows, year: '2024' }
+            });
+            data = response.data;
+        }
+        const jsonObj = parser.parse(data);
+        const list = jsonObj.response?.body?.items?.item;
+        if (!list) return [];
+        const arrayList = Array.isArray(list) ? list : [list];
+
+        return arrayList.map(item => ({
+            servId: `MOIS_ST_${item.statsId || Math.random().toString(36).substring(7)}`,
+            servNm: item.statsNm || '보조금24 이용 통계',
+            jurMnofNm: '행정안전부',
+            servDgst: `${item.year}년 기준: 온라인 이용 ${item.onlineCount}건, 방문 이용 ${item.visitCount}건`,
+            servDtlLink: '',
+            svcfrstRegTs: item.regDt ? item.regDt.replace(/-/g, '') : '',
+            apiSource: 'MOIS_STATS',
+            priority: 4,
+            isNews: false
+        }));
+    } catch (error) {
+        console.error('API Fetch Error (MOIS Stats):', error);
+        return [];
+    }
+};
 
 // --- Mock Data ---
 export const getMockNationalData = (): WelfareService[] => {
