@@ -457,43 +457,52 @@ export default function ArticleManagement() {
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
-                        <thead className="bg-gray-50/50 text-gray-500 text-xs font-bold uppercase tracking-wider">
+                        <thead className="bg-gray-50 text-gray-500 text-sm">
                             <tr>
-                                <th className="p-4 pl-6">제목</th>
-                                <th className="p-4">작성자</th>
-                                <th className="p-4">등록일</th>
-                                <th className="p-4">상태</th>
-                                <th className="p-4 text-center">관리</th>
+                                <th className="p-4 font-medium">제목</th>
+                                <th className="p-4 font-medium">작성자</th>
+                                <th className="p-4 font-medium">분류</th>
+                                <th className="p-4 font-medium">상태</th>
+                                <th className="p-4 font-medium">날짜</th>
+                                <th className="p-4 font-medium">관리</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50 text-sm">
+                        <tbody className="divide-y divide-gray-100 text-sm">
                             {filteredArticles.map((item) => (
-                                <tr key={item.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="p-4 pl-6">
-                                        <div className="font-medium text-gray-900 cursor-pointer" onClick={() => router.push(`/admin/articles/write?id=${item.id}`)}>{item.title}</div>
-                                        <div className="text-[10px] text-gray-400 mt-1">{item.category}</div>
-                                    </td>
+                                <tr
+                                    key={item.id}
+                                    className="hover:bg-gray-50 transition-colors cursor-pointer"
+                                    onClick={() => router.push(`/admin/articles/write?id=${item.id}`)}
+                                >
+                                    <td className="p-4 text-gray-900 font-medium truncate max-w-xs">{item.title}</td>
                                     <td className="p-4 text-gray-600">{item.author}</td>
-                                    <td className="p-4 text-gray-500 text-xs">{new Date(item.created_at || item.date || Date.now()).toLocaleDateString('ko-KR')}</td>
+                                    <td className="p-4"><span className="bg-blue-100 text-primary px-2 py-1 rounded text-[11px] font-bold">{item.category}</span></td>
                                     <td className="p-4">
-                                        <span className={`px-2 py-1 rounded-full text-[10px] font-bold ${item.status === 'published' ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
-                                            {item.status === 'published' ? '게시중' : '여벌'}
+                                        <span className={`font-bold ${item.status === 'published' ? 'text-green-600' : 'text-gray-400'}`}>
+                                            ● {item.status === 'published' ? '게시중' : '임시저장'}
                                         </span>
                                     </td>
-                                    <td className="p-4">
-                                        <div className="flex justify-center gap-2">
-                                            <button onClick={() => handleOpenCommentModal(item)} className="p-2 text-gray-400 hover:text-blue-600 transition-all relative">
-                                                <MessageCircle size={18} />
-                                                {newCommentArticleIds.includes(item.id) && <span className="absolute top-1.5 right-1.5 w-2 h-2 bg-red-500 rounded-full border border-white"></span>}
+                                    <td className="p-4 text-gray-400">{new Date(item.date).toLocaleDateString()}</td>
+                                    <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                                        <div className="flex gap-2">
+                                            <button
+                                                onClick={() => handleOpenCommentModal(item)}
+                                                className="flex items-center gap-1 text-primary hover:text-blue-700 border border-blue-100 px-2 py-1 rounded bg-blue-50/50 font-bold whitespace-nowrap"
+                                            >
+                                                <MessageCircle size={14} />
+                                                댓글보기
                                             </button>
-                                            <button onClick={() => router.push(`/admin/articles/write?id=${item.id}`)} className="p-2 text-gray-400 hover:text-gray-600"><Plus size={18} /></button>
-                                            <button onClick={() => handleDelete(item.id)} className="p-2 text-gray-400 hover:text-red-600"><Trash2 size={18} /></button>
+                                            <button onClick={() => router.push(`/admin/articles/write?id=${item.id}`)} className="text-gray-400 hover:text-gray-600 border px-2 py-1 rounded">수정</button>
+                                            <button onClick={() => handleDelete(item.id)} className="text-red-400 hover:text-red-600 border border-red-100 px-2 py-1 rounded"><Trash2 size={16} /></button>
                                         </div>
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+                    {filteredArticles.length === 0 && (
+                        <div className="p-12 text-center text-gray-500">등록된 기사가 없습니다.</div>
+                    )}
                 </div>
             </div>
 
