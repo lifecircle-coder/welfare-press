@@ -324,11 +324,16 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
                     perPage: numOfRows,
                 }
             });
-            list = response.data?.data;
+            list = response.data?.data || response.data?.item || response.data;
         }
 
         if (!list) return [];
-        let arrayList = Array.isArray(list) ? list : [list];
+        let arrayList = Array.isArray(list) ? list : (list.item ? (Array.isArray(list.item) ? list.item : [list.item]) : [list]);
+
+        // 데이터가 실제 오브젝트 배열인지 확인 (500 에러 방지)
+        if (arrayList.length > 0 && typeof arrayList[0] !== 'object') {
+            return [];
+        }
 
         return arrayList.map(item => ({
             servId: String(item.svcId),

@@ -440,10 +440,12 @@ export default function ArticleManagement() {
             </div>
 
             {/* Article Management List Area */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-                <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
-                    <h3 className="font-bold text-gray-800 flex items-center gap-2">
-                        <Calendar size={18} className="text-blue-500" />
+            <div className="bg-white rounded-2xl shadow-md border border-gray-200 overflow-hidden mt-12">
+                <div className="p-6 border-b border-gray-100 flex items-center justify-between bg-blue-50/20">
+                    <h3 className="text-xl font-extrabold text-gray-900 flex items-center gap-3">
+                        <div className="bg-blue-600 p-2 rounded-lg text-white">
+                            <Calendar size={20} />
+                        </div>
                         작성된 기사 목록
                     </h3>
                     <div className="flex gap-4">
