@@ -370,11 +370,13 @@ export default function ArticleManagement() {
                         .filter(api => !apiSearchTerm || api.servNm.includes(apiSearchTerm) || api.servDgst.includes(apiSearchTerm))
                         .map(api => {
                             const isCopied = !!copiedState[api.servId];
-                            const getRelativeTime = (ds?: string) => {
-                                if (!ds || ds.length < 8) return '최근';
-                                const year = parseInt(ds.substring(0, 4));
-                                const month = parseInt(ds.substring(4, 6)) - 1;
-                                const day = parseInt(ds.substring(6, 8));
+                            const getRelativeTime = (ds?: string | any) => {
+                                if (!ds) return '최근';
+                                const dsStr = String(ds);
+                                if (dsStr.length < 8) return '최근';
+                                const year = parseInt(dsStr.substring(0, 4));
+                                const month = parseInt(dsStr.substring(4, 6)) - 1;
+                                const day = parseInt(dsStr.substring(6, 8));
                                 const date = new Date(year, month, day);
                                 const now = new Date();
                                 const diff = now.getTime() - date.getTime();

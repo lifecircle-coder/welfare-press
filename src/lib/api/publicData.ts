@@ -102,10 +102,13 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
             data = response.data;
         }
 
-        const jsonObj = parser.parse(data);
-        const servList = jsonObj.wantedList?.servList;
+        const jsonObj = typeof data === 'object' ? data : parser.parse(data);
+        const servList = jsonObj.wantedList?.servList || jsonObj.response?.body?.items?.item || jsonObj.servList || jsonObj.data;
 
-        if (!servList) return [];
+        if (!servList) {
+            console.warn('No servList found for National Welfare:', jsonObj);
+            return [];
+        }
         let arrayList = Array.isArray(servList) ? servList : [servList];
 
         let mappedList = arrayList.map(item => ({
@@ -426,9 +429,9 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
         let arrayList = Array.isArray(list) ? list : [list];
 
         const mappedList: WelfareService[] = arrayList.map(item => ({
-            servId: `MOGEF_${item.bbtSn || Math.random().toString(36).substring(7)}`,
-            servNm: item.title,
-            jurMnofNm: '여성가족부',
+            servId: item.articleId ? `MOGEF_${item.articleId}` : (item.bbtSn ? `MOGEF_${item.bbtSn}` : `MOGEF_${Math.random().toString(36).substring(7)}`),
+            servNm: item.title || item.articleTitle,
+            jurMnofNm: item.deptNm || '여성가족부',
             servDgst: '',
             servDtlLink: item.viewUrl,
             svcfrstRegTs: item.regDt ? item.regDt.replace(/-/g, '') : '',
