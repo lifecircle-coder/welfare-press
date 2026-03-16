@@ -2,7 +2,7 @@ import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
 
 const API_KEY = process.env.NEXT_PUBLIC_DATA_API_KEY || '';
-const GENERAL_API_KEY = process.env.NEXT_PUBLIC_GENERAL_DATA_API_KEY || '';
+const GENERAL_API_KEY = process.env.NEXT_PUBLIC_GENERAL_DATA_API_KEY || '12b8bc4d97607f8df3a88d39efa639e76ea1668505c5762165139c7eff120944';
 
 // 1. 한국사회보장정보원_중앙부처복지서비스
 const NATIONAL_API_URL = 'http://apis.data.go.kr/B554287/NationalWelfareInformationsV001';

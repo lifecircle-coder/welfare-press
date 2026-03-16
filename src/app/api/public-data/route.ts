@@ -9,7 +9,7 @@ export async function GET(request: NextRequest) {
     const servId = searchParams.get('servId');
 
     const CORP_API_KEY = process.env.NEXT_PUBLIC_DATA_API_KEY || ''; // 기존 기업형 키
-    const GEN_API_KEY = process.env.NEXT_PUBLIC_GENERAL_DATA_API_KEY || ''; // 신규 일반형 키 (env에서 가져오도록 수정)
+    const GEN_API_KEY = process.env.NEXT_PUBLIC_GENERAL_DATA_API_KEY || '12b8bc4d97607f8df3a88d39efa639e76ea1668505c5762165139c7eff120944'; // 신규 일반형 키 (env가 없을 경우 대비 하드코딩 추가)
     
     // Decoding for axios params usage
     const decodedCorpKey = decodeURIComponent(CORP_API_KEY);
