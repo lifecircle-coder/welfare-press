@@ -487,7 +487,7 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
         return arrayList.map(item => ({
             servId: `MCST_PR_${item.NewsItemId || item.articleId || Math.random().toString(36).substring(7)}`,
             servNm: item.Title || item.title || '제목 없음',
-            jurMnofNm: item.DeptNm || item.deptNm || '문화채육관광부',
+            jurMnofNm: item.DeptNm || item.deptNm || '문화체육관광부',
             servDgst: item.SubTitle || item.subTitle || '',
             servDtlLink: item.ArticleUrl || item.articleUrl || '',
             svcfrstRegTs: (item.ApproveDate || item.approveDate || '').replace(/-/g, '').substring(0, 8),
