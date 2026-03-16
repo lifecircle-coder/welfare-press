@@ -6,22 +6,25 @@ export async function GET(request: NextRequest) {
     const type = searchParams.get('type');
     const pageNo = searchParams.get('pageNo') || '1';
     const numOfRows = searchParams.get('numOfRows') || '10';
-    const searchKeyword = searchParams.get('searchWrd') || '';
     const servId = searchParams.get('servId');
 
-    const API_KEY = process.env.NEXT_PUBLIC_DATA_API_KEY || '';
-    const decodedKey = decodeURIComponent(API_KEY);
+    const CORP_API_KEY = process.env.NEXT_PUBLIC_DATA_API_KEY || ''; // 기존 기업형 키
+    const GEN_API_KEY = process.env.NEXT_PUBLIC_GENERAL_DATA_API_KEY || ''; // 신규 일반형 키 (env에서 가져오도록 수정)
+    
+    // Decoding for axios params usage
+    const decodedCorpKey = decodeURIComponent(CORP_API_KEY);
+    const decodedGenKey = decodeURIComponent(GEN_API_KEY);
 
     try {
         if (type === 'NATIONAL_LIST') {
             const response = await axios.get('http://apis.data.go.kr/B554287/NationalWelfareInformationsV001/NationalWelfarelistV001', {
                 params: {
-                    serviceKey: decodedKey,
+                    serviceKey: decodedCorpKey, // 기존 키 유지
                     callTp: 'L',
                     pageNo: 1,
-                    numOfRows: 500, // 전체 복지서비스(약 360여건)를 한 번에 가져와서 정렬
+                    numOfRows: 500,
                     srchKeyCode: '003',
-                    searchWrd: '', // 키워드 제한 없이 전체 호출
+                    searchWrd: '',
                 }
             });
             return new NextResponse(response.data, {
@@ -32,7 +35,7 @@ export async function GET(request: NextRequest) {
         if (type === 'NATIONAL_DETAIL') {
             const response = await axios.get('http://apis.data.go.kr/B554287/NationalWelfareInformationsV001/NationalWelfaredetailedV001', {
                 params: {
-                    serviceKey: decodedKey,
+                    serviceKey: decodedCorpKey, // 기존 키 유지
                     callTp: 'D',
                     servId,
                 }
@@ -45,7 +48,7 @@ export async function GET(request: NextRequest) {
         if (type === 'LOCAL_LIST') {
             const response = await axios.get('http://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations/LcgvWelfarelist', {
                 params: {
-                    serviceKey: decodedKey,
+                    serviceKey: decodedCorpKey, // 기존 키 유지
                     callTp: 'L',
                     pageNo,
                     numOfRows,
@@ -59,7 +62,7 @@ export async function GET(request: NextRequest) {
         if (type === 'LOCAL_DETAIL') {
             const response = await axios.get('http://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations/LcgvWelfaredetailed', {
                 params: {
-                    serviceKey: decodedKey,
+                    serviceKey: decodedCorpKey, // 기존 키 유지
                     callTp: 'D',
                     servId,
                 }
@@ -72,7 +75,7 @@ export async function GET(request: NextRequest) {
         if (type === 'MOGEF_LIST') {
             const response = await axios.get('http://apis.data.go.kr/1383000/mogefNew/nwEnwSelectList', {
                 params: {
-                    serviceKey: decodedKey,
+                    serviceKey: decodedGenKey, // 신규 일반형 키 적용
                     pageNo,
                     numOfRows,
                     type: 'xml'
@@ -86,7 +89,7 @@ export async function GET(request: NextRequest) {
         if (type === 'SUBSIDY_LIST') {
             const response = await axios.get('https://api.odcloud.kr/api/gov24/v3/serviceList', {
                 params: {
-                    serviceKey: decodedKey,
+                    serviceKey: decodedGenKey, // 신규 일반형 키 적용
                     page: pageNo,
                     perPage: numOfRows,
                 }
@@ -107,8 +110,17 @@ export async function GET(request: NextRequest) {
                 headers: { 'Content-Type': 'application/xml; charset=utf-8' }
             });
         }
+
+        // MCST APIs - Use RAW_API_KEY in URL to avoid double-encoding issues common with data.go.kr
+        // MCST APIs - 신규 일반형 키(GEN_API_KEY) 사용
         if (type === 'MCST_PRESS_LIST') {
-            const url = `http://apis.data.go.kr/1312000/PolicyBriefingService/getPressReleaseList?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+            const today = new Date();
+            const startDay = new Date(today);
+            startDay.setFullYear(today.getFullYear() - 1);
+            const startDate = startDay.toISOString().split('T')[0].replace(/-/g, '');
+            const endDate = today.toISOString().split('T')[0].replace(/-/g, '');
+            
+            const url = `http://apis.data.go.kr/1371000/pressReleaseService/pressReleaseList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&startDate=${startDate}&endDate=${endDate}`;
             const response = await axios.get(url);
             return new NextResponse(response.data, {
                 headers: { 'Content-Type': 'application/xml; charset=utf-8' }
@@ -116,7 +128,13 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'MCST_NEWS_LIST') {
-            const url = `http://apis.data.go.kr/1312000/PolicyBriefingService/getNewsList?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+            const today = new Date();
+            const startDay = new Date(today);
+            startDay.setFullYear(today.getFullYear() - 1);
+            const startDate = startDay.toISOString().split('T')[0].replace(/-/g, '');
+            const endDate = today.toISOString().split('T')[0].replace(/-/g, '');
+
+            const url = `http://apis.data.go.kr/1371000/policyNewsService/policyNewsList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&startDate=${startDate}&endDate=${endDate}`;
             const response = await axios.get(url);
             return new NextResponse(response.data, {
                 headers: { 'Content-Type': 'application/xml; charset=utf-8' }
@@ -124,7 +142,13 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'MCST_PHOTO_LIST') {
-            const url = `http://apis.data.go.kr/1312000/PolicyBriefingService/getPhotoList?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+            const today = new Date();
+            const startDay = new Date(today);
+            startDay.setFullYear(today.getFullYear() - 1);
+            const startDate = startDay.toISOString().split('T')[0].replace(/-/g, '');
+            const endDate = today.toISOString().split('T')[0].replace(/-/g, '');
+
+            const url = `http://apis.data.go.kr/1371000/photoService/photoList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&startDate=${startDate}&endDate=${endDate}`;
             const response = await axios.get(url);
             return new NextResponse(response.data, {
                 headers: { 'Content-Type': 'application/xml; charset=utf-8' }
@@ -132,7 +156,7 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'MOIS_STATS_LIST') {
-            const url = `http://apis.data.go.kr/1741000/Subsidy24/getStatsInfo?serviceKey=${API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&year=2024`;
+            const url = `https://apis.data.go.kr/1741000/Subsidy24/getSubsidy24?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
             const response = await axios.get(url);
             return new NextResponse(response.data, {
                 headers: { 'Content-Type': 'application/xml; charset=utf-8' }

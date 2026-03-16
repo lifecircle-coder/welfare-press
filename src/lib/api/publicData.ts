@@ -2,6 +2,7 @@ import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
 
 const API_KEY = process.env.NEXT_PUBLIC_DATA_API_KEY || '';
+const GENERAL_API_KEY = process.env.NEXT_PUBLIC_GENERAL_DATA_API_KEY || '';
 
 // 1. 한국사회보장정보원_중앙부처복지서비스
 const NATIONAL_API_URL = 'http://apis.data.go.kr/B554287/NationalWelfareInformationsV001';
@@ -23,7 +24,8 @@ const MOGEF_API_URL = 'http://apis.data.go.kr/1383000/mogefNew';
 const LOCAL_API_URL = 'http://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations';
 
 // 6. 문화체육관광부_정책브리핑
-const MCST_API_URL = 'http://apis.data.go.kr/1312000/PolicyBriefingService';
+// 6. 문화체육관광부_정책브리핑 (정상 엔드포인트 1371000 계열로 통합)
+const MCST_API_URL = 'http://apis.data.go.kr/1371000/pressReleaseService';
 
 // 7. 행정안전부_보조금24_통계
 const MOIS_STATS_API_URL = 'http://apis.data.go.kr/1741000/Subsidy24';
@@ -470,8 +472,8 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
             });
             data = response.data;
         } else {
-            const response = await axios.get(`${MCST_API_URL}/getPressReleaseList`, {
-                params: { serviceKey: decodeURIComponent(API_KEY), pageNo, numOfRows }
+            const response = await axios.get(`${MCST_API_URL}/pressReleaseList`, {
+                params: { serviceKey: decodeURIComponent(GENERAL_API_KEY), pageNo, numOfRows }
             });
             data = response.data;
         }
@@ -510,8 +512,8 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
             });
             data = response.data;
         } else {
-            const response = await axios.get(`${MCST_API_URL}/getNewsList`, {
-                params: { serviceKey: decodeURIComponent(API_KEY), pageNo, numOfRows }
+            const response = await axios.get('http://apis.data.go.kr/1371000/policyNewsService/policyNewsList', {
+                params: { serviceKey: decodeURIComponent(GENERAL_API_KEY), pageNo, numOfRows }
             });
             data = response.data;
         }
@@ -520,7 +522,7 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
         if (!list) return [];
         const arrayList = Array.isArray(list) ? list : [list];
 
-        return arrayList.map(item => ({
+        return arrayList.map((item: any) => ({
             servId: `MCST_NW_${item.articleId}`,
             servNm: item.title,
             jurMnofNm: '정책브리핑',
@@ -550,8 +552,8 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             });
             data = response.data;
         } else {
-            const response = await axios.get(`${MCST_API_URL}/getPhotoList`, {
-                params: { serviceKey: decodeURIComponent(API_KEY), pageNo, numOfRows }
+            const response = await axios.get('http://apis.data.go.kr/1371000/photoService/photoList', {
+                params: { serviceKey: decodeURIComponent(GENERAL_API_KEY), pageNo, numOfRows }
             });
             data = response.data;
         }
@@ -560,7 +562,7 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
         if (!list) return [];
         const arrayList = Array.isArray(list) ? list : [list];
 
-        return arrayList.map(item => ({
+        return arrayList.map((item: any) => ({
             servId: `MCST_PH_${item.articleId}`,
             servNm: item.title,
             jurMnofNm: '정책포토',
@@ -590,26 +592,36 @@ export const getMoisStatsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             });
             data = response.data;
         } else {
-            const response = await axios.get(`${MOIS_STATS_API_URL}/getStatsInfo`, {
-                params: { serviceKey: decodeURIComponent(API_KEY), pageNo, numOfRows, year: '2024' }
+            // Server side or direct call (fallback)
+            const response = await axios.get(`https://apis.data.go.kr/1741000/Subsidy24/getSubsidy24`, {
+                params: { serviceKey: decodeURIComponent(GENERAL_API_KEY), pageNo, numOfRows, type: 'json' }
             });
             data = response.data;
         }
+
+        // The proxy returns XML/JSON, ensure parsing
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
-        const list = jsonObj.response?.body?.items?.item;
-        if (!list) return [];
+        
+        // MOIS Stats structure usually: response -> body -> items -> item or custom root
+        let list = jsonObj.response?.body?.items?.item || 
+                   jsonObj.Subsidy24?.body?.items?.item || 
+                   jsonObj.items?.item || 
+                   jsonObj.item || [];
+        
+        if (!list || (Array.isArray(list) && list.length === 0)) return [];
         const arrayList = Array.isArray(list) ? list : [list];
 
-        return arrayList.map(item => ({
-            servId: `MOIS_ST_${item.statsId || Math.random().toString(36).substring(7)}`,
-            servNm: item.statsNm || '보조금24 이용 통계',
+        return arrayList.map((item: any) => ({
+            servId: `MOIS_ST_${item.statsCode || Math.random().toString(36).substring(7)}`,
+            servNm: `[통계] ${item.statsNm || '보조금24 이용 통계'}`,
             jurMnofNm: '행정안전부',
-            servDgst: `${item.year}년 기준: 온라인 이용 ${item.onlineCount}건, 방문 이용 ${item.visitCount}건`,
-            servDtlLink: '',
-            svcfrstRegTs: item.regDt ? item.regDt.replace(/-/g, '') : '',
+            servDgst: `${item.statsValue || ''} (기준: ${item.statsYear || ''}년 ${item.statsMonth || ''}월)`,
+            servDtlLink: 'https://www.gov.kr/portal/rcvfvrSvc/main',
+            svcfrstRegTs: item.statsYear && item.statsMonth ? `${item.statsYear}${item.statsMonth.padStart(2, '0')}01` : '',
             apiSource: 'MOIS_STATS',
-            priority: 4,
-            isNews: false
+            isNews: true,
+            priority: 3,
+            keywords: ['보조금24', '통계', '행안부']
         }));
     } catch (error) {
         console.error('API Fetch Error (MOIS Stats):', error);
