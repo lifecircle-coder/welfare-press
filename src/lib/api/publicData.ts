@@ -463,10 +463,9 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             });
             data = response.data;
         } else {
-            // 일부 여가부 API는 CORPORATE_API_KEY가 필요할 수 있으므로 실패 시 폴백 고려
-            // 또한 _type 보다는 type 파라미터를 사용하거나 기본 XML을 파싱하는 것이 안전
+            // 여가부 API는 CORPORATE_API_KEY를 선호하며, _type 파라미터가 문제를 일으킬 수 있음
             const response = await axios.get(MOGEF_API_URL + '/nwEnwSelectList', {
-                params: { serviceKey: decodeURIComponent(GENERAL_API_KEY), pageNo, numOfRows, _type: 'json' },
+                params: { serviceKey: decodeURIComponent(CORPORATE_API_KEY), pageNo, numOfRows },
                 timeout: 10000
             });
             
