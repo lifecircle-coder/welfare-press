@@ -116,7 +116,7 @@ export async function GET(request: NextRequest) {
         if (type === 'MCST_PRESS_LIST') {
             const today = new Date();
             const startDay = new Date(today);
-            startDay.setFullYear(today.getFullYear() - 1);
+            startDay.setDate(today.getDate() - 3);
             const startDate = startDay.toISOString().split('T')[0].replace(/-/g, '');
             const endDate = today.toISOString().split('T')[0].replace(/-/g, '');
             
@@ -130,7 +130,7 @@ export async function GET(request: NextRequest) {
         if (type === 'MCST_NEWS_LIST') {
             const today = new Date();
             const startDay = new Date(today);
-            startDay.setFullYear(today.getFullYear() - 1);
+            startDay.setDate(today.getDate() - 3);
             const startDate = startDay.toISOString().split('T')[0].replace(/-/g, '');
             const endDate = today.toISOString().split('T')[0].replace(/-/g, '');
 
@@ -144,7 +144,7 @@ export async function GET(request: NextRequest) {
         if (type === 'MCST_PHOTO_LIST') {
             const today = new Date();
             const startDay = new Date(today);
-            startDay.setFullYear(today.getFullYear() - 1);
+            startDay.setDate(today.getDate() - 3);
             const startDate = startDay.toISOString().split('T')[0].replace(/-/g, '');
             const endDate = today.toISOString().split('T')[0].replace(/-/g, '');
 
