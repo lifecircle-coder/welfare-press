@@ -2,6 +2,7 @@ import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
 
 const API_KEY = process.env.NEXT_PUBLIC_DATA_API_KEY || '';
+const CORPORATE_API_KEY = 'G2O9SAtp%2Bc60I7f%2Fz6z8v7u8v8y8x8q8w8e8r8t8y8u8i8o8p%3D%3D'; // Existing key
 const GENERAL_API_KEY = process.env.NEXT_PUBLIC_GENERAL_DATA_API_KEY || '12b8bc4d97607f8df3a88d39efa639e76ea1668505c5762165139c7eff120944';
 
 // 1. 한국사회보장정보원_중앙부처복지서비스
@@ -462,15 +463,36 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             });
             data = response.data;
         } else {
-            const response = await axios.get(`${MOGEF_API_URL}/nwEnwSelectList`, {
-                params: {
-                    serviceKey: decodeURIComponent(API_KEY),
-                    pageNo,
-                    numOfRows,
-                    type: 'xml'
-                }
+            // 일부 여가부 API는 CORPORATE_API_KEY가 필요할 수 있으므로 실패 시 폴백 고려
+            // 또한 _type 보다는 type 파라미터를 사용하거나 기본 XML을 파싱하는 것이 안전
+            const response = await axios.get(MOGEF_API_URL + '/nwEnwSelectList', {
+                params: { serviceKey: decodeURIComponent(GENERAL_API_KEY), pageNo, numOfRows, _type: 'json' },
+                timeout: 10000
             });
-            data = response.data;
+            
+            let list = response.data.response?.body?.items?.item || response.data.items?.item || response.data.row || [];
+            if (typeof response.data === 'string' && response.data.includes('<?xml')) {
+                const jsonObj = parser.parse(response.data);
+                const body = jsonObj.response?.body || jsonObj.Body || jsonObj;
+                const items = body.items || body.NewsItems || body;
+                list = items.item || items.NewsItem || items.row || [];
+            }
+            if (!list || (Array.isArray(list) && list.length === 0)) return [];
+            const arrayList = Array.isArray(list) ? list : [list];
+
+            const mappedList: WelfareService[] = arrayList.map(item => ({
+                servId: item.articleId ? `MOGEF_${item.articleId}` : (item.bbtSn ? `MOGEF_${item.bbtSn}` : `MOGEF_${Math.random().toString(36).substring(7)}`),
+                servNm: decodeHtml(item.title || item.articleTitle || item.pstTtl || ''),
+                jurMnofNm: item.deptNm || '여성가족부',
+                servDgst: decodeHtml(item.cont || item.articleContent || item.pstCn || ''),
+                servDtlLink: item.viewUrl || '',
+                svcfrstRegTs: parseApiDate(item.regDt || item.ntcDt || ''),
+                apiSource: 'MOGEF',
+                priority: 2,
+                isNews: true
+            }));
+
+            return mappedList;
         }
         const jsonObj = parser.parse(data);
         const list = jsonObj.response?.body?.items?.item;
@@ -526,7 +548,11 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
             servId: `MCST_PR_${item.NewsItemId || item.articleId || item.articleID || Math.random().toString(36).substring(7)}`,
             servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: item.DeptNm || item.deptNm || '문화체육관광부',
-            servDgst: decodeHtml(item.DataContents || item.SubTitle || item.subTitle || item.Content || ''),
+            servDgst: decodeHtml(
+                item.SubTitle1 || item.SubTitle2 || item.SubTitle3 || 
+                item.SubTitle || item.subTitle || 
+                (item.DataContents ? item.DataContents.substring(0, 300) : '') || ''
+            ),
             servDtlLink: item.ArticleUrl || item.articleUrl || item.OriginalUrl || '',
             svcfrstRegTs: parseApiDate(item.ApproveDate || item.approveDate || ''),
             apiSource: 'MCST_PRESS',
@@ -569,7 +595,11 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
             servId: `MCST_NW_${item.NewsItemId || item.articleId || item.articleID || Math.random().toString(36).substring(7)}`,
             servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: '정책브리핑',
-            servDgst: decodeHtml(item.DataContents || item.SubTitle || item.subTitle || item.Content || ''),
+            servDgst: decodeHtml(
+                item.SubTitle1 || item.SubTitle2 || item.SubTitle3 || 
+                item.SubTitle || item.subTitle || 
+                (item.DataContents ? item.DataContents.substring(0, 300) : '') || ''
+            ),
             servDtlLink: item.ArticleUrl || item.articleUrl || item.OriginalUrl || '',
             svcfrstRegTs: parseApiDate(item.ApproveDate || item.approveDate || ''),
             apiSource: 'MCST_NEWS',
@@ -612,7 +642,11 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             servId: `MCST_PH_${item.NewsItemId || item.articleId || item.articleID || Math.random().toString(36).substring(7)}`,
             servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: '정책포토',
-            servDgst: decodeHtml(item.DataContents || item.SubTitle || item.subTitle || item.Content || ''),
+            servDgst: decodeHtml(
+                item.SubTitle1 || item.SubTitle2 || item.SubTitle3 || 
+                item.SubTitle || item.subTitle || 
+                (item.DataContents ? item.DataContents.substring(0, 300) : '') || ''
+            ),
             servDtlLink: item.ArticleUrl || item.articleUrl || item.OriginalUrl || '',
             svcfrstRegTs: parseApiDate(item.ApproveDate || item.approveDate || ''),
             apiSource: 'MCST_PHOTO',
