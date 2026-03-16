@@ -35,6 +35,44 @@ const parser = new XMLParser({
     textNodeName: '_text',
 });
 
+// HTML Entity Decoder
+const decodeHtml = (html: string) => {
+    if (!html) return '';
+    return html
+        .replace(/&quot;/g, '"')
+        .replace(/&amp;/g, '&')
+        .replace(/&lt;/g, '<')
+        .replace(/&gt;/g, '>')
+        .replace(/&#39;/g, "'")
+        .replace(/&apos;/g, "'")
+        .replace(/&nbsp;/g, ' ')
+        .replace(/<[^>]*>?/gm, ''); // Remove HTML tags
+};
+
+// Robust Date Parser
+const parseApiDate = (dateStr: string) => {
+    if (!dateStr) return '';
+    const clean = dateStr.trim();
+    
+    // YYYY-MM-DD or YYYY.MM.DD or YYYYMMDD
+    if (/^\d{4}[-.]?\d{2}[-.]?\d{2}/.test(clean)) {
+        return clean.replace(/[-.]/g, '').substring(0, 8);
+    }
+    
+    // MM/DD/YYYY (MCST format)
+    if (clean.includes('/')) {
+        const parts = clean.split(' ')[0].split('/');
+        if (parts.length === 3) {
+            const m = parts[0].padStart(2, '0');
+            const d = parts[1].padStart(2, '0');
+            const y = parts[2];
+            return `${y}${m}${d}`;
+        }
+    }
+    
+    return clean.replace(/[^0-9]/g, '').substring(0, 8);
+};
+
 // Mock 데이터 스위치
 const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
 
@@ -442,11 +480,11 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
 
         const mappedList: WelfareService[] = arrayList.map(item => ({
             servId: item.articleId ? `MOGEF_${item.articleId}` : (item.bbtSn ? `MOGEF_${item.bbtSn}` : `MOGEF_${Math.random().toString(36).substring(7)}`),
-            servNm: item.title || item.articleTitle,
+            servNm: decodeHtml(item.title || item.articleTitle || item.pstTtl || ''),
             jurMnofNm: item.deptNm || '여성가족부',
-            servDgst: '',
+            servDgst: decodeHtml(item.cont || item.articleContent || item.pstCn || ''),
             servDtlLink: item.viewUrl || '',
-            svcfrstRegTs: item.regDt ? String(item.regDt).replace(/-/g, '').substring(0, 8) : '',
+            svcfrstRegTs: parseApiDate(item.regDt || item.ntcDt || ''),
             apiSource: 'MOGEF',
             priority: 2,
             isNews: true
@@ -485,12 +523,12 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
         const arrayList = Array.isArray(list) ? list : [list];
 
         return arrayList.map(item => ({
-            servId: `MCST_PR_${item.NewsItemId || item.articleId || Math.random().toString(36).substring(7)}`,
-            servNm: item.Title || item.title || '제목 없음',
+            servId: `MCST_PR_${item.NewsItemId || item.articleId || item.articleID || Math.random().toString(36).substring(7)}`,
+            servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: item.DeptNm || item.deptNm || '문화체육관광부',
-            servDgst: item.SubTitle || item.subTitle || '',
-            servDtlLink: item.ArticleUrl || item.articleUrl || '',
-            svcfrstRegTs: (item.ApproveDate || item.approveDate || '').replace(/-/g, '').substring(0, 8),
+            servDgst: decodeHtml(item.DataContents || item.SubTitle || item.subTitle || item.Content || ''),
+            servDtlLink: item.ArticleUrl || item.articleUrl || item.OriginalUrl || '',
+            svcfrstRegTs: parseApiDate(item.ApproveDate || item.approveDate || ''),
             apiSource: 'MCST_PRESS',
             isNews: true,
             priority: 1,
@@ -528,12 +566,12 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
         const arrayList = Array.isArray(list) ? list : [list];
 
         return arrayList.map((item: any) => ({
-            servId: `MCST_NW_${item.NewsItemId || item.articleId || Math.random().toString(36).substring(7)}`,
-            servNm: item.Title || item.title || '제목 없음',
+            servId: `MCST_NW_${item.NewsItemId || item.articleId || item.articleID || Math.random().toString(36).substring(7)}`,
+            servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: '정책브리핑',
-            servDgst: item.SubTitle || item.subTitle || '',
-            servDtlLink: item.ArticleUrl || item.articleUrl || '',
-            svcfrstRegTs: (item.ApproveDate || item.approveDate || '').replace(/-/g, '').substring(0, 8),
+            servDgst: decodeHtml(item.DataContents || item.SubTitle || item.subTitle || item.Content || ''),
+            servDtlLink: item.ArticleUrl || item.articleUrl || item.OriginalUrl || '',
+            svcfrstRegTs: parseApiDate(item.ApproveDate || item.approveDate || ''),
             apiSource: 'MCST_NEWS',
             isNews: true,
             priority: 1,
@@ -571,12 +609,12 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
         const arrayList = Array.isArray(list) ? list : [list];
 
         return arrayList.map((item: any) => ({
-            servId: `MCST_PH_${item.NewsItemId || item.articleId || Math.random().toString(36).substring(7)}`,
-            servNm: item.Title || item.title || '제목 없음',
+            servId: `MCST_PH_${item.NewsItemId || item.articleId || item.articleID || Math.random().toString(36).substring(7)}`,
+            servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: '정책포토',
-            servDgst: '',
-            servDtlLink: item.ArticleUrl || item.articleUrl || '',
-            svcfrstRegTs: (item.ApproveDate || item.approveDate || '').replace(/-/g, '').substring(0, 8),
+            servDgst: decodeHtml(item.DataContents || item.SubTitle || item.subTitle || item.Content || ''),
+            servDtlLink: item.ArticleUrl || item.articleUrl || item.OriginalUrl || '',
+            svcfrstRegTs: parseApiDate(item.ApproveDate || item.approveDate || ''),
             apiSource: 'MCST_PHOTO',
             isNews: true,
             priority: 2,
