@@ -139,11 +139,16 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'MCST_PHOTO_LIST') {
-            const url = `http://apis.data.go.kr/1371000/photoService/getPhotoList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
-            const response = await axios.get(url);
-            return new NextResponse(response.data, {
-                headers: { 'Content-Type': 'application/xml; charset=utf-8' }
-            });
+            try {
+                const url = `http://apis.data.go.kr/1371000/photoService/getPhotoList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+                const response = await axios.get(url, { timeout: 5000 });
+                return new NextResponse(response.data, {
+                    headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+                });
+            } catch (err) {
+                console.error('MCST Photo API Error:', err);
+                return NextResponse.json({ error: 'Portal API error', items: [] }, { status: 200 });
+            }
         }
 
 

@@ -380,7 +380,10 @@ export default function ArticleManagement() {
                     </div>
                 </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
+                <div 
+                    key={activeApiTab} 
+                    className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar"
+                >
                     {((activeApiTab === 'LOCAL' ? displayLocalApiData : displayApiData)
                         .filter(api => !apiSearchTerm || api.servNm.toLowerCase().includes(apiSearchTerm.toLowerCase()) || api.servDgst.toLowerCase().includes(apiSearchTerm.toLowerCase()))
                     ).length === 0 ? (
