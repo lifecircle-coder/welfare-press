@@ -139,18 +139,13 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'MCST_PHOTO_LIST') {
-            const today = new Date();
-            const startDay = new Date(today);
-            startDay.setDate(today.getDate() - 3);
-            const startDate = startDay.toISOString().split('T')[0].replace(/-/g, '');
-            const endDate = today.toISOString().split('T')[0].replace(/-/g, '');
-
-            const url = `http://apis.data.go.kr/1371000/photoService/photoList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&startDate=${startDate}&endDate=${endDate}`;
+            const url = `http://apis.data.go.kr/1371000/photoService/photoList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
             const response = await axios.get(url);
             return new NextResponse(response.data, {
                 headers: { 'Content-Type': 'application/xml; charset=utf-8' }
             });
         }
+
 
         if (type === 'MOIS_STATS_LIST') {
             const url = `https://apis.data.go.kr/1741000/Subsidy24/getSubsidy24?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
