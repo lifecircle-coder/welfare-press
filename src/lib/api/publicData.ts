@@ -478,8 +478,10 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
             data = response.data;
         }
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
-        const list = jsonObj.response?.body?.items?.item;
-        if (!list) return [];
+        const body = jsonObj.response?.body || jsonObj.Body || jsonObj;
+        const items = body.items || body.NewsItems || body;
+        const list = items.item || items.NewsItem || items.row || [];
+        if (!list || (Array.isArray(list) && list.length === 0)) return [];
         const arrayList = Array.isArray(list) ? list : [list];
 
         return arrayList.map(item => ({
@@ -500,6 +502,7 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
     }
 };
 
+
 /**
  * [신규] 문화체육관광부 정책뉴스 조회
  */
@@ -518,8 +521,10 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
             data = response.data;
         }
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
-        const list = jsonObj.response?.body?.items?.item;
-        if (!list) return [];
+        const body = jsonObj.response?.body || jsonObj.Body || jsonObj;
+        const items = body.items || body.NewsItems || body;
+        const list = items.item || items.NewsItem || items.row || [];
+        if (!list || (Array.isArray(list) && list.length === 0)) return [];
         const arrayList = Array.isArray(list) ? list : [list];
 
         return arrayList.map((item: any) => ({
@@ -540,6 +545,7 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
     }
 };
 
+
 /**
  * [신규] 문화체육관광부 정책포토 조회
  */
@@ -558,8 +564,10 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             data = response.data;
         }
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
-        const list = jsonObj.response?.body?.items?.item;
-        if (!list) return [];
+        const body = jsonObj.response?.body || jsonObj.Body || jsonObj;
+        const items = body.items || body.NewsItems || body;
+        const list = items.item || items.NewsItem || items.row || [];
+        if (!list || (Array.isArray(list) && list.length === 0)) return [];
         const arrayList = Array.isArray(list) ? list : [list];
 
         return arrayList.map((item: any) => ({
@@ -579,6 +587,7 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
         return [];
     }
 };
+
 
 /**
  * [신규] 행정안전부 보조금24 통계 정보 조회
@@ -602,11 +611,9 @@ export const getMoisStatsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
         // The proxy returns XML/JSON, ensure parsing
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
         
-        // MOIS Stats structure usually: response -> body -> items -> item or custom root
-        let list = jsonObj.response?.body?.items?.item || 
-                   jsonObj.Subsidy24?.body?.items?.item || 
-                   jsonObj.items?.item || 
-                   jsonObj.item || [];
+        const body = jsonObj.response?.body || jsonObj.Subsidy24?.body || jsonObj.Subsidy24 || jsonObj;
+        const items = body.items || body;
+        const list = items.item || items.row || [];
         
         if (!list || (Array.isArray(list) && list.length === 0)) return [];
         const arrayList = Array.isArray(list) ? list : [list];

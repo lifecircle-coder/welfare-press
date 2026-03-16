@@ -48,29 +48,26 @@ export async function GET(request: NextRequest) {
         if (type === 'LOCAL_LIST') {
             const response = await axios.get('http://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations/LcgvWelfarelist', {
                 params: {
-                    serviceKey: decodedCorpKey, // 기존 키 유지
+                    serviceKey: decodedCorpKey,
                     callTp: 'L',
                     pageNo,
                     numOfRows,
                 }
             });
-            return new NextResponse(response.data, {
-                headers: { 'Content-Type': 'application/json; charset=utf-8' }
-            });
+            return NextResponse.json(response.data);
         }
 
         if (type === 'LOCAL_DETAIL') {
             const response = await axios.get('http://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations/LcgvWelfaredetailed', {
                 params: {
-                    serviceKey: decodedCorpKey, // 기존 키 유지
+                    serviceKey: decodedCorpKey,
                     callTp: 'D',
                     servId,
                 }
             });
-            return new NextResponse(response.data, {
-                headers: { 'Content-Type': 'application/json; charset=utf-8' }
-            });
+            return NextResponse.json(response.data);
         }
+
 
         if (type === 'MOGEF_LIST') {
             const response = await axios.get('http://apis.data.go.kr/1383000/mogefNew/nwEnwSelectList', {
