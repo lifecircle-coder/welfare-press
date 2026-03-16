@@ -51,18 +51,48 @@ const modules = (articleId: string) => ({
 
                     // 1. Show loading state
                     const range = this.quill.getSelection(true);
-                    this.quill.insertText(range.index, '⌛ 이미지 최적화 중...', 'bold', true);
+                    this.quill.insertText(range.index, '⌛ 이미지 최적화 및 압축 중...', 'bold', true);
 
                     const reader = new FileReader();
                     reader.onload = async () => {
-                        const base64 = reader.result as string;
+                        const originalBase64 = reader.result as string;
+                        
+                        // --- New: Client-side Pre-compression ---
+                        const compressAndResize = (base64: string): Promise<string> => {
+                            return new Promise((resolve) => {
+                                const img = new Image();
+                                img.src = base64;
+                                img.onload = () => {
+                                    const canvas = document.createElement('canvas');
+                                    let width = img.width;
+                                    let height = img.height;
+                                    const MAX_WIDTH = 1200;
+
+                                    if (width > MAX_WIDTH) {
+                                        height *= MAX_WIDTH / width;
+                                        width = MAX_WIDTH;
+                                    }
+
+                                    canvas.width = width;
+                                    canvas.height = height;
+                                    const ctx = canvas.getContext('2d');
+                                    ctx?.drawImage(img, 0, 0, width, height);
+                                    
+                                    // 0.7 quality is enough for editorial content and keeps file size < 1MB usually
+                                    resolve(canvas.toDataURL('image/jpeg', 0.7));
+                                };
+                            });
+                        };
+
                         try {
-                            // 2. Call Optimization API
+                            const compressedBase64 = await compressAndResize(originalBase64);
+                            
+                            // 2. Call Optimization API with already-shrunken image
                             const response = await fetch('/api/optimize-image', {
                                 method: 'POST',
                                 headers: { 'Content-Type': 'application/json' },
                                 body: JSON.stringify({
-                                    imageUrl: base64,
+                                    imageUrl: compressedBase64,
                                     articleId: articleId
                                 })
                             });
@@ -70,15 +100,15 @@ const modules = (articleId: string) => ({
                             const data = await response.json();
                             if (data.optimizedUrl) {
                                 // 3. Replace loading text with optimized image URL
-                                this.quill.deleteText(range.index, 14);
+                                this.quill.deleteText(range.index, 20);
                                 this.quill.insertEmbed(range.index, 'image', data.optimizedUrl);
                             } else {
                                 throw new Error('Optimization failed');
                             }
                         } catch (error) {
                             console.error('Image upload failed', error);
-                            this.quill.deleteText(range.index, 14);
-                            alert('이미지 최적화 업로드에 실패했습니다. 파일 용량이 너무 큰지 확인해주세요.');
+                            this.quill.deleteText(range.index, 20);
+                            alert('이미지 최적화 업로드에 실패했습니다. 이미지를 조금 더 작은 파일로 시도해주세요.');
                         }
                     };
                     reader.readAsDataURL(file);
