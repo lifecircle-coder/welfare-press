@@ -47,6 +47,11 @@ const decodeHtml = (html: string) => {
         .replace(/&#39;/g, "'")
         .replace(/&apos;/g, "'")
         .replace(/&nbsp;/g, ' ')
+        .replace(/&middot;/g, '·')
+        .replace(/&lsquo;/g, "'")
+        .replace(/&rsquo;/g, "'")
+        .replace(/&ldquo;/g, '"')
+        .replace(/&rdquo;/g, '"')
         .replace(/<[^>]*>?/gm, ''); // Remove HTML tags
 };
 
@@ -55,22 +60,27 @@ const parseApiDate = (dateStr: string) => {
     if (!dateStr) return '';
     const clean = dateStr.trim();
     
-    // YYYY-MM-DD or YYYY.MM.DD or YYYYMMDD
-    if (/^\d{4}[-.]?\d{2}[-.]?\d{2}/.test(clean)) {
-        return clean.replace(/[-.]/g, '').substring(0, 8);
-    }
-    
-    // MM/DD/YYYY (MCST format)
+    // Check for US Format MM/DD/YYYY or similar
     if (clean.includes('/')) {
         const parts = clean.split(' ')[0].split('/');
         if (parts.length === 3) {
-            const m = parts[0].padStart(2, '0');
-            const d = parts[1].padStart(2, '0');
-            const y = parts[2];
+            let y, m, d;
+            if (parts[2].length === 4) { // MM/DD/YYYY (Typical US/MCST)
+                y = parts[2];
+                m = parts[0].padStart(2, '0');
+                d = parts[1].padStart(2, '0');
+            } else if (parts[0].length === 4) { // YYYY/MM/DD
+                y = parts[0];
+                m = parts[1].padStart(2, '0');
+                d = parts[2].padStart(2, '0');
+            } else {
+                return clean.replace(/[^0-9]/g, '').substring(0, 8);
+            }
             return `${y}${m}${d}`;
         }
     }
     
+    // YYYY-MM-DD or YYYY.MM.DD
     return clean.replace(/[^0-9]/g, '').substring(0, 8);
 };
 
@@ -463,9 +473,9 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             });
             data = response.data;
         } else {
-            // 여가부 API는 CORPORATE_API_KEY를 선호하며, _type 파라미터가 문제를 일으킬 수 있음
+            // MOGEF API는 환경변수 API_KEY가 가장 안정적으로 작동할 가능성이 큼
             const response = await axios.get(MOGEF_API_URL + '/nwEnwSelectList', {
-                params: { serviceKey: decodeURIComponent(CORPORATE_API_KEY), pageNo, numOfRows },
+                params: { serviceKey: decodeURIComponent(API_KEY || GENERAL_API_KEY), pageNo, numOfRows },
                 timeout: 10000
             });
             
