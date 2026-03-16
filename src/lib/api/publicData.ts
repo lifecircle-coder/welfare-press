@@ -710,15 +710,19 @@ export const getMoisStatsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
         // Handle Subsidy24 special array structure: data.Subsidy24[1].row or items.row
         let list = [];
         if (Array.isArray(body)) {
-            const rowPart = body.find((p: any) => p && p.row);
-            list = rowPart ? rowPart.row : [];
+            const rowPart = body.find((p: any) => p && (p.row || p.Row || p.items || p.item));
+            if (rowPart) {
+                list = rowPart.row || rowPart.Row || rowPart.items || rowPart.item || [];
+            }
         } else if (body && typeof body === 'object') {
-            const items = body.items || body;
+            const items = body.items || body.item || body;
             list = items.item || items.row || (Array.isArray(items) ? items : []);
         }
+
+        // Final safety check: if list is still not an array, force it
+        const arrayList = Array.isArray(list) ? list : (list ? [list] : []);
         
-        if (!list || (Array.isArray(list) && list.length === 0)) return [];
-        const arrayList = Array.isArray(list) ? list : [list];
+        if (arrayList.length === 0) return [];
 
         return arrayList.map((item: any) => ({
             servId: `MOIS_ST_${item.StatsCode || item.statsCode || Math.random().toString(36).substring(7)}`,

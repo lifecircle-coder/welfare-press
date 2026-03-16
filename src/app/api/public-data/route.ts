@@ -79,8 +79,8 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'SUBSIDY_LIST') {
-            // ODCloud Subsidy24 v3 (15101213) is very sensitive. Use decoded key and explicitly returnType=JSON.
-            const url = `https://api.odcloud.kr/api/gov24/v3/serviceList?serviceKey=${decodedCorpKey}&page=${pageNo}&perPage=${numOfRows}&returnType=JSON`;
+            // ODCloud Subsidy24 v3 (15101213) precision: use raw CORP_API_KEY and lowercase returnType=json.
+            const url = `https://api.odcloud.kr/api/gov24/v3/serviceList?serviceKey=${CORP_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
             const response = await axios.get(url, { timeout: 7000 });
             return NextResponse.json(response.data);
         }
@@ -131,8 +131,8 @@ export async function GET(request: NextRequest) {
 
         if (type === 'MCST_PHOTO_LIST') {
             try {
-                // Operation name check: photoList. Date range: remove extreme dates to see if portal defaults work.
-                const url = `http://apis.data.go.kr/1371000/photoService/photoList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+                // Operation name check: photoList. Trying Group A (Corp) as last resort if Group B fails.
+                const url = `http://apis.data.go.kr/1371000/photoService/photoList?serviceKey=${decodedCorpKey}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
                 const response = await axios.get(url, { timeout: 7000 });
                 return new NextResponse(response.data, {
                     headers: { 'Content-Type': 'application/xml; charset=utf-8' }
