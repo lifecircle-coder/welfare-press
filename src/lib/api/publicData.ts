@@ -375,9 +375,10 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
         } else {
             const response = await axios.get(`${SUBSIDY_API_URL}/serviceList`, {
                 params: {
-                    serviceKey: decodeURIComponent(GENERAL_API_KEY),
+                    serviceKey: decodeURIComponent(CORPORATE_API_KEY), // Switch to Corp key for List
                     page: pageNo,
                     perPage: numOfRows,
+                    returnType: 'json'
                 }
             });
             list = response.data?.data || response.data?.item || response.data;
@@ -703,9 +704,18 @@ export const getMoisStatsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
         // The proxy returns XML/JSON, ensure parsing
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
         
-        const body = jsonObj.response?.body || jsonObj.Subsidy24?.body || jsonObj.Subsidy24 || jsonObj;
-        const items = body.items || body;
-        const list = items.item || items.row || [];
+        // Statistics (MOIS_STATS) parsing: The portal returns {"Subsidy24": [{"head":...}, {"row":[...]}]}
+        let body = jsonObj.response?.body || jsonObj.Subsidy24?.body || jsonObj.Subsidy24 || jsonObj;
+        
+        // Handle Subsidy24 special array structure: data.Subsidy24[1].row or items.row
+        let list = [];
+        if (Array.isArray(body)) {
+            const rowPart = body.find((p: any) => p && p.row);
+            list = rowPart ? rowPart.row : [];
+        } else if (body && typeof body === 'object') {
+            const items = body.items || body;
+            list = items.item || items.row || (Array.isArray(items) ? items : []);
+        }
         
         if (!list || (Array.isArray(list) && list.length === 0)) return [];
         const arrayList = Array.isArray(list) ? list : [list];

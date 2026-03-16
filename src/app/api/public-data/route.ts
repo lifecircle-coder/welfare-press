@@ -79,13 +79,9 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'SUBSIDY_LIST') {
-            const response = await axios.get('https://api.odcloud.kr/api/gov24/v3/serviceList', {
-                params: {
-                    serviceKey: decodedGenKey, // 신규 일반형 키 적용
-                    page: pageNo,
-                    perPage: numOfRows,
-                }
-            });
+            // ODCloud Subsidy24 v3 (15101213) is very sensitive. Use decoded key and explicitly returnType=JSON.
+            const url = `https://api.odcloud.kr/api/gov24/v3/serviceList?serviceKey=${decodedCorpKey}&page=${pageNo}&perPage=${numOfRows}&returnType=JSON`;
+            const response = await axios.get(url, { timeout: 7000 });
             return NextResponse.json(response.data);
         }
 
@@ -135,9 +131,9 @@ export async function GET(request: NextRequest) {
 
         if (type === 'MCST_PHOTO_LIST') {
             try {
-                // Operation name check: photoList is the standard for 1371000 photo service
-                const url = `http://apis.data.go.kr/1371000/photoService/photoList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&startDate=20240101&endDate=20991231`;
-                const response = await axios.get(url, { timeout: 5000 });
+                // Operation name check: photoList. Date range: remove extreme dates to see if portal defaults work.
+                const url = `http://apis.data.go.kr/1371000/photoService/photoList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+                const response = await axios.get(url, { timeout: 7000 });
                 return new NextResponse(response.data, {
                     headers: { 'Content-Type': 'application/xml; charset=utf-8' }
                 });
