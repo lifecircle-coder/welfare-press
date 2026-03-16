@@ -643,8 +643,20 @@ export default function ArticleManagement() {
                                     <div className="w-1 h-4 bg-blue-600 rounded-full" />
                                     정책 요약
                                 </h4>
-                                <p className="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-2xl">{selectedApiItem.servDgst || '요약 정보가 없습니다.'}</p>
+                                <p className="text-gray-600 text-sm leading-relaxed bg-gray-50 p-4 rounded-2xl whitespace-pre-wrap">{selectedApiItem.servDgst || '요약 정보가 없습니다.'}</p>
                             </section>
+
+                            {selectedApiItem.fullContent && selectedApiItem.fullContent !== selectedApiItem.servDgst && (
+                                <section>
+                                    <h4 className="text-sm font-black text-gray-900 mb-3 flex items-center gap-2">
+                                        <div className="w-1 h-4 bg-amber-500 rounded-full" />
+                                        상세 정보 (기사용 소스)
+                                    </h4>
+                                    <div className="text-gray-600 text-sm leading-relaxed bg-amber-50/50 p-4 rounded-2xl border border-amber-100 whitespace-pre-wrap max-h-[400px] overflow-y-auto custom-scrollbar">
+                                        {selectedApiItem.fullContent}
+                                    </div>
+                                </section>
+                            )}
                             {selectedApiItem.servDtlLink && (
                                 <section>
                                     <h4 className="text-sm font-black text-gray-900 mb-3">원본 링크</h4>

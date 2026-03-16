@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
     const numOfRows = searchParams.get('numOfRows') || '10';
     const servId = searchParams.get('servId');
 
-    const CORP_API_KEY = process.env.NEXT_PUBLIC_DATA_API_KEY || ''; // 기존 기업형 키
-    const GEN_API_KEY = process.env.NEXT_PUBLIC_GENERAL_DATA_API_KEY || '12b8bc4d97607f8df3a88d39efa639e76ea1668505c5762165139c7eff120944'; // 신규 일반형 키 (env가 없을 경우 대비 하드코딩 추가)
+    const CORP_API_KEY = process.env.NEXT_PUBLIC_DATA_API_KEY || 'eefcb5c67be6e9da1aecba37f8806ad339c56a74af600774d380920685d87ec3'; // Group A (Corporate)
+    const GEN_API_KEY = process.env.NEXT_PUBLIC_GENERAL_DATA_API_KEY || '12b8bc4d97607f8df3a88d39efa639e76ea1668505c5762165139c7eff120944'; // Group B (General)
     
     // Decoding for axios params usage
     const decodedCorpKey = decodeURIComponent(CORP_API_KEY);
@@ -70,16 +70,11 @@ export async function GET(request: NextRequest) {
 
 
         if (type === 'MOGEF_LIST') {
-            const response = await axios.get('http://apis.data.go.kr/1383000/mogefNew/nwEnwSelectList', {
-                params: {
-                    serviceKey: decodedGenKey, // 신규 일반형 키 적용
-                    pageNo,
-                    numOfRows,
-                    type: 'xml'
-                }
-            });
-            return new NextResponse(response.data, {
-                headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+            // MOGEF (1383000) is often sensitive to key encoding. Try raw key or _type=json
+            const url = `http://apis.data.go.kr/1383000/mogefNew/nwEnwSelectList?serviceKey=${CORP_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&_type=json`;
+            const response = await axios.get(url, { timeout: 7000 });
+            return new NextResponse(JSON.stringify(response.data), {
+                headers: { 'Content-Type': 'application/json; charset=utf-8' }
             });
         }
 
@@ -140,7 +135,8 @@ export async function GET(request: NextRequest) {
 
         if (type === 'MCST_PHOTO_LIST') {
             try {
-                const url = `http://apis.data.go.kr/1371000/photoService/getPhotoList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+                // Operation name check: photoList is the standard for 1371000 photo service
+                const url = `http://apis.data.go.kr/1371000/photoService/photoList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&startDate=20240101&endDate=20991231`;
                 const response = await axios.get(url, { timeout: 5000 });
                 return new NextResponse(response.data, {
                     headers: { 'Content-Type': 'application/xml; charset=utf-8' }
@@ -153,10 +149,10 @@ export async function GET(request: NextRequest) {
 
 
         if (type === 'MOIS_STATS_LIST') {
-            const url = `https://apis.data.go.kr/1741000/Subsidy24/getSubsidy24?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
-            const response = await axios.get(url);
-            return new NextResponse(response.data, {
-                headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+            const url = `http://apis.data.go.kr/1741000/Subsidy24/getSubsidy24?serviceKey=${decodedGenKey}&pageNo=${pageNo}&numOfRows=${numOfRows}&type=json`;
+            const response = await axios.get(url, { timeout: 7000 });
+            return new NextResponse(JSON.stringify(response.data), {
+                headers: { 'Content-Type': 'application/json; charset=utf-8' }
             });
         }
 

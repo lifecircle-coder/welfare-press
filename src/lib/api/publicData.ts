@@ -1,9 +1,8 @@
 import axios from 'axios';
 import { XMLParser } from 'fast-xml-parser';
 
-const API_KEY = process.env.NEXT_PUBLIC_DATA_API_KEY || '';
-const CORPORATE_API_KEY = 'G2O9SAtp%2Bc60I7f%2Fz6z8v7u8v8y8x8q8w8e8r8t8y8u8i8o8p%3D%3D'; // Existing key
-const GENERAL_API_KEY = process.env.NEXT_PUBLIC_GENERAL_DATA_API_KEY || '12b8bc4d97607f8df3a88d39efa639e76ea1668505c5762165139c7eff120944';
+const CORPORATE_API_KEY = 'eefcb5c67be6e9da1aecba37f8806ad339c56a74af600774d380920685d87ec3'; // Group A
+const GENERAL_API_KEY = '12b8bc4d97607f8df3a88d39efa639e76ea1668505c5762165139c7eff120944'; // Group B
 
 // 1. 한국사회보장정보원_중앙부처복지서비스
 const NATIONAL_API_URL = 'http://apis.data.go.kr/B554287/NationalWelfareInformationsV001';
@@ -106,6 +105,7 @@ export interface WelfareService {
     thumbnail?: string;      // 썸네일 이미지 URL
     deptNm?: string;         // 상세 부서명
     keywords?: string[];     // 추출 키워드
+    fullContent?: string;    // [풍성한 소스] 전체 본문 데이타
 }
 
 export interface ResourceService {
@@ -142,7 +142,7 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
             // Server env: Call direct
             const response = await axios.get(`${NATIONAL_API_URL}/NationalWelfarelistV001`, {
                 params: {
-                    serviceKey: decodeURIComponent(API_KEY),
+                    serviceKey: decodeURIComponent(CORPORATE_API_KEY),
                     callTp: 'L',
                     pageNo: 1,
                     numOfRows: 500, // 전체 데이터를 한 번에 가져와서 정렬
@@ -162,7 +162,7 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
         }
         let arrayList = Array.isArray(servList) ? servList : [servList];
 
-        let mappedList = arrayList.map(item => ({
+        let mappedList = arrayList.map((item: any) => ({
             servId: item.servId || '',
             servNm: item.servNm || '',
             jurMnofNm: item.jurMnofNm || '',
@@ -207,7 +207,7 @@ export const getNationalWelfareDetail = async (servId: string): Promise<WelfareS
         } else {
             const response = await axios.get(`${NATIONAL_API_URL}/NationalWelfaredetailedV001`, {
                 params: {
-                    serviceKey: decodeURIComponent(API_KEY),
+                    serviceKey: decodeURIComponent(CORPORATE_API_KEY),
                     callTp: 'D',
                     servId,
                 }
@@ -244,7 +244,7 @@ export const getLocalGovWelfareList = async (pageNo = 1, numOfRows = 50): Promis
         } else {
             const response = await axios.get(`${LOCAL_API_URL}/LcgvWelfarelist`, {
                 params: {
-                    serviceKey: decodeURIComponent(API_KEY),
+                    serviceKey: decodeURIComponent(CORPORATE_API_KEY),
                     callTp: 'L',
                     pageNo,
                     numOfRows,
@@ -297,7 +297,7 @@ export const getLocalGovWelfareDetail = async (servId: string): Promise<WelfareS
         } else {
             const response = await axios.get(`${LOCAL_API_URL}/LcgvWelfaredetailed`, {
                 params: {
-                    serviceKey: decodeURIComponent(API_KEY),
+                    serviceKey: decodeURIComponent(CORPORATE_API_KEY),
                     callTp: 'D',
                     servId,
                 }
@@ -339,7 +339,7 @@ export const getResourceInfoList = async (pageNo = 1, numOfRows = 10): Promise<R
     try {
         const response = await axios.get(`${RESOURCE_API_URL}/getPrvateResrcInfoInqire`, {
             params: {
-                ServiceKey: decodeURIComponent(API_KEY), // 자원정보는 S가 대문자
+                ServiceKey: decodeURIComponent(CORPORATE_API_KEY), // 자원정보는 S가 대문자
                 pageNo,
                 numOfRows
             }
@@ -375,7 +375,7 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
         } else {
             const response = await axios.get(`${SUBSIDY_API_URL}/serviceList`, {
                 params: {
-                    serviceKey: decodeURIComponent(API_KEY),
+                    serviceKey: decodeURIComponent(GENERAL_API_KEY),
                     page: pageNo,
                     perPage: numOfRows,
                 }
@@ -391,7 +391,7 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
             return [];
         }
 
-        return arrayList.map(item => ({
+        return arrayList.map((item: any) => ({
             servId: String(item.svcId),
             servNm: item.svcNm,
             jurMnofNm: item.pdeptNm || item.porgNm || '보조금24',
@@ -440,7 +440,7 @@ export const getYouthPolicyList = async (pageNo = 1, numOfRows = 50): Promise<We
         if (!list) return [];
         let arrayList = Array.isArray(list) ? list : [list];
 
-        return arrayList.map(item => ({
+        return arrayList.map((item: any) => ({
             servId: item.bizId,
             servNm: item.polyBizSjnm,
             jurMnofNm: item.polyBizTy || '청년정책',
@@ -473,9 +473,9 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             });
             data = response.data;
         } else {
-            // MOGEF API는 환경변수 API_KEY가 가장 안정적으로 작동할 가능성이 큼
+            // MOGEF API는 Group A (Corporate) 키 사용
             const response = await axios.get(MOGEF_API_URL + '/nwEnwSelectList', {
-                params: { serviceKey: decodeURIComponent(API_KEY || GENERAL_API_KEY), pageNo, numOfRows },
+                params: { serviceKey: decodeURIComponent(CORPORATE_API_KEY), pageNo, numOfRows },
                 timeout: 10000
             });
             
@@ -489,7 +489,7 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             if (!list || (Array.isArray(list) && list.length === 0)) return [];
             const arrayList = Array.isArray(list) ? list : [list];
 
-            const mappedList: WelfareService[] = arrayList.map(item => ({
+            const mappedList: WelfareService[] = arrayList.map((item: any) => ({
                 servId: item.articleId ? `MOGEF_${item.articleId}` : (item.bbtSn ? `MOGEF_${item.bbtSn}` : `MOGEF_${Math.random().toString(36).substring(7)}`),
                 servNm: decodeHtml(item.title || item.articleTitle || item.pstTtl || ''),
                 jurMnofNm: item.deptNm || '여성가족부',
@@ -498,7 +498,8 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
                 svcfrstRegTs: parseApiDate(item.regDt || item.ntcDt || ''),
                 apiSource: 'MOGEF',
                 priority: 2,
-                isNews: true
+                isNews: true,
+                fullContent: decodeHtml(item.cont || item.articleContent || item.pstCn || '')
             }));
 
             return mappedList;
@@ -509,7 +510,7 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
         if (!list) return [];
         let arrayList = Array.isArray(list) ? list : [list];
 
-        const mappedList: WelfareService[] = arrayList.map(item => ({
+        const mappedList: WelfareService[] = arrayList.map((item: any) => ({
             servId: item.articleId ? `MOGEF_${item.articleId}` : (item.bbtSn ? `MOGEF_${item.bbtSn}` : `MOGEF_${Math.random().toString(36).substring(7)}`),
             servNm: decodeHtml(item.title || item.articleTitle || item.pstTtl || ''),
             jurMnofNm: item.deptNm || '여성가족부',
@@ -518,7 +519,8 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             svcfrstRegTs: parseApiDate(item.regDt || item.ntcDt || ''),
             apiSource: 'MOGEF',
             priority: 2,
-            isNews: true
+            isNews: true,
+            fullContent: decodeHtml(item.cont || item.articleContent || item.pstCn || '')
         }));
 
         return mappedList;
@@ -553,12 +555,14 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
         if (!list || (Array.isArray(list) && list.length === 0)) return [];
         const arrayList = Array.isArray(list) ? list : [list];
 
-        return arrayList.map(item => ({
+        return arrayList.map((item: any) => ({
             servId: `MCST_PR_${item.NewsItemId || item.articleId || item.articleID || Math.random().toString(36).substring(7)}`,
             servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: item.DeptNm || item.deptNm || '문화체육관광부',
             servDgst: decodeHtml(
-                item.SubTitle1 || item.SubTitle2 || item.SubTitle3 || 
+                [item.SubTitle1, item.SubTitle2, item.SubTitle3]
+                    .filter(Boolean)
+                    .join(' | ') || 
                 item.SubTitle || item.subTitle || 
                 (item.DataContents ? item.DataContents.substring(0, 300) : '') || ''
             ),
@@ -567,7 +571,8 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
             apiSource: 'MCST_PRESS',
             isNews: true,
             priority: 1,
-            deptNm: item.DeptNm || item.deptNm
+            deptNm: item.DeptNm || item.deptNm,
+            fullContent: decodeHtml(item.DataContents || '') // 본문 전체 포함
         }));
     } catch (error) {
         console.error('API Fetch Error (MCST Press):', error);
@@ -605,7 +610,9 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
             servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: '정책브리핑',
             servDgst: decodeHtml(
-                item.SubTitle1 || item.SubTitle2 || item.SubTitle3 || 
+                [item.SubTitle1, item.SubTitle2, item.SubTitle3]
+                    .filter(Boolean)
+                    .join(' | ') || 
                 item.SubTitle || item.subTitle || 
                 (item.DataContents ? item.DataContents.substring(0, 300) : '') || ''
             ),
@@ -614,7 +621,8 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
             apiSource: 'MCST_NEWS',
             isNews: true,
             priority: 1,
-            thumbnail: item.ThumbnailUrl || item.thumbnailUrl
+            thumbnail: item.ThumbnailUrl || item.thumbnailUrl,
+            fullContent: decodeHtml(item.DataContents || '')
         }));
     } catch (error) {
         console.error('API Fetch Error (MCST News):', error);
@@ -652,7 +660,9 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: '정책포토',
             servDgst: decodeHtml(
-                item.SubTitle1 || item.SubTitle2 || item.SubTitle3 || 
+                [item.SubTitle1, item.SubTitle2, item.SubTitle3]
+                    .filter(Boolean)
+                    .join(' | ') || 
                 item.SubTitle || item.subTitle || 
                 (item.DataContents ? item.DataContents.substring(0, 300) : '') || ''
             ),
@@ -661,7 +671,8 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             apiSource: 'MCST_PHOTO',
             isNews: true,
             priority: 2,
-            thumbnail: item.ThumbnailUrl || item.thumbnailUrl
+            thumbnail: item.ThumbnailUrl || item.thumbnailUrl,
+            fullContent: decodeHtml(item.DataContents || '')
         }));
     } catch (error) {
         console.error('API Fetch Error (MCST Photo):', error);
