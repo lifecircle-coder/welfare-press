@@ -404,22 +404,25 @@ export default function ArticleManagement() {
                             
                             const getRelativeTimeInfo = (ds?: string | any) => {
                                 if (!ds) return { text: '최근', isNew: false, dDay: null };
-                                const dsStr = String(ds);
+                                const dsStr = String(ds).replace(/[^0-9]/g, '');
                                 if (dsStr.length < 8) return { text: '최근', isNew: false, dDay: null };
                                 const year = parseInt(dsStr.substring(0, 4));
                                 const month = parseInt(dsStr.substring(4, 6)) - 1;
                                 const day = parseInt(dsStr.substring(6, 8));
                                 const date = new Date(year, month, day);
+                                if (isNaN(date.getTime())) return { text: '최근', isNew: false, dDay: null };
                                 const now = new Date();
                                 now.setHours(0, 0, 0, 0);
                                 date.setHours(0, 0, 0, 0);
                                 const diff = now.getTime() - date.getTime();
                                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
                                 
+                                const dateLabel = `${year}.${(month+1).toString().padStart(2, '0')}.${day.toString().padStart(2, '0')}`;
+                                
                                 if (days === 0) return { text: '오늘', isNew: true, dDay: 'Today' };
                                 if (days === 1) return { text: '어제', isNew: true, dDay: 'D-1' };
-                                if (days < 7) return { text: `${days}일 전`, isNew: false, dDay: `D-${days}` };
-                                return { text: `${year}.${(month+1).toString().padStart(2, '0')}.${day.toString().padStart(2, '0')}`, isNew: false, dDay: null };
+                                if (days > 1 && days < 7) return { text: `${days}일 전`, isNew: false, dDay: `D-${days}` };
+                                return { text: dateLabel, isNew: false, dDay: null };
                             };
 
                             const timeInfo = getRelativeTimeInfo(api.svcfrstRegTs);
