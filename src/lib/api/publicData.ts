@@ -704,21 +704,9 @@ export const getMoisStatsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
         // The proxy returns XML/JSON, ensure parsing
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
         
-        // Statistics (MOIS_STATS) parsing: The portal returns {"Subsidy24": [{"head":...}, {"row":[...]}]}
-        let body = jsonObj.response?.body || jsonObj.Subsidy24?.body || jsonObj.Subsidy24 || jsonObj;
+        // MOIS_STATS is now normalized by our route.ts proxy to return { items: [...] }
+        const list = jsonObj.items || jsonObj.item || jsonObj.row || [];
         
-        // Handle Subsidy24 special array structure: data.Subsidy24[1].row or items.row
-        let list = [];
-        if (Array.isArray(body)) {
-            const rowPart = body.find((p: any) => p && (p.row || p.Row || p.items || p.item));
-            if (rowPart) {
-                list = rowPart.row || rowPart.Row || rowPart.items || rowPart.item || [];
-            }
-        } else if (body && typeof body === 'object') {
-            const items = body.items || body.item || body;
-            list = items.item || items.row || (Array.isArray(items) ? items : []);
-        }
-
         // Final safety check: if list is still not an array, force it
         const arrayList = Array.isArray(list) ? list : (list ? [list] : []);
         

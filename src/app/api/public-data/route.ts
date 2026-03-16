@@ -79,10 +79,16 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'SUBSIDY_LIST') {
-            // ODCloud Subsidy24 v3 (15101213) precision: use raw CORP_API_KEY and lowercase returnType=json.
-            const url = `https://api.odcloud.kr/api/gov24/v3/serviceList?serviceKey=${CORP_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
-            const response = await axios.get(url, { timeout: 7000 });
-            return NextResponse.json(response.data);
+            // ODCloud Subsidy24 v3. If Corp key fails (400), fallback to General key.
+            try {
+                const url = `https://api.odcloud.kr/api/gov24/v3/serviceList?serviceKey=${CORP_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
+                const response = await axios.get(url, { timeout: 7000 });
+                return NextResponse.json(response.data);
+            } catch (e) {
+                const url = `https://api.odcloud.kr/api/gov24/v3/serviceList?serviceKey=${GEN_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
+                const response = await axios.get(url, { timeout: 7000 });
+                return NextResponse.json(response.data);
+            }
         }
 
         if (type === 'YOUTH_LIST') {
@@ -131,9 +137,13 @@ export async function GET(request: NextRequest) {
 
         if (type === 'MCST_PHOTO_LIST') {
             try {
-                // Operation name check: photoList. Trying Group A (Corp) as last resort if Group B fails.
-                const url = `http://apis.data.go.kr/1371000/photoService/photoList?serviceKey=${decodedCorpKey}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
-                const response = await axios.get(url, { timeout: 7000 });
+                // Try Group B (General) first as requested, fallback to Group A (Corp)
+                let url = `http://apis.data.go.kr/1371000/photoService/photoList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+                let response = await axios.get(url, { timeout: 7000 });
+                if (response.data.includes('Portal API error')) {
+                    url = `http://apis.data.go.kr/1371000/photoService/photoList?serviceKey=${CORP_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
+                    response = await axios.get(url, { timeout: 7000 });
+                }
                 return new NextResponse(response.data, {
                     headers: { 'Content-Type': 'application/xml; charset=utf-8' }
                 });
@@ -147,9 +157,10 @@ export async function GET(request: NextRequest) {
         if (type === 'MOIS_STATS_LIST') {
             const url = `http://apis.data.go.kr/1741000/Subsidy24/getSubsidy24?serviceKey=${decodedGenKey}&pageNo=${pageNo}&numOfRows=${numOfRows}&type=json`;
             const response = await axios.get(url, { timeout: 7000 });
-            return new NextResponse(JSON.stringify(response.data), {
-                headers: { 'Content-Type': 'application/json; charset=utf-8' }
-            });
+            // Normalize JSON structure for Statistics to prevent frontend parsing bugs.
+            const rawData = response.data;
+            const items = rawData?.Subsidy24?.[1]?.row || rawData?.Subsidy24?.row || rawData?.row || [];
+            return NextResponse.json({ items });
         }
 
         return NextResponse.json({ error: 'Invalid type' }, { status: 400 });
