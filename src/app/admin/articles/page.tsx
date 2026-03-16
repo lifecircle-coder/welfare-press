@@ -214,51 +214,66 @@ export default function ArticleManagement() {
     const handleCopySource = async (api: WelfareService) => {
         try {
             let prompt = '';
-            const sourceName = api.jurMnofNm || '정부 부처';
+            const sourceName = api.jurMnofNm || '공공기관';
             const title = api.servNm;
             const summary = api.servDgst;
             const link = api.servDtlLink || '상세 페이지 참조';
-            const keywords = (api.keywords || []).join(', ');
+            const keywords = (api.keywords || []).length > 0 ? (api.keywords || []).join(', ') : '복지, 정책, 뉴스';
 
-            // 왕 기자(AI Persona) 전용 지능형 프롬프트 템플릿
+            // [스토리보드 반영] 왕 기자(AI Persona) 지능형 프롬프트 시스템
             if (api.apiSource === 'MCST_PRESS') {
-                prompt = `[왕 기자 전용: 보도자료 기반 기사 작성 지침]
+                prompt = `[왕 기자 전용: 보도자료 기반 팩트체크 리포트]
 
-핵심 소스: 문화체육관광부 보도자료
-기관명: ${sourceName}
-기사 제목 후보: ${title}
+핵심 소스: 문화체육관광부 정책브리핑 (보도자료)
+소속 기관: ${sourceName}
+헤드라인(원문): ${title}
 데이터 요약: ${summary}
 상세 URL: ${link}
-키워드: ${keywords}
+핵심 키워드: ${keywords}
 
-작성 지침:
-1. 보도자료의 팩트를 기반으로 객관적이고 신뢰감 있는 신문사 톤앤매너를 유지하세요.
-2. 독자가 혜택을 쉽게 이해할 수 있도록 'Q&A' 또는 '핵심 요약 3가지' 섹션을 포함하세요.
-3. 전문 용어는 쉽게 풀어서 설명하고, 시행 일시와 장소를 명확히 강조해 주세요.`;
+작성 지침 (보도자료형):
+1. '팩트 위주의 뉴스 브리핑' 형태를 유지하며, 정부의 공식 입장을 독자들에게 신뢰감 있게 전달하세요.
+2. 기사 도입부에 '이 정책이 왜 중요한지' 한 문장으로 정의하고 시작하세요.
+3. [누가, 언제, 무엇을, 어떻게] 수혜를 받는지 표(Table) 또는 리스트 형태로 일목요연하게 정리하세요.
+4. 마지막에는 정책 담당 부서와 연락처(있는 경우)를 명시하여 독자의 편의를 돕습니다.`;
             } else if (api.apiSource === 'MCST_NEWS' || api.apiSource === 'MCST_PHOTO') {
-                prompt = `[왕 기자 전용: 정책 뉴스 기반 기사 작성 지침]
+                prompt = `[왕 기자 전용: 정책 뉴스 기반 스토리텔링 지능형 프롬프트]
 
-뉴스 소스: 대한민국 정책뉴스
-제목: ${title}
+뉴스 소스: 정책브리핑 전문 뉴스/포토
+기사 제목: ${title}
 내용 요약: ${summary}
 참고 URL: ${link}
 
-작성 지침:
-1. 최신 트렌드와 연결하여 독자들의 관심을 끌 수 있는 흥미로운 헤드라인을 뽑아주세요.
-2. 정책이 우리 삶에 미치는 영향을 중심으로 '친근한 해설' 톤으로 작성하세요.
-3. 정책 관련 댓글이나 소셜 미디어의 반응을 예상하여 보완하는 내용을 추가해 주세요.`;
-            } else if (api.apiSource === 'NATIONAL' || api.apiSource === 'LOCAL' || api.apiSource === 'SUBSIDY') {
-                prompt = `[왕 기자 전용: 복지/혜택 안내 기사 작성 지침]
+작성 지침 (스토리텔링형):
+1. 딱딱한 정책 발표가 아닌, 실생활에 적용된 '사례' 중심의 친근한 해설 기사로 작성하세요.
+2. '왕 기자' 특유의 날카로운 분석을 더해, 이 정책이 가져올 기대효과 3가지를 도출하세요.
+3. 시각적으로 돋보이도록 적절한 소제목(Sub-heading)을 3개 이상 사용하세요.
+4. 독자 초청 멘트나 궁금증을 유발하는 질문으로 기사를 마무리하세요.`;
+            } else if (api.apiSource === 'NATIONAL' || api.apiSource === 'LOCAL' || api.apiSource === 'SUBSIDY' || api.apiSource === 'MOGEF') {
+                prompt = `[왕 기자 전용: 복지 서비스 수혜자 중심 가이드]
 
-지원 정책명: ${title}
-소관 기관: ${sourceName}
-주요 내용: ${summary}
-신청 방법/링크: ${link}
+서비스명: ${title}
+제공 기관: ${sourceName}
+서비스 요약: ${summary}
+신청 링크: ${link}
 
-작성 지침:
-1. '신청 안 하면 손해!'라는 느낌의 실생활 체감형 복지 안내 기사로 작성하세요.
-2. 신청 자격, 지원 금액, 신청 방법을 블렛 포인트로 선명하게 정리해 주세요.
-3. 비슷한 다른 복지 제도와 비교하여 어떤 점이 좋은지 언급해 주면 좋습니다.`;
+작성 지침 (수혜자 맞춤형):
+1. '당신을 위한 맞춤 복지'라는 컨셉으로, 2030 청년 또는 6070 시니어 등 핵심 타겟을 명확히 설정하여 작성하세요.
+2. '쉬운 요약' 박스를 상단에 배치하고, 전문 용어 대신 일상 용어를 사용하세요.
+3. "이런 분들은 꼭 신청하세요!" 섹션을 만들어 자격 요건을 강조하세요.
+4. 기사 끝에 글자 크기 조절 버튼이 있다는 점을 언급하여 접근성을 강조하세요.`;
+            } else if (api.apiSource === 'MOIS_STATS') {
+                prompt = `[왕 기자 전용: 데이터 인사이트 분석 리포트]
+
+통계 데이터: ${title}
+출처: 행정안전부 (보도자료/통계)
+데이터 개요: ${summary}
+
+작성 지침 (데이터 분석형):
+1. 숫자가 주는 의미를 파악하여 '데이터로 보는 복지 현황' 테마로 작성하세요.
+2. 과거 데이터나 다른 지표와 비교하여 증가/감소 추세를 분석해 주세요.
+3. 통계 결과가 시사하는 사회적 메시지를 '왕 기자'의 논평으로 정리하세요.
+4. 인포그래픽을 보는 듯한 텍스트 구조(도표화)를 사용하세요.`;
             } else {
                 prompt = `[왕 기자 전용: 일반 정보 브리핑 지침]
 
@@ -276,7 +291,7 @@ export default function ArticleManagement() {
             const newCopied = { ...copiedState, [api.servId]: now };
             setCopiedState(newCopied);
             localStorage.setItem('copiedPublicData', JSON.stringify(newCopied));
-            alert('왕 기자 전용 지능형 프롬프트가 복사되었습니다!\nAI 기자 창에 붙여넣기 하여 기사를 완성하세요.');
+            alert('🚀 왕 기자 전용 지능형 프롬프트가 복사되었습니다!\n기사 작성 창의 AI 프롬프트 입력란에 붙여넣으세요.');
         } catch (error) {
             console.error('Failed to copy', error);
         }
@@ -325,33 +340,38 @@ export default function ArticleManagement() {
                     </div>
                 </div>
 
-                <div className="flex flex-wrap items-center gap-3 mb-6 bg-white p-3 rounded-xl border border-blue-100 shadow-sm">
-                    <select
-                        className="bg-transparent font-bold text-sm text-gray-700 outline-none cursor-pointer px-2"
-                        value={activeApiTab}
-                        onChange={(e) => setActiveApiTab(e.target.value as any)}
-                    >
-                        <optgroup label="뉴스 및 보도자료">
-                            <option value="MCST_PRESS">정책브리핑 (보도자료)</option>
-                            <option value="MCST_NEWS">정책뉴스 (브리핑)</option>
-                            <option value="MCST_PHOTO">뉴스포토</option>
-                            <option value="NEWS_ALL">종합 뉴스 브리핑</option>
-                        </optgroup>
-                        <optgroup label="정책 정보">
-                            <option value="NATIONAL">중앙부처 통합 (복지로)</option>
-                            <option value="MOGEF">여성가족부</option>
-                            <option value="SUBSIDY">보조금24</option>
-                            <option value="LOCAL">지자체 특화</option>
-                            <option value="MOIS_STATS">통계 데이터</option>
-                        </optgroup>
-                    </select>
-                    <div className="h-4 w-px bg-gray-200 mx-2" />
-                    <div className="flex-1 flex items-center gap-2 bg-gray-50 px-3 py-2 rounded-lg border border-gray-100">
+                <div className="flex flex-wrap items-center gap-2 mb-6">
+                    <div className="flex bg-white p-1 rounded-xl border border-blue-100 shadow-sm overflow-x-auto no-scrollbar max-w-full">
+                        {[
+                            { id: 'MCST_PRESS', label: '보도자료', icon: '📢' },
+                            { id: 'MCST_NEWS', label: '정책뉴스', icon: '🗞️' },
+                            { id: 'NEWS_ALL', label: '종합뉴스', icon: '⚡' },
+                            { id: 'NATIONAL', label: '중앙부처', icon: '🏛️' },
+                            { id: 'LOCAL', label: '지자체', icon: '📍' },
+                            { id: 'SUBSIDY', label: '보조금24', icon: '💰' },
+                            { id: 'MOGEF', label: '여가부', icon: '👪' },
+                            { id: 'MOIS_STATS', label: '통계', icon: '📊' },
+                        ].map((tab) => (
+                            <button
+                                key={tab.id}
+                                onClick={() => setActiveApiTab(tab.id as any)}
+                                className={`flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-bold transition-all whitespace-nowrap
+                                    ${activeApiTab === tab.id 
+                                        ? 'bg-blue-600 text-white shadow-md shadow-blue-100 scale-105' 
+                                        : 'text-gray-500 hover:bg-gray-50 hover:text-blue-600'}`}
+                            >
+                                <span>{tab.icon}</span>
+                                {tab.label}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    <div className="flex-1 flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl border border-blue-100 shadow-sm ml-auto min-w-[240px]">
                         <Search size={16} className="text-gray-400" />
                         <input 
                             type="text" 
-                            placeholder="소스 내 키워드 검색..."
-                            className="bg-transparent border-none outline-none text-sm w-full"
+                            placeholder="뉴스 소스 내 통합 검색..."
+                            className="bg-transparent border-none outline-none text-sm w-full font-medium"
                             value={apiSearchTerm}
                             onChange={(e) => setApiSearchTerm(e.target.value)}
                         />
@@ -360,84 +380,135 @@ export default function ArticleManagement() {
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar">
                     {((activeApiTab === 'LOCAL' ? displayLocalApiData : displayApiData)
-                        .filter(api => !apiSearchTerm || api.servNm.includes(apiSearchTerm) || api.servDgst.includes(apiSearchTerm))
+                        .filter(api => !apiSearchTerm || api.servNm.toLowerCase().includes(apiSearchTerm.toLowerCase()) || api.servDgst.toLowerCase().includes(apiSearchTerm.toLowerCase()))
                     ).length === 0 ? (
                         <div className="col-span-full p-12 text-center text-gray-400 bg-white rounded-xl border border-dashed">
                             {isFetchingApi || isFetchingLocal ? '데이터를 불러오는 중입니다...' : '검색된 항목이 없습니다.'}
                         </div>
                     ) : (
                         (activeApiTab === 'LOCAL' ? displayLocalApiData : displayApiData)
-                        .filter(api => !apiSearchTerm || api.servNm.includes(apiSearchTerm) || api.servDgst.includes(apiSearchTerm))
+                        .filter(api => !apiSearchTerm || api.servNm.toLowerCase().includes(apiSearchTerm.toLowerCase()) || api.servDgst.toLowerCase().includes(apiSearchTerm.toLowerCase()))
                         .map(api => {
                             const isCopied = !!copiedState[api.servId];
-                            const getRelativeTime = (ds?: string | any) => {
-                                if (!ds) return '최근';
+                            
+                            const getRelativeTimeInfo = (ds?: string | any) => {
+                                if (!ds) return { text: '최근', isNew: false, dDay: null };
                                 const dsStr = String(ds);
-                                if (dsStr.length < 8) return '최근';
+                                if (dsStr.length < 8) return { text: '최근', isNew: false, dDay: null };
                                 const year = parseInt(dsStr.substring(0, 4));
                                 const month = parseInt(dsStr.substring(4, 6)) - 1;
                                 const day = parseInt(dsStr.substring(6, 8));
                                 const date = new Date(year, month, day);
                                 const now = new Date();
+                                now.setHours(0, 0, 0, 0);
+                                date.setHours(0, 0, 0, 0);
                                 const diff = now.getTime() - date.getTime();
                                 const days = Math.floor(diff / (1000 * 60 * 60 * 24));
-                                if (days === 0) return '오늘';
-                                if (days === 1) return '어제';
-                                return `${days}일 전`;
+                                
+                                if (days === 0) return { text: '오늘', isNew: true, dDay: 'Today' };
+                                if (days === 1) return { text: '어제', isNew: true, dDay: 'D-1' };
+                                if (days < 7) return { text: `${days}일 전`, isNew: false, dDay: `D-${days}` };
+                                return { text: `${year}.${(month+1).toString().padStart(2, '0')}.${day.toString().padStart(2, '0')}`, isNew: false, dDay: null };
                             };
 
-                            const isNew = getRelativeTime(api.svcfrstRegTs).includes('오늘') || getRelativeTime(api.svcfrstRegTs).includes('어제');
+                            const timeInfo = getRelativeTimeInfo(api.svcfrstRegTs);
+                            
                             const sourceLabels: any = {
-                                'MCST_PRESS': { label: '보도자료', color: 'bg-blue-600', text: 'text-blue-700', bg: 'bg-blue-50' },
-                                'MCST_NEWS': { label: '정책뉴스', color: 'bg-indigo-600', text: 'text-indigo-700', bg: 'bg-indigo-50' },
-                                'MCST_PHOTO': { label: '뉴스포토', color: 'bg-purple-600', text: 'text-purple-700', bg: 'bg-purple-50' },
-                                'NATIONAL': { label: '중앙부처', color: 'bg-sky-600', text: 'text-sky-700', bg: 'bg-sky-50' },
-                                'LOCAL': { label: '지자체', color: 'bg-orange-600', text: 'text-orange-700', bg: 'bg-orange-50' },
-                                'SUBSIDY': { label: '보조금24', color: 'bg-green-600', text: 'text-green-700', bg: 'bg-green-50' },
-                                'YOUTH': { label: '청년정책', color: 'bg-violet-600', text: 'text-violet-700', bg: 'bg-violet-50' },
-                                'MOGEF': { label: '여가부', color: 'bg-pink-600', text: 'text-pink-700', bg: 'bg-pink-50' },
-                                'MOIS_STATS': { label: '통계자료', color: 'bg-gray-600', text: 'text-gray-700', bg: 'bg-gray-50' }
+                                'MCST_PRESS': { label: '보도자료', color: 'bg-blue-600', text: 'text-blue-700', bg: 'bg-blue-50', icon: '📢' },
+                                'MCST_NEWS': { label: '정책뉴스', color: 'bg-indigo-600', text: 'text-indigo-700', bg: 'bg-indigo-50', icon: '🗞️' },
+                                'MCST_PHOTO': { label: '뉴스포토', color: 'bg-purple-600', text: 'text-purple-700', bg: 'bg-purple-50', icon: '📸' },
+                                'NATIONAL': { label: '중앙부처', color: 'bg-sky-600', text: 'text-sky-700', bg: 'bg-sky-50', icon: '🏛️' },
+                                'LOCAL': { label: '지자체', color: 'bg-orange-600', text: 'text-orange-700', bg: 'bg-orange-50', icon: '📍' },
+                                'SUBSIDY': { label: '보조금24', color: 'bg-green-600', text: 'text-green-700', bg: 'bg-green-50', icon: '💰' },
+                                'YOUTH': { label: '청년정책', color: 'bg-violet-600', text: 'text-violet-700', bg: 'bg-violet-50', icon: '✨' },
+                                'MOGEF': { label: '여가부', color: 'bg-pink-600', text: 'text-pink-700', bg: 'bg-pink-50', icon: '👪' },
+                                'MOIS_STATS': { label: '통계자료', color: 'bg-gray-700', text: 'text-gray-700', bg: 'bg-gray-100', icon: '📊' }
                             };
-                            const s = sourceLabels[api.apiSource || 'NATIONAL'];
+                            const s = sourceLabels[api.apiSource || 'NATIONAL'] || sourceLabels['NATIONAL'];
 
                             return (
-                                <div key={api.servId} className={`bg-white p-5 rounded-2xl border flex gap-4 transition-all group ${isCopied ? 'opacity-60 grayscale-[0.5]' : 'border-white hover:border-blue-200 hover:shadow-md'}`}>
-                                    {(api.thumbnail || api.apiSource === 'MCST_PHOTO') && (
-                                        <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-gray-50 border">
-                                            <img src={api.thumbnail || '/assets/images/placeholder.png'} alt="thumb" className="w-full h-full object-cover group-hover:scale-110 transition-transform" />
+                                <div 
+                                    key={api.servId} 
+                                    className={`relative overflow-hidden bg-white p-5 rounded-2xl border transition-all duration-300 flex gap-4 group 
+                                        ${isCopied ? 'bg-gray-50 border-gray-100' : 'border-white hover:border-blue-200 hover:shadow-xl hover:-translate-y-1'}`}
+                                >
+                                    {/* Copy Tracking Overlay for used items */}
+                                    {isCopied && (
+                                        <div className="absolute top-2 right-2 z-10 bg-gray-200 text-gray-500 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm">
+                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
+                                            </svg>
+                                            작성 진행중
                                         </div>
                                     )}
-                                    <div className="flex-1 min-w-0">
-                                        <div className="flex items-center gap-2 mb-2 flex-wrap">
-                                            {isNew && <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[9px] font-black animate-pulse">NEW</span>}
-                                            {api.priority === 1 && <span className="border border-amber-200 bg-amber-50 text-amber-700 px-1.5 py-0.5 rounded text-[9px] font-bold">중요</span>}
-                                            <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${s.bg} ${s.text}`}>{s.label}</span>
-                                            <span className="text-[10px] text-gray-500 font-medium">{api.jurMnofNm}</span>
+
+                                    {/* Thumbnail or Icon */}
+                                    {(api.thumbnail || api.apiSource === 'MCST_PHOTO') ? (
+                                        <div className="w-24 h-24 rounded-xl overflow-hidden shrink-0 bg-gray-100 border relative group-hover:ring-2 ring-blue-100 transition-all">
+                                            <img 
+                                                src={api.thumbnail || '/assets/images/placeholder.png'} 
+                                                alt="thumb" 
+                                                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${isCopied ? 'opacity-40 grayscale' : ''}`} 
+                                            />
+                                            <div className="absolute top-1 left-1 bg-black/40 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-[8px] font-bold">IMAGE</div>
                                         </div>
-                                        <h4 className="font-bold text-gray-900 mb-1 truncate group-hover:text-blue-600 cursor-pointer" onClick={() => setSelectedApiItem(api)}>{api.servNm}</h4>
-                                        <p className="text-xs text-gray-500 line-clamp-2 mb-3 leading-relaxed">{api.servDgst}</p>
-                                        <div className="flex items-center justify-between">
-                                            <div className="flex gap-1 items-center">
-                                                {(api.keywords || []).slice(0, 2).map((kw, i) => (
-                                                    <span key={i} className="text-[10px] text-gray-400 bg-gray-50 px-1.5 py-0.5 rounded leading-none">#{kw}</span>
+                                    ) : (
+                                        <div className={`w-24 h-24 rounded-xl shrink-0 flex items-center justify-center text-3xl border transition-all duration-300
+                                            ${isCopied ? 'bg-gray-100 border-gray-200 opacity-50' : s.bg + ' ' + s.text + ' border-transparent group-hover:scale-105'}`}>
+                                            {s.icon}
+                                        </div>
+                                    )}
+
+                                    <div className="flex-1 min-w-0 flex flex-col justify-between">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                {timeInfo.isNew && <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[9px] font-black animate-pulse shadow-sm">NEW</span>}
+                                                {timeInfo.dDay && <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[9px] font-black shadow-sm">{timeInfo.dDay}</span>}
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isCopied ? 'bg-gray-200 text-gray-500' : s.bg + ' ' + s.text}`}>{s.label}</span>
+                                                <span className="text-[10px] text-gray-400 font-medium">| {api.jurMnofNm}</span>
+                                            </div>
+                                            <h4 
+                                                className={`font-bold mb-1 line-clamp-1 transition-colors ${isCopied ? 'text-gray-400' : 'text-gray-900 group-hover:text-blue-600 cursor-pointer'}`}
+                                                onClick={() => setSelectedApiItem(api)}
+                                            >
+                                                {api.servNm}
+                                            </h4>
+                                            <p className={`text-xs line-clamp-2 mb-3 leading-relaxed ${isCopied ? 'text-gray-300' : 'text-gray-500'}`}>
+                                                {api.servDgst || '상세 내용을 확인하려면 상세보기 버튼을 클릭하세요.'}
+                                            </p>
+                                        </div>
+
+                                        <div className="flex items-center justify-between border-t border-gray-50 pt-2">
+                                            <div className="flex gap-1 items-center flex-wrap max-w-[70%]">
+                                                {(api.keywords || ['복지', '정책']).slice(0, 2).map((kw, i) => (
+                                                    <span key={i} className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${isCopied ? 'bg-gray-100 text-gray-300' : 'text-blue-400 bg-blue-50/50'}`}>#{kw}</span>
                                                 ))}
-                                                <span className="text-[10px] text-gray-400 ml-2 font-medium">
-                                                    {api.svcfrstRegTs ? 
-                                                        `${api.svcfrstRegTs.substring(0, 4)}.${api.svcfrstRegTs.substring(4, 6)}.${api.svcfrstRegTs.substring(6, 8)}` : 
-                                                        '최근'
-                                                    }
-                                                </span>
+                                                <span className="text-[9px] text-gray-300 ml-1 font-medium italic">{timeInfo.text}</span>
                                             </div>
                                             <div className="flex gap-2">
-                                                <button onClick={() => !isCopied && handleCopySource(api)} className={`p-2 rounded-lg transition-colors ${isCopied ? 'bg-gray-100 text-gray-400' : 'bg-blue-50 text-blue-600 hover:bg-blue-600 hover:text-white'}`}>
-                                                    <Copy size={16} />
+                                                <button 
+                                                    onClick={() => handleCopySource(api)} 
+                                                    className={`p-2 rounded-lg transition-all duration-300 shadow-sm
+                                                        ${isCopied 
+                                                            ? 'bg-gray-200 text-gray-400 cursor-default' 
+                                                            : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200 active:scale-95'}`}
+                                                    title="왕 기자 프롬프트 복사"
+                                                >
+                                                    <Copy size={14} />
                                                 </button>
-                                                <button onClick={() => setSelectedApiItem(api)} className="p-2 rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-100 hover:text-gray-600">
-                                                    <Plus size={16} />
+                                                <button 
+                                                    onClick={() => setSelectedApiItem(api)} 
+                                                    className="p-2 rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors"
+                                                    title="상세보기"
+                                                >
+                                                    <Plus size={14} />
                                                 </button>
                                             </div>
                                         </div>
                                     </div>
+                                    
+                                    {/* Premium glassmorphism highlight on hover */}
+                                    {!isCopied && <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />}
                                 </div>
                             );
                         })
