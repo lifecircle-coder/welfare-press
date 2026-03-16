@@ -103,32 +103,31 @@ export default function ArticleManagement() {
         try {
             let list: WelfareService[] = [];
             if (tab === 'NATIONAL') {
-                list = await getNationalWelfareList(1, 100);
+                list = await getNationalWelfareList(1, 50);
             } else if (tab === 'SUBSIDY') {
-                list = await getSubsidy24List(1, 100);
+                list = await getSubsidy24List(1, 50);
             } else if (tab === 'YOUTH') {
-                list = await getYouthPolicyList(1, 100);
+                list = await getYouthPolicyList(1, 50);
             } else if (tab === 'MOGEF') {
-                list = await getMogefNewsList(1, 100);
+                list = await getMogefNewsList(1, 50);
             } else if (tab === 'MCST_PRESS') {
-                list = await getMcstPressReleaseList(1, 100);
+                list = await getMcstPressReleaseList(1, 40); // 100 -> 40으로 축소 (500 에러 방지용)
             } else if (tab === 'MCST_NEWS') {
-                list = await getMcstNewsList(1, 100);
+                list = await getMcstNewsList(1, 40);
             } else if (tab === 'MCST_PHOTO') {
-                list = await getMcstPhotoList(1, 100);
+                list = await getMcstPhotoList(1, 40);
             } else if (tab === 'MOIS_STATS') {
-                list = await getMoisStatsList(1, 100);
+                list = await getMoisStatsList(1, 50);
             } else if (tab === 'NEWS_ALL') {
                 const results = await Promise.all([
-                    getMcstPressReleaseList(1, 30),
-                    getMcstNewsList(1, 30),
-                    getMogefNewsList(1, 30)
+                    getMcstPressReleaseList(1, 20),
+                    getMcstNewsList(1, 20),
+                    getMogefNewsList(1, 20)
                 ]);
                 list = results.flat();
             }
 
             list.sort((a, b) => {
-                // 우선순위 가중치 정렬 (1: 보도자료, 2: 정책뉴스/일반, 3: 복지정보, ...)
                 const priorityA = a.priority || 99;
                 const priorityB = b.priority || 99;
                 if (priorityA !== priorityB) {
@@ -345,6 +344,7 @@ export default function ArticleManagement() {
                         {[
                             { id: 'MCST_PRESS', label: '보도자료', icon: '📢' },
                             { id: 'MCST_NEWS', label: '정책뉴스', icon: '🗞️' },
+                            { id: 'MCST_PHOTO', label: '뉴스포토', icon: '📸' },
                             { id: 'NEWS_ALL', label: '종합뉴스', icon: '⚡' },
                             { id: 'NATIONAL', label: '중앙부처', icon: '🏛️' },
                             { id: 'LOCAL', label: '지자체', icon: '📍' },
