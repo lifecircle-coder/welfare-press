@@ -485,16 +485,16 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
         const arrayList = Array.isArray(list) ? list : [list];
 
         return arrayList.map(item => ({
-            servId: `MCST_PR_${item.articleId}`,
-            servNm: item.title,
-            jurMnofNm: item.deptNm || '문화체육관광부',
-            servDgst: item.subTitle || '',
-            servDtlLink: item.articleUrl || '',
-            svcfrstRegTs: item.approveDate ? item.approveDate.replace(/-/g, '').substring(0, 8) : '',
+            servId: `MCST_PR_${item.NewsItemId || item.articleId || Math.random().toString(36).substring(7)}`,
+            servNm: item.Title || item.title || '제목 없음',
+            jurMnofNm: item.DeptNm || item.deptNm || '문화채육관광부',
+            servDgst: item.SubTitle || item.subTitle || '',
+            servDtlLink: item.ArticleUrl || item.articleUrl || '',
+            svcfrstRegTs: (item.ApproveDate || item.approveDate || '').replace(/-/g, '').substring(0, 8),
             apiSource: 'MCST_PRESS',
             isNews: true,
-            priority: 1, // 보도자료는 최상위 우선순위
-            deptNm: item.deptNm
+            priority: 1,
+            deptNm: item.DeptNm || item.deptNm
         }));
     } catch (error) {
         console.error('API Fetch Error (MCST Press):', error);
@@ -528,16 +528,16 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
         const arrayList = Array.isArray(list) ? list : [list];
 
         return arrayList.map((item: any) => ({
-            servId: `MCST_NW_${item.articleId}`,
-            servNm: item.title,
+            servId: `MCST_NW_${item.NewsItemId || item.articleId || Math.random().toString(36).substring(7)}`,
+            servNm: item.Title || item.title || '제목 없음',
             jurMnofNm: '정책브리핑',
-            servDgst: item.subTitle || '',
-            servDtlLink: item.articleUrl || '',
-            svcfrstRegTs: item.approveDate ? item.approveDate.replace(/-/g, '').substring(0, 8) : '',
+            servDgst: item.SubTitle || item.subTitle || '',
+            servDtlLink: item.ArticleUrl || item.articleUrl || '',
+            svcfrstRegTs: (item.ApproveDate || item.approveDate || '').replace(/-/g, '').substring(0, 8),
             apiSource: 'MCST_NEWS',
             isNews: true,
             priority: 1,
-            thumbnail: item.thumbnailUrl
+            thumbnail: item.ThumbnailUrl || item.thumbnailUrl
         }));
     } catch (error) {
         console.error('API Fetch Error (MCST News):', error);
@@ -571,16 +571,16 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
         const arrayList = Array.isArray(list) ? list : [list];
 
         return arrayList.map((item: any) => ({
-            servId: `MCST_PH_${item.articleId}`,
-            servNm: item.title,
+            servId: `MCST_PH_${item.NewsItemId || item.articleId || Math.random().toString(36).substring(7)}`,
+            servNm: item.Title || item.title || '제목 없음',
             jurMnofNm: '정책포토',
             servDgst: '',
-            servDtlLink: item.articleUrl || '',
-            svcfrstRegTs: item.approveDate ? item.approveDate.replace(/-/g, '').substring(0, 8) : '',
+            servDtlLink: item.ArticleUrl || item.articleUrl || '',
+            svcfrstRegTs: (item.ApproveDate || item.approveDate || '').replace(/-/g, '').substring(0, 8),
             apiSource: 'MCST_PHOTO',
             isNews: true,
             priority: 2,
-            thumbnail: item.thumbnailUrl
+            thumbnail: item.ThumbnailUrl || item.thumbnailUrl
         }));
     } catch (error) {
         console.error('API Fetch Error (MCST Photo):', error);
@@ -619,12 +619,12 @@ export const getMoisStatsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
         const arrayList = Array.isArray(list) ? list : [list];
 
         return arrayList.map((item: any) => ({
-            servId: `MOIS_ST_${item.statsCode || Math.random().toString(36).substring(7)}`,
-            servNm: `[통계] ${item.statsNm || '보조금24 이용 통계'}`,
+            servId: `MOIS_ST_${item.StatsCode || item.statsCode || Math.random().toString(36).substring(7)}`,
+            servNm: `[통계] ${item.StatsNm || item.statsNm || '보조금24 이용 통계'}`,
             jurMnofNm: '행정안전부',
-            servDgst: `${item.statsValue || ''} (기준: ${item.statsYear || ''}년 ${item.statsMonth || ''}월)`,
+            servDgst: `${item.StatsValue || item.statsValue || ''} (기준: ${item.StatsYear || item.statsYear || ''}년 ${item.StatsMonth || item.statsMonth || ''}월)`,
             servDtlLink: 'https://www.gov.kr/portal/rcvfvrSvc/main',
-            svcfrstRegTs: item.statsYear && item.statsMonth ? `${item.statsYear}${item.statsMonth.padStart(2, '0')}01` : '',
+            svcfrstRegTs: (item.StatsYear && item.StatsMonth) ? `${item.StatsYear}${String(item.StatsMonth).padStart(2, '0')}01` : '',
             apiSource: 'MOIS_STATS',
             isNews: true,
             priority: 3,

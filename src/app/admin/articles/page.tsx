@@ -36,8 +36,8 @@ export default function ArticleManagement() {
     const [localApiData, setLocalApiData] = useState<WelfareService[]>([]);
     const [isFetchingLocal, setIsFetchingLocal] = useState(false);
 
-    // Copy tracking state: { [servId]: timestamp }
-    const [copiedState, setCopiedState] = useState<Record<string, number>>({});
+    // Status tracking state: { [servId]: 'copied' | 'writing' | 'completed' }
+    const [apiStatusHistory, setApiStatusHistory] = useState<Record<string, string>>({});
     // Deleted tracking state: { [servId]: boolean }
     const [deletedState, setDeletedState] = useState<Record<string, boolean>>({});
 
@@ -79,15 +79,16 @@ export default function ArticleManagement() {
             const saved = localStorage.getItem('copiedPublicData');
             if (saved) {
                 const parsed = JSON.parse(saved);
-                const now = Date.now();
-                const valid: Record<string, number> = {};
+                // Migrating old timestamp format to new status format if needed
+                const migrated: Record<string, string> = {};
                 for (const key in parsed) {
-                    if (now - parsed[key] < 24 * 60 * 60 * 1000) {
-                        valid[key] = parsed[key];
+                    if (typeof parsed[key] === 'number') {
+                        migrated[key] = 'copied';
+                    } else {
+                        migrated[key] = parsed[key];
                     }
                 }
-                setCopiedState(valid);
-                localStorage.setItem('copiedPublicData', JSON.stringify(valid));
+                setApiStatusHistory(migrated);
             }
             const savedDeleted = localStorage.getItem('deletedPublicData');
             if (savedDeleted) {
@@ -288,14 +289,19 @@ export default function ArticleManagement() {
             }
 
             await navigator.clipboard.writeText(prompt);
-            const now = Date.now();
-            const newCopied = { ...copiedState, [api.servId]: now };
-            setCopiedState(newCopied);
-            localStorage.setItem('copiedPublicData', JSON.stringify(newCopied));
+            const newHistory = { ...apiStatusHistory, [api.servId]: 'copied' };
+            setApiStatusHistory(newHistory);
+            localStorage.setItem('copiedPublicData', JSON.stringify(newHistory));
             alert('🚀 왕 기자 전용 지능형 프롬프트가 복사되었습니다!\n기사 작성 창의 AI 프롬프트 입력란에 붙여넣으세요.');
         } catch (error) {
             console.error('Failed to copy', error);
         }
+    };
+
+    const handleUpdateStatus = (servId: string, status: string) => {
+        const newHistory = { ...apiStatusHistory, [servId]: status };
+        setApiStatusHistory(newHistory);
+        localStorage.setItem('copiedPublicData', JSON.stringify(newHistory));
     };
 
     const handleHidePublicData = (servId: string) => {
@@ -394,7 +400,7 @@ export default function ArticleManagement() {
                         (activeApiTab === 'LOCAL' ? displayLocalApiData : displayApiData)
                         .filter(api => !apiSearchTerm || api.servNm.toLowerCase().includes(apiSearchTerm.toLowerCase()) || api.servDgst.toLowerCase().includes(apiSearchTerm.toLowerCase()))
                         .map(api => {
-                            const isCopied = !!copiedState[api.servId];
+                            const status = apiStatusHistory[api.servId] || 'default';
                             
                             const getRelativeTimeInfo = (ds?: string | any) => {
                                 if (!ds) return { text: '최근', isNew: false, dDay: null };
@@ -435,15 +441,37 @@ export default function ArticleManagement() {
                                 <div 
                                     key={api.servId} 
                                     className={`relative overflow-hidden bg-white p-5 rounded-2xl border transition-all duration-300 flex gap-4 group 
-                                        ${isCopied ? 'bg-gray-50 border-gray-100' : 'border-white hover:border-blue-200 hover:shadow-xl hover:-translate-y-1'}`}
+                                        ${status === 'completed' 
+                                            ? 'border-green-200 bg-green-50 hover:shadow-green-100' 
+                                            : status === 'writing' 
+                                                ? 'border-amber-200 bg-amber-50 shadow-inner'
+                                                : status === 'copied'
+                                                    ? 'bg-gray-50 border-gray-100'
+                                                    : 'border-white hover:border-blue-200 hover:shadow-xl hover:-translate-y-1'}`}
                                 >
-                                    {/* Copy Tracking Overlay for used items */}
-                                    {isCopied && (
-                                        <div className="absolute top-2 right-2 z-10 bg-gray-200 text-gray-500 px-2 py-1 rounded-lg text-[10px] font-bold flex items-center gap-1 shadow-sm">
-                                            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
-                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7"></path>
-                                            </svg>
-                                            작성 진행중
+                                    {/* Status Selector UI */}
+                                    <div className="absolute top-2 right-2 z-10 flex items-center gap-1.5 overflow-hidden rounded-lg bg-white/60 backdrop-blur-sm p-1 border border-white/40 shadow-sm opacity-0 group-hover:opacity-100 transition-opacity">
+                                        <select 
+                                            value={status} 
+                                            onChange={(e) => handleUpdateStatus(api.servId!, e.target.value)}
+                                            className={`text-[10px] font-bold px-2 py-0.5 rounded cursor-pointer outline-none transition-colors
+                                                ${status === 'completed' ? 'bg-green-500 text-white' : 
+                                                  status === 'writing' ? 'bg-amber-500 text-white' : 
+                                                  status === 'copied' ? 'bg-blue-500 text-white' : 'bg-gray-100 text-gray-400'}`}
+                                        >
+                                            <option value="default">상세 전</option>
+                                            <option value="copied">복사함</option>
+                                            <option value="writing">작성 중</option>
+                                            <option value="completed">작성완료</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Quick Badge for no-hover state */}
+                                    {status !== 'default' && (
+                                        <div className={`absolute top-2 right-2 z-0 px-2 py-0.5 rounded text-[9px] font-black shadow-sm group-hover:opacity-0 transition-opacity
+                                            ${status === 'completed' ? 'bg-green-500 text-white' : 
+                                              status === 'writing' ? 'bg-amber-500 text-white' : 'bg-blue-500 text-white'}`}>
+                                            {status === 'completed' ? '완료' : status === 'writing' ? '작성중' : '복사함'}
                                         </div>
                                     )}
 
@@ -453,57 +481,59 @@ export default function ArticleManagement() {
                                             <img 
                                                 src={api.thumbnail || '/assets/images/placeholder.png'} 
                                                 alt="thumb" 
-                                                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${isCopied ? 'opacity-40 grayscale' : ''}`} 
+                                                className={`w-full h-full object-cover transition-transform duration-500 group-hover:scale-110 ${status === 'completed' ? 'opacity-60' : ''}`} 
                                             />
-                                            <div className="absolute top-1 left-1 bg-black/40 backdrop-blur-sm text-white px-1.5 py-0.5 rounded text-[8px] font-bold">IMAGE</div>
                                         </div>
                                     ) : (
                                         <div className={`w-24 h-24 rounded-xl shrink-0 flex items-center justify-center text-3xl border transition-all duration-300
-                                            ${isCopied ? 'bg-gray-100 border-gray-200 opacity-50' : s.bg + ' ' + s.text + ' border-transparent group-hover:scale-105'}`}>
+                                            ${status === 'completed' ? 'bg-green-100 border-green-200 text-green-600' : 
+                                              status === 'writing' ? 'bg-amber-100 border-amber-200 text-amber-600' :
+                                              status === 'copied' ? 'bg-gray-100 border-gray-200 opacity-60' : s.bg + ' ' + s.text + ' border-transparent group-hover:scale-105'}`}>
                                             {s.icon}
                                         </div>
                                     )}
 
                                     <div className="flex-1 min-w-0 flex flex-col justify-between">
                                         <div>
-                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                            <div className="flex items-center gap-2 mb-2 flex-wrap pr-8">
                                                 {timeInfo.isNew && <span className="bg-red-500 text-white px-1.5 py-0.5 rounded text-[9px] font-black animate-pulse shadow-sm">NEW</span>}
                                                 {timeInfo.dDay && <span className="bg-blue-600 text-white px-1.5 py-0.5 rounded text-[9px] font-black shadow-sm">{timeInfo.dDay}</span>}
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${isCopied ? 'bg-gray-200 text-gray-500' : s.bg + ' ' + s.text}`}>{s.label}</span>
-                                                <span className="text-[10px] text-gray-400 font-medium">| {api.jurMnofNm}</span>
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold ${status === 'completed' ? 'bg-green-200 text-green-700' : s.bg + ' ' + s.text}`}>{s.label}</span>
+                                                <span className={`text-[10px] font-medium ${status === 'completed' ? 'text-green-400' : 'text-gray-400'}`}>| {api.jurMnofNm}</span>
                                             </div>
                                             <h4 
-                                                className={`font-bold mb-1 line-clamp-1 transition-colors ${isCopied ? 'text-gray-400' : 'text-gray-900 group-hover:text-blue-600 cursor-pointer'}`}
+                                                className={`font-bold mb-1 line-clamp-1 transition-colors cursor-pointer ${status === 'completed' ? 'text-green-800' : 'text-gray-900 group-hover:text-blue-600'}`}
                                                 onClick={() => setSelectedApiItem(api)}
                                             >
-                                                {api.servNm}
+                                                {api.servNm || '제목 없음'}
                                             </h4>
-                                            <p className={`text-xs line-clamp-2 mb-3 leading-relaxed ${isCopied ? 'text-gray-300' : 'text-gray-500'}`}>
+                                            <p className={`text-xs line-clamp-2 mb-3 leading-relaxed ${status === 'completed' ? 'text-green-600/70' : 'text-gray-500'}`}>
                                                 {api.servDgst || '상세 내용을 확인하려면 상세보기 버튼을 클릭하세요.'}
                                             </p>
                                         </div>
 
-                                        <div className="flex items-center justify-between border-t border-gray-50 pt-2">
+                                        <div className={`flex items-center justify-between border-t pt-2 ${status === 'completed' ? 'border-green-100' : 'border-gray-50'}`}>
                                             <div className="flex gap-1 items-center flex-wrap max-w-[70%]">
                                                 {(api.keywords || ['복지', '정책']).slice(0, 2).map((kw, i) => (
-                                                    <span key={i} className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${isCopied ? 'bg-gray-100 text-gray-300' : 'text-blue-400 bg-blue-50/50'}`}>#{kw}</span>
+                                                    <span key={i} className={`text-[9px] px-1.5 py-0.5 rounded leading-none ${status === 'completed' ? 'bg-green-100 text-green-500' : 'text-blue-400 bg-blue-50/50'}`}>#{kw}</span>
                                                 ))}
-                                                <span className="text-[9px] text-gray-300 ml-1 font-medium italic">{timeInfo.text}</span>
+                                                <span className={`text-[9px] ml-1 font-medium italic ${status === 'completed' ? 'text-green-300' : 'text-gray-300'}`}>{timeInfo.text}</span>
                                             </div>
                                             <div className="flex gap-2">
                                                 <button 
                                                     onClick={() => handleCopySource(api)} 
                                                     className={`p-2 rounded-lg transition-all duration-300 shadow-sm
-                                                        ${isCopied 
-                                                            ? 'bg-gray-200 text-gray-400 cursor-default' 
-                                                            : 'bg-blue-600 text-white hover:bg-blue-700 hover:shadow-blue-200 active:scale-95'}`}
+                                                        ${status === 'completed' 
+                                                            ? 'bg-green-600 text-white hover:bg-green-700' 
+                                                            : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'}`}
                                                     title="왕 기자 프롬프트 복사"
                                                 >
                                                     <Copy size={14} />
                                                 </button>
                                                 <button 
                                                     onClick={() => setSelectedApiItem(api)} 
-                                                    className="p-2 rounded-lg bg-gray-50 text-gray-400 hover:bg-gray-200 hover:text-gray-600 transition-colors"
+                                                    className={`p-2 rounded-lg transition-colors
+                                                        ${status === 'completed' ? 'bg-green-100 text-green-600 hover:bg-green-200' : 'bg-gray-50 text-gray-400 hover:bg-gray-200 hover:text-gray-600'}`}
                                                     title="상세보기"
                                                 >
                                                     <Plus size={14} />
@@ -513,7 +543,7 @@ export default function ArticleManagement() {
                                     </div>
                                     
                                     {/* Premium glassmorphism highlight on hover */}
-                                    {!isCopied && <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />}
+                                    {status === 'default' && <div className="absolute inset-0 bg-gradient-to-tr from-blue-500/5 to-transparent opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none" />}
                                 </div>
                             );
                         })
