@@ -1,5 +1,5 @@
 'use client';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css';
 
@@ -26,18 +26,67 @@ const ReactQuill = dynamic(async () => {
     loading: () => <div className="h-96 w-full bg-gray-50 flex items-center justify-center text-gray-400 border border-gray-200 rounded-lg">에디터 로딩 중...</div>
 });
 
-const modules = {
-    toolbar: [
-        [{ 'header': [1, 2, 3, false] }],
-        [{ 'size': ['12px', false, '24px', '36px'] }], // Match with whitelist. 'false' is default (16px)
-        [{ 'color': [] }],
-        ['bold', 'italic', 'underline', 'strike'],
-        [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-        [{ 'align': [] }],
-        ['link', 'image'],
-        ['clean']
-    ],
-};
+const modules = (articleId: string) => ({
+    toolbar: {
+        container: [
+            [{ 'header': [1, 2, 3, false] }],
+            [{ 'size': ['12px', false, '24px', '36px'] }],
+            [{ 'color': [] }],
+            ['bold', 'italic', 'underline', 'strike'],
+            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
+            [{ 'align': [] }],
+            ['link', 'image'],
+            ['clean']
+        ],
+        handlers: {
+            image: function(this: any) {
+                const input = document.createElement('input');
+                input.setAttribute('type', 'file');
+                input.setAttribute('accept', 'image/*');
+                input.click();
+
+                input.onchange = async () => {
+                    const file = input.files?.[0];
+                    if (!file) return;
+
+                    // 1. Show loading state
+                    const range = this.quill.getSelection(true);
+                    this.quill.insertText(range.index, '⌛ 이미지 최적화 중...', 'bold', true);
+
+                    const reader = new FileReader();
+                    reader.onload = async () => {
+                        const base64 = reader.result as string;
+                        try {
+                            // 2. Call Optimization API
+                            const response = await fetch('/api/optimize-image', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    imageUrl: base64,
+                                    articleId: articleId
+                                })
+                            });
+
+                            const data = await response.json();
+                            if (data.optimizedUrl) {
+                                // 3. Replace loading text with optimized image URL
+                                this.quill.deleteText(range.index, 14);
+                                this.quill.insertEmbed(range.index, 'image', data.optimizedUrl);
+                            } else {
+                                throw new Error('Optimization failed');
+                            }
+                        } catch (error) {
+                            console.error('Image upload failed', error);
+                            this.quill.deleteText(range.index, 14);
+                            alert('이미지 최적화 업로드에 실패했습니다. 파일 용량이 너무 큰지 확인해주세요.');
+                        }
+                    };
+                    reader.readAsDataURL(file);
+                };
+            }
+        }
+    }
+});
 
 const formats = [
     'header', 'size', 'color',
@@ -46,9 +95,11 @@ const formats = [
     'link', 'image'
 ];
 
-export default function ClientQuillEditor({ value, onChange }: any) {
+export default function ClientQuillEditor({ value, onChange, articleId }: any) {
     const [mounted, setMounted] = useState(false);
     useEffect(() => { setMounted(true); }, []);
+
+    const editorModules = useMemo(() => modules(articleId), [articleId]);
 
     if (!mounted) return <div className="h-96 w-full bg-gray-50 rounded-lg border border-gray-200"></div>;
 
@@ -99,7 +150,7 @@ export default function ClientQuillEditor({ value, onChange }: any) {
                 theme="snow"
                 value={value}
                 onChange={onChange}
-                modules={modules}
+                modules={editorModules}
                 formats={formats}
                 className="h-[400px] mb-12"
             />

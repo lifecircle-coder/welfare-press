@@ -1,0 +1,50 @@
+[
+  {
+    "name": "MCST Press Release (1312000) - CORP KEY",
+    "url": "http://apis.data.go.kr/1312000/PolicyBriefingService/getPressReleaseList",
+    "key": "CORP",
+    "success": false,
+    "status": 500,
+    "errorData": "Unexpected errors\n"
+  },
+  {
+    "name": "MCST Press Release (1312000) - GEN KEY",
+    "url": "http://apis.data.go.kr/1312000/PolicyBriefingService/getPressReleaseList",
+    "key": "GEN",
+    "success": false,
+    "status": 500,
+    "errorData": "Unexpected errors\n"
+  },
+  {
+    "name": "MCST Press Release (1371000) - CORP KEY",
+    "url": "http://apis.data.go.kr/1371000/pressReleaseService/pressReleaseList",
+    "key": "CORP",
+    "success": false,
+    "status": 403,
+    "errorData": "Forbidden\n"
+  },
+  {
+    "name": "MCST Press Release (1371000) - GEN KEY",
+    "url": "http://apis.data.go.kr/1371000/pressReleaseService/pressReleaseList",
+    "key": "GEN",
+    "status": 200,
+    "data": "<?xml version=\"1.0\" encoding=\"UTF-8\"?><response><header><resultCode>11</resultCode><resultMsg>NO_MANDATORY_REQUEST_PARAMETERS_ERROR</resultMsg></header><body></body></response>\r\n",
+    "success": true
+  },
+  {
+    "name": "MOIS Stats (1741000) - CORP KEY",
+    "url": "https://apis.data.go.kr/1741000/Subsidy24/getSubsidy24",
+    "key": "CORP",
+    "success": false,
+    "status": 403,
+    "errorData": "Forbidden\n"
+  },
+  {
+    "name": "MOIS Stats (1741000) - GEN KEY",
+    "url": "https://apis.data.go.kr/1741000/Subsidy24/getSubsidy24",
+    "key": "GEN",
+    "status": 200,
+    "data": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n\n<Subsidy24>\n  <head>\n    <totalCount>76</totalCount>\n    <numOfRows>1</numOfRows>\n    <pageNo>1</pageNo>\n    <type>XML</type>\n    <RESULT>\n      <resultCode>INFO-0</resultCode>\n      <resultMsg>NOMAL SERVICE</resultMsg>\n    </RESULT>\n  </head>\n  <row>\n    <wrttimeid>2021</wrttimeid>\n    <seq>1</seq>\n    <cls>계</cls>\n    <tot>25616566</tot>\n    <online_use_cnt>2450466</online_use_cnt>\n    <online_rate>97.4</online_rate>\n    <visit_use_cnt>65927</visit_use_c",
+    "success": true
+  }
+]
