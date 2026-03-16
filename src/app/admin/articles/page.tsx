@@ -100,6 +100,7 @@ export default function ArticleManagement() {
 
     const loadApiData = async (tab: 'NATIONAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF' | 'MCST_PRESS' | 'MCST_NEWS' | 'MCST_PHOTO' | 'MOIS_STATS' | 'NEWS_ALL') => {
         setIsFetchingApi(true);
+        setApiData([]); // 이전 데이터 즉시 초기화 (중요: 레이블 꼬임 방지)
         try {
             let list: WelfareService[] = [];
             if (tab === 'NATIONAL') {
@@ -148,6 +149,7 @@ export default function ArticleManagement() {
 
     const loadLocalApiData = async () => {
         setIsFetchingLocal(true);
+        setLocalApiData([]); // 이전 데이터 즉시 초기화 (중요: 레이블 꼬임 방지)
         try {
             const list = await getLocalGovWelfareList(1, 50);
             setLocalApiData(list || []);
