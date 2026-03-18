@@ -40,12 +40,12 @@ export default async function ArticleDetail({ params }: { params: { id: string }
     ).slice(0, 5);
 
     const getCategoryStyles = (cat: string) => {
-        if (cat.includes('일자리')) return 'bg-cat-job/30 text-cat-job';
-        if (cat.includes('건강')) return 'bg-cat-health/30 text-cat-health';
-        if (cat.includes('주거')) return 'bg-cat-house/30 text-cat-house';
-        if (cat.includes('생활')) return 'bg-cat-living/30 text-cat-living';
-        if (cat.includes('육아')) return 'bg-cat-child/30 text-cat-child';
-        return 'bg-cat-etc/30 text-cat-etc';
+        if (cat.includes('일자리')) return 'bg-cat-job/60 border-cat-job/20';
+        if (cat.includes('건강')) return 'bg-cat-health/60 border-cat-health/20';
+        if (cat.includes('주거')) return 'bg-cat-house/60 border-cat-house/20';
+        if (cat.includes('생활')) return 'bg-cat-living/60 border-cat-living/20';
+        if (cat.includes('육아')) return 'bg-cat-child/60 border-cat-child/20';
+        return 'bg-cat-etc/60 border-cat-etc/20';
     };
 
     return (
@@ -54,7 +54,7 @@ export default async function ArticleDetail({ params }: { params: { id: string }
             <ViewCounter articleId={params.id} />
 
             {/* Category Badge - Unified with thumbnail labels */}
-            <span className={`inline-block ${getCategoryStyles(article.category)} px-3 py-1 rounded-full text-sm font-bold mb-4 shadow-sm backdrop-blur-sm`}>
+            <span className={`inline-block ${getCategoryStyles(article.category)} px-3 py-1 rounded-full text-sm font-bold text-white mb-4 shadow-md backdrop-blur-md border border-white/10`}>
                 {article.category}
             </span>
 

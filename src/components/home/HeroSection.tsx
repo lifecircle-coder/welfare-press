@@ -28,12 +28,12 @@ export default function HeroSection({ articles }: HeroSectionProps) {
     if (!main) return null;
 
     const getCategoryStyles = (cat: string) => {
-        if (cat.includes('일자리')) return 'bg-cat-job/30 text-cat-job';
-        if (cat.includes('건강')) return 'bg-cat-health/30 text-cat-health';
-        if (cat.includes('주거')) return 'bg-cat-house/30 text-cat-house';
-        if (cat.includes('생활')) return 'bg-cat-living/30 text-cat-living';
-        if (cat.includes('육아')) return 'bg-cat-child/30 text-cat-child';
-        return 'bg-cat-etc/30 text-cat-etc';
+        if (cat.includes('일자리')) return 'bg-cat-job/60 border-cat-job/20';
+        if (cat.includes('건강')) return 'bg-cat-health/60 border-cat-health/20';
+        if (cat.includes('주거')) return 'bg-cat-house/60 border-cat-house/20';
+        if (cat.includes('생활')) return 'bg-cat-living/60 border-cat-living/20';
+        if (cat.includes('육아')) return 'bg-cat-child/60 border-cat-child/20';
+        return 'bg-cat-etc/60 border-cat-etc/20';
     };
 
     return (
@@ -55,7 +55,7 @@ export default function HeroSection({ articles }: HeroSectionProps) {
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                             sizes="(max-width: 1024px) 100vw, 66vw"
                         />
-                        <span className={`absolute top-4 left-4 ${getCategoryStyles(main.category)} px-3 py-1 rounded-full text-sm font-bold shadow-md backdrop-blur-sm`}>
+                        <span className={`absolute top-4 left-4 ${getCategoryStyles(main.category)} px-3 py-1 rounded-full text-sm font-bold text-white shadow-md backdrop-blur-md border border-white/10`}>
                             {main.category}
                         </span>
                     </div>
@@ -93,7 +93,7 @@ export default function HeroSection({ articles }: HeroSectionProps) {
                                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                 />
-                                <span className={`absolute top-2 left-2 ${getCategoryStyles(article.category)} px-2 py-0.5 rounded text-xs font-bold backdrop-blur-sm transition-all shadow-sm`}>
+                                <span className={`absolute top-3 left-3 ${getCategoryStyles(article.category)} px-3 py-1 rounded-full text-sm font-bold text-white backdrop-blur-md transition-all shadow-md border border-white/10`}>
                                     {article.category}
                                 </span>
                             </div>
