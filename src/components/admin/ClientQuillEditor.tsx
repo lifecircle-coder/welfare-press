@@ -177,8 +177,9 @@ export default function ClientQuillEditor({ value, onChange, articleId }: any) {
                 }
             `}</style>
             <ReactQuill
+                key={articleId || 'new'}
                 theme="snow"
-                value={value}
+                value={value || ''}
                 onChange={onChange}
                 modules={editorModules}
                 formats={formats}
