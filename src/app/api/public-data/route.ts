@@ -79,32 +79,30 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'SUBSIDY_LIST') {
-            // ODCloud Subsidy24 v3. 파라미터 인코딩 이슈 해결을 위해 서비스키를 명시적으로 전달
             const url = 'https://api.odcloud.kr/api/gov24/v3/serviceList';
+            let finalData;
             try {
                 const response = await axios.get(url, { 
-                    params: {
-                        serviceKey: CORP_API_KEY, // 인코딩된 원본 키 사용
-                        page: pageNo,
-                        perPage: numOfRows,
-                        returnType: 'json'
-                    },
+                    params: { serviceKey: CORP_API_KEY, page: pageNo, perPage: numOfRows, returnType: 'json' },
                     timeout: 7000 
                 });
-                return NextResponse.json(response.data);
+                finalData = response.data;
             } catch (e: any) {
-                console.error('Subsidy v3 Corp Key Error:', e.message);
+                console.error('Subsidy V3 Corp Key Failed, trying Gen Key...', e.message);
                 const response = await axios.get(url, { 
-                    params: {
-                        serviceKey: GEN_API_KEY, // 일반형 키로 재시도
-                        page: pageNo,
-                        perPage: numOfRows,
-                        returnType: 'json'
-                    },
+                    params: { serviceKey: GEN_API_KEY, page: pageNo, perPage: numOfRows, returnType: 'json' },
                     timeout: 7000 
                 });
-                return NextResponse.json(response.data);
+                finalData = response.data;
             }
+
+            if (!finalData) {
+                return NextResponse.json({ error: 'No data from Subsidy API' }, { status: 404 });
+            }
+            
+            // 데이터 구조 로깅 (배포 환경 로그 확인용)
+            console.log('Subsidy Data Keys:', Object.keys(finalData));
+            return NextResponse.json(finalData);
         }
 
         if (type === 'YOUTH_LIST') {
