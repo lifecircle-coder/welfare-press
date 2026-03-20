@@ -252,7 +252,8 @@ export default function ArticleManagement() {
 3. 시각적으로 돋보이도록 적절한 소제목(Sub-heading)을 3개 이상 사용하세요.
 4. 독자 초청 멘트나 궁금증을 유발하는 질문으로 기사를 마무리하세요.`;
             } else if (api.apiSource === 'NATIONAL' || api.apiSource === 'LOCAL' || api.apiSource === 'SUBSIDY' || api.apiSource === 'MOGEF') {
-                const category = api.keywords?.[0] || '일반';
+                const keywords = api.keywords || [];
+                const category = keywords[0] || '일반';
                 const isWelfareMapSeries = ['영유아', '청년', '어르신'].includes(category);
                 
                 if (isWelfareMapSeries) {
