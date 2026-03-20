@@ -395,6 +395,16 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
                 list = directRes.data?.data || directRes.data?.item;
             }
         } else {
+            const response = await axios.get(`https://api.odcloud.kr/api/gov24/v3/serviceList`, {
+                params: {
+                    serviceKey: decodeURIComponent(CORPORATE_API_KEY),
+                    page: pageNo,
+                    perPage: numOfRows,
+                    returnType: 'json'
+                }
+            });
+            list = response.data?.data || response.data?.item;
+        }
 
         if (!list) return [];
         let arrayList = Array.isArray(list) ? list : (list.item ? (Array.isArray(list.item) ? list.item : [list.item]) : [list]);
