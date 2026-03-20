@@ -79,33 +79,27 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'SUBSIDY_LIST') {
-            const baseUrl = 'https://api.odcloud.kr/api/gov24/v3/serviceList';
+            const baseUrl = 'https://api.odcloud.kr/api/gov24/v1/list';
             let finalData;
             
-            // Try 1: Params with Decoded Key (Axios style)
             try {
-                const res = await axios.get(baseUrl, { 
-                    params: { serviceKey: decodedCorpKey, page: pageNo, perPage: numOfRows, returnType: 'json' },
-                    timeout: 5000 
-                });
+                // Try v1 with encoded key first (most stable for Gov24)
+                const url = `${baseUrl}?serviceKey=${CORP_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
+                const res = await axios.get(url, { timeout: 5000 });
                 finalData = res.data;
             } catch (e1) {
-                // Try 2: Raw URL with Encoded Key (Common data.go.kr fix)
+                console.error('Subsidy V1 Corp Key Failed, trying Gen Key...', e1.message);
                 try {
-                    const rawUrl = `${baseUrl}?serviceKey=${CORP_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
-                    const res = await axios.get(rawUrl, { timeout: 5000 });
+                    const url = `${baseUrl}?serviceKey=${GEN_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
+                    const res = await axios.get(url, { timeout: 5000 });
                     finalData = res.data;
                 } catch (e2) {
-                    // Try 3: General Key fallback
-                    const res = await axios.get(baseUrl, { 
-                        params: { serviceKey: decodedGenKey, page: pageNo, perPage: numOfRows, returnType: 'json' },
-                        timeout: 5000 
-                    });
-                    finalData = res.data;
+                    console.error('Subsidy V1 Gen Key Failed', e2.message);
+                    throw e2;
                 }
             }
 
-            if (!finalData) throw new Error('Subsidy24 API returned empty or failed all attempts');
+            if (!finalData) throw new Error('Subsidy24 API returned empty');
             return NextResponse.json(finalData);
         }
 
