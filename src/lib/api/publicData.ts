@@ -370,9 +370,9 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
                 });
                 list = response.data?.data || response.data?.item;
                 
-                // 프록시 실패 시 클라이언트에서 직접 시도 (CORS 허용 시)
+                // 프록시 실패 시 클라이언트에서 v1 직접 시도
                 if (!list || list.length === 0) {
-                    const directRes = await axios.get(`https://api.odcloud.kr/api/gov24/v3/serviceList`, {
+                    const directRes = await axios.get(`https://api.odcloud.kr/api/gov24/v1/list`, {
                         params: {
                             serviceKey: decodeURIComponent(CORPORATE_API_KEY),
                             page: pageNo,
@@ -383,8 +383,8 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
                     list = directRes.data?.data || directRes.data?.item;
                 }
             } catch (proxyError) {
-                console.warn('Proxy failed, trying direct fetch...', proxyError);
-                const directRes = await axios.get(`https://api.odcloud.kr/api/gov24/v3/serviceList`, {
+                console.warn('Proxy failed, trying direct v1 fetch...', proxyError);
+                const directRes = await axios.get(`https://api.odcloud.kr/api/gov24/v1/list`, {
                     params: {
                         serviceKey: decodeURIComponent(CORPORATE_API_KEY),
                         page: pageNo,
@@ -395,7 +395,7 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
                 list = directRes.data?.data || directRes.data?.item;
             }
         } else {
-            const response = await axios.get(`https://api.odcloud.kr/api/gov24/v3/serviceList`, {
+            const response = await axios.get(`https://api.odcloud.kr/api/gov24/v1/list`, {
                 params: {
                     serviceKey: decodeURIComponent(CORPORATE_API_KEY),
                     page: pageNo,
