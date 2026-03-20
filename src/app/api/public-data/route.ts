@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
 
 
         if (type === 'MOIS_STATS_LIST') {
-            const url = `http://apis.data.go.kr/1741000/Subsidy24/getSubsidy24?serviceKey=${decodedGenKey}&pageNo=${pageNo}&numOfRows=${numOfRows}&type=json`;
+            const url = `http://apis.data.go.kr/1741000/Subsidy24/getSubsidy24?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&type=json`;
             const response = await axios.get(url, { timeout: 7000 });
             // Normalize JSON structure for Statistics to prevent frontend parsing bugs.
             const rawData = response.data;
