@@ -79,29 +79,35 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'SUBSIDY_LIST') {
-            const baseUrl = 'https://api.odcloud.kr/api/gov24/v1/list';
+            // ODCloud Gov24 v1/v3 is currently returning 'Unregistered Service' on live.
+            // Failing over to MOIS (Ministry of the Interior and Safety) getSubsidy24 endpoint (1741000)
+            const baseUrl = 'http://apis.data.go.kr/1741000/Subsidy24/getSubsidy24';
             let finalData;
             
             try {
-                // Try 1: Native Fetch with Literal URL (Prevents Axios encoding bugs)
-                const fullUrl = `${baseUrl}?serviceKey=${CORP_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
+                const fullUrl = `${baseUrl}?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&type=json`;
                 const res = await fetch(fullUrl);
                 if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                finalData = await res.json();
-            } catch (e1: any) {
-                console.error('Subsidy V1 Corp Key Failed, trying Gen Key...', e1.message);
-                try {
-                    const fullUrl = `${baseUrl}?serviceKey=${GEN_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
-                    const res = await fetch(fullUrl);
-                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-                    finalData = await res.json();
-                } catch (e2: any) {
-                    console.error('Subsidy V1 Gen Key Failed', e2.message);
-                    throw e2;
-                }
+                const data = await res.json();
+                
+                // Normalizing to match the expected format
+                const rawItems = data?.Subsidy24?.[1]?.row || data?.Subsidy24?.row || data?.row || [];
+                const normalizedItems = rawItems.map((item: any) => ({
+                    servId: item.svcId || item.servId || Math.random().toString(),
+                    servNm: item.svcNm || item.servNm,
+                    servDgst: item.svcContents || item.servDgst,
+                    jurMnofNm: item.jdgnNm || item.jurMnofNm || '보조금24',
+                    svcfrstRegTs: item.lastModTs || item.svcfrstRegTs,
+                    apiSource: 'SUBSIDY',
+                    servDtlLink: item.dtlResUrl || ''
+                }));
+                
+                finalData = { data: normalizedItems };
+            } catch (e: any) {
+                console.error('Subsidy Failover to MOIS failed:', e.message);
+                throw e;
             }
 
-            if (!finalData) throw new Error('Subsidy24 API returned empty');
             return NextResponse.json(finalData);
         }
 
