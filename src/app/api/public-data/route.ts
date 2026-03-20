@@ -83,14 +83,14 @@ export async function GET(request: NextRequest) {
             let finalData;
             try {
                 const response = await axios.get(url, { 
-                    params: { serviceKey: CORP_API_KEY, page: pageNo, perPage: numOfRows, returnType: 'json' },
+                    params: { serviceKey: decodedCorpKey, page: pageNo, perPage: numOfRows, returnType: 'json' },
                     timeout: 7000 
                 });
                 finalData = response.data;
             } catch (e: any) {
-                console.error('Subsidy V3 Corp Key Failed, trying Gen Key...', e.message);
+                console.error('Subsidy V3 Decoded Corp Key Failed, trying Decoded Gen Key...', e.message);
                 const response = await axios.get(url, { 
-                    params: { serviceKey: GEN_API_KEY, page: pageNo, perPage: numOfRows, returnType: 'json' },
+                    params: { serviceKey: decodedGenKey, page: pageNo, perPage: numOfRows, returnType: 'json' },
                     timeout: 7000 
                 });
                 finalData = response.data;
@@ -100,8 +100,6 @@ export async function GET(request: NextRequest) {
                 return NextResponse.json({ error: 'No data from Subsidy API' }, { status: 404 });
             }
             
-            // 데이터 구조 로깅 (배포 환경 로그 확인용)
-            console.log('Subsidy Data Keys:', Object.keys(finalData));
             return NextResponse.json(finalData);
         }
 
