@@ -79,14 +79,30 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'SUBSIDY_LIST') {
-            // ODCloud Subsidy24 v3. If Corp key fails (400), fallback to General key.
+            // ODCloud Subsidy24 v3. 파라미터 인코딩 이슈 해결을 위해 서비스키를 명시적으로 전달
+            const url = 'https://api.odcloud.kr/api/gov24/v3/serviceList';
             try {
-                const url = `https://api.odcloud.kr/api/gov24/v3/serviceList?serviceKey=${CORP_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
-                const response = await axios.get(url, { timeout: 7000 });
+                const response = await axios.get(url, { 
+                    params: {
+                        serviceKey: CORP_API_KEY, // 인코딩된 원본 키 사용
+                        page: pageNo,
+                        perPage: numOfRows,
+                        returnType: 'json'
+                    },
+                    timeout: 7000 
+                });
                 return NextResponse.json(response.data);
-            } catch (e) {
-                const url = `https://api.odcloud.kr/api/gov24/v3/serviceList?serviceKey=${GEN_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
-                const response = await axios.get(url, { timeout: 7000 });
+            } catch (e: any) {
+                console.error('Subsidy v3 Corp Key Error:', e.message);
+                const response = await axios.get(url, { 
+                    params: {
+                        serviceKey: GEN_API_KEY, // 일반형 키로 재시도
+                        page: pageNo,
+                        perPage: numOfRows,
+                        returnType: 'json'
+                    },
+                    timeout: 7000 
+                });
                 return NextResponse.json(response.data);
             }
         }
