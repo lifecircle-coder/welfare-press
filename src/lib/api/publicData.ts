@@ -392,17 +392,27 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
             return [];
         }
 
-        return arrayList.map((item: any) => ({
-            servId: String(item.svcId),
-            servNm: item.svcNm,
-            jurMnofNm: item.pdeptNm || item.porgNm || '보조금24',
-            servDgst: item.svcContent || '',
-            servDtlLink: '',
-            svcfrstRegTs: item.regDt?.replace(/-/g, '') || '',
-            apiSource: 'SUBSIDY',
-            priority: 4,
-            isNews: false
-        }));
+        return arrayList.map((item: any) => {
+            const content = item.svcContent || '';
+            // 추출 로직: 간단한 키워드 매칭으로 카테고리 태깅 (영향도 낮음)
+            let category = '일반';
+            if (content.includes('아기') || content.includes('출산') || content.includes('영유아') || content.includes('보육')) category = '영유아';
+            else if (content.includes('청년') || content.includes('취업') || content.includes('대학생')) category = '청년';
+            else if (content.includes('어르신') || content.includes('노인') || content.includes('기초연금')) category = '어르신';
+
+            return {
+                servId: String(item.svcId),
+                servNm: item.svcNm,
+                jurMnofNm: item.pdeptNm || item.porgNm || '보조금24',
+                servDgst: content,
+                servDtlLink: '',
+                svcfrstRegTs: item.regDt?.replace(/-/g, '') || '',
+                apiSource: 'SUBSIDY',
+                priority: 4,
+                isNews: false,
+                keywords: [category, '보조금24']
+            };
+        });
     } catch (error) {
         console.error('API Fetch Error (Subsidy24):', error);
         return [];

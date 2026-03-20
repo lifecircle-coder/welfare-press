@@ -252,7 +252,25 @@ export default function ArticleManagement() {
 3. 시각적으로 돋보이도록 적절한 소제목(Sub-heading)을 3개 이상 사용하세요.
 4. 독자 초청 멘트나 궁금증을 유발하는 질문으로 기사를 마무리하세요.`;
             } else if (api.apiSource === 'NATIONAL' || api.apiSource === 'LOCAL' || api.apiSource === 'SUBSIDY' || api.apiSource === 'MOGEF') {
-                prompt = `[왕 기자 전용: 복지 서비스 수혜자 중심 가이드]
+                const category = api.keywords?.[0] || '일반';
+                const isWelfareMapSeries = ['영유아', '청년', '어르신'].includes(category);
+                
+                if (isWelfareMapSeries) {
+                    prompt = `[왕 기자 전용: 내 삶의 지도 (Welfare Map) 시리즈 - ${category}편]
+
+시리즈 테마: 내 삶의 지도 (생애주기별 맞춤 복지)
+핵심 정책: ${title}
+제공 기관: ${sourceName}
+주요 내용: ${summary}
+상세 링크: ${link}
+
+작성 지침 (시리즈 특화형):
+1. '내 삶의 지도' 시리즈의 일환으로, ${category} 시기에 꼭 챙겨야 할 필수 복지라는 점을 강조하세요.
+2. 정책 요약을 넘어, '이 혜택이 내 삶을 어떻게 바꾸는지' 구체적인 라이프스타일 변화를 묘사하세요.
+3. [지도 포인트] 섹션을 만들어, 신청 시 주의사항이나 꿀팁 2가지를 '왕 기자'의 시선으로 짚어주세요.
+4. "당신의 인생 지도를 완성하는 한 줄기 빛, THE복지가 함께합니다."라는 문구로 감성적인 마무리를 해주세요.`;
+                } else {
+                    prompt = `[왕 기자 전용: 복지 서비스 수혜자 중심 가이드]
 
 서비스명: ${title}
 제공 기관: ${sourceName}
@@ -264,6 +282,7 @@ export default function ArticleManagement() {
 2. '쉬운 요약' 박스를 상단에 배치하고, 전문 용어 대신 일상 용어를 사용하세요.
 3. "이런 분들은 꼭 신청하세요!" 섹션을 만들어 자격 요건을 강조하세요.
 4. 기사 끝에 글자 크기 조절 버튼이 있다는 점을 언급하여 접근성을 강조하세요.`;
+                }
             } else if (api.apiSource === 'MOIS_STATS') {
                 prompt = `[왕 기자 전용: 데이터 인사이트 분석 리포트]
 
@@ -373,6 +392,35 @@ export default function ArticleManagement() {
                             </button>
                         ))}
                     </div>
+
+                    {/* Quick Life-cycle Filters for Welfare Map Series */}
+                    {(activeApiTab === 'SUBSIDY' || activeApiTab === 'NATIONAL' || activeApiTab === 'LOCAL') && (
+                        <div className="flex gap-1.5 bg-blue-100/50 p-1 rounded-xl border border-blue-200/50">
+                            {[
+                                { label: '영유아', color: 'text-pink-600', bg: 'hover:bg-pink-50' },
+                                { label: '청년', color: 'text-indigo-600', bg: 'hover:bg-indigo-50' },
+                                { label: '어르신', color: 'text-orange-600', bg: 'hover:bg-orange-50' }
+                            ].map((filter) => (
+                                <button
+                                    key={filter.label}
+                                    onClick={() => setApiSearchTerm(filter.label)}
+                                    className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all ${filter.bg} ${filter.color} 
+                                        ${apiSearchTerm === filter.label ? 'bg-white shadow-sm ring-1 ring-blue-200' : ''}`}
+                                >
+                                    #{filter.label}
+                                </button>
+                            ))}
+                            {apiSearchTerm && (
+                                <button 
+                                    onClick={() => setApiSearchTerm('')}
+                                    className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
+                                    title="필터 해제"
+                                >
+                                    <X size={14} />
+                                </button>
+                            )}
+                        </div>
+                    )}
                     
                     <div className="flex-1 flex items-center gap-2 bg-white px-4 py-2.5 rounded-xl border border-blue-100 shadow-sm ml-auto min-w-[240px]">
                         <Search size={16} className="text-gray-400" />
