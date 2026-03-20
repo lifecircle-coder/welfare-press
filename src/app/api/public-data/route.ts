@@ -83,17 +83,19 @@ export async function GET(request: NextRequest) {
             let finalData;
             
             try {
-                // Try v1 with encoded key first (most stable for Gov24)
-                const url = `${baseUrl}?serviceKey=${CORP_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
-                const res = await axios.get(url, { timeout: 5000 });
-                finalData = res.data;
-            } catch (e1) {
+                // Try 1: Native Fetch with Literal URL (Prevents Axios encoding bugs)
+                const fullUrl = `${baseUrl}?serviceKey=${CORP_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
+                const res = await fetch(fullUrl);
+                if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                finalData = await res.json();
+            } catch (e1: any) {
                 console.error('Subsidy V1 Corp Key Failed, trying Gen Key...', e1.message);
                 try {
-                    const url = `${baseUrl}?serviceKey=${GEN_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
-                    const res = await axios.get(url, { timeout: 5000 });
-                    finalData = res.data;
-                } catch (e2) {
+                    const fullUrl = `${baseUrl}?serviceKey=${GEN_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
+                    const res = await fetch(fullUrl);
+                    if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
+                    finalData = await res.json();
+                } catch (e2: any) {
                     console.error('Subsidy V1 Gen Key Failed', e2.message);
                     throw e2;
                 }
