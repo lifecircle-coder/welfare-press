@@ -394,8 +394,8 @@ export default function ArticleManagement() {
                         ))}
                     </div>
 
-                    {/* Quick Life-cycle Filters for Welfare Map Series */}
-                    {(activeApiTab === 'SUBSIDY' || activeApiTab === 'NATIONAL' || activeApiTab === 'LOCAL') && (
+                    {/* Quick Life-cycle Filters for Welfare Map Series - 중앙부처(NATIONAL) 탭에서만 노출 */}
+                    {activeApiTab === 'NATIONAL' && (
                         <div className="flex gap-1.5 bg-blue-100/50 p-1 rounded-xl border border-blue-200/50">
                             {[
                                 { label: '영유아', color: 'text-pink-600', bg: 'hover:bg-pink-50' },
