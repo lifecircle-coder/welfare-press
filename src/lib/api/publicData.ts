@@ -364,25 +364,37 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
     try {
         let list;
         if (typeof window !== 'undefined') {
-            const response = await axios.get('/api/public-data', {
-                params: {
-                    type: 'SUBSIDY_LIST',
-                    pageNo,
-                    numOfRows
+            try {
+                const response = await axios.get('/api/public-data', {
+                    params: { type: 'SUBSIDY_LIST', pageNo, numOfRows }
+                });
+                list = response.data?.data || response.data?.item;
+                
+                // 프록시 실패 시 클라이언트에서 직접 시도 (CORS 허용 시)
+                if (!list || list.length === 0) {
+                    const directRes = await axios.get(`https://api.odcloud.kr/api/gov24/v3/serviceList`, {
+                        params: {
+                            serviceKey: decodeURIComponent(CORPORATE_API_KEY),
+                            page: pageNo,
+                            perPage: numOfRows,
+                            returnType: 'json'
+                        }
+                    });
+                    list = directRes.data?.data || directRes.data?.item;
                 }
-            });
-            list = response.data?.data;
+            } catch (proxyError) {
+                console.warn('Proxy failed, trying direct fetch...', proxyError);
+                const directRes = await axios.get(`https://api.odcloud.kr/api/gov24/v3/serviceList`, {
+                    params: {
+                        serviceKey: decodeURIComponent(CORPORATE_API_KEY),
+                        page: pageNo,
+                        perPage: numOfRows,
+                        returnType: 'json'
+                    }
+                });
+                list = directRes.data?.data || directRes.data?.item;
+            }
         } else {
-            const response = await axios.get(`${SUBSIDY_API_URL}/serviceList`, {
-                params: {
-                    serviceKey: decodeURIComponent(CORPORATE_API_KEY), // Switch to Corp key for List
-                    page: pageNo,
-                    perPage: numOfRows,
-                    returnType: 'json'
-                }
-            });
-            list = response.data?.data || response.data?.item || response.data;
-        }
 
         if (!list) return [];
         let arrayList = Array.isArray(list) ? list : (list.item ? (Array.isArray(list.item) ? list.item : [list.item]) : [list]);
