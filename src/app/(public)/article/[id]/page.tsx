@@ -155,7 +155,7 @@ export default async function ArticleDetail({ params }: { params: { id: string }
             {/* AI Summary Box */}
             <div className="bg-gray-50 border-l-4 border-primary p-6 rounded-r-lg mb-10">
                 <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
-                    🤖 AI 3줄 요약
+                    🤖 AI 기사 요약
                 </h3>
                 <p className="text-lg text-gray-700 leading-relaxed">
                     {article.summary}
