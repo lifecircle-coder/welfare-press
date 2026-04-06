@@ -26,6 +26,7 @@ export default function ArticleManagement() {
     // Public Data State
     const [activeApiTab, setActiveApiTab] = useState<'NATIONAL' | 'LOCAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF' | 'MCST_PRESS' | 'MCST_NEWS' | 'MCST_PHOTO' | 'MOIS_STATS' | 'NEWS_ALL'>('MCST_PRESS');
     const [apiSearchTerm, setApiSearchTerm] = useState('');
+    const [clientFilter, setClientFilter] = useState('');
     const [selectedApiItem, setSelectedApiItem] = useState<WelfareService | null>(null);
 
     // National (MOHW + MOGEF + SUBSIDY + YOUTH)
@@ -105,39 +106,40 @@ export default function ArticleManagement() {
         try {
             let list: WelfareService[] = [];
             if (tab === 'NATIONAL') {
-                list = await getNationalWelfareList(1, 50);
+                list = await getNationalWelfareList(1, 1000); 
             } else if (tab === 'SUBSIDY') {
-                list = await getSubsidy24List(1, 50);
+                list = await getSubsidy24List(1, 500); // 50 -> 500: Give more data for filtering
             } else if (tab === 'YOUTH') {
-                list = await getYouthPolicyList(1, 50);
+                list = await getYouthPolicyList(1, 500);
             } else if (tab === 'MOGEF') {
-                list = await getMogefNewsList(1, 50);
+                list = await getMogefNewsList(1, 100);
             } else if (tab === 'MCST_PRESS') {
-                list = await getMcstPressReleaseList(1, 40); // 100 -> 40으로 축소 (500 에러 방지용)
+                list = await getMcstPressReleaseList(1, 100);
             } else if (tab === 'MCST_NEWS') {
-                list = await getMcstNewsList(1, 40);
+                list = await getMcstNewsList(1, 100);
             } else if (tab === 'MCST_PHOTO') {
-                list = await getMcstPhotoList(1, 40);
+                list = await getMcstPhotoList(1, 100);
             } else if (tab === 'MOIS_STATS') {
-                list = await getMoisStatsList(1, 50);
+                list = await getMoisStatsList(1, 100);
             } else if (tab === 'NEWS_ALL') {
                 const results = await Promise.all([
-                    getMcstPressReleaseList(1, 20),
-                    getMcstNewsList(1, 20),
-                    getMogefNewsList(1, 20)
+                    getMcstPressReleaseList(1, 40),
+                    getMcstNewsList(1, 40),
+                    getMogefNewsList(1, 40)
                 ]);
                 list = results.flat();
             }
 
             list.sort((a, b) => {
+                // Ensure 2026/2025 data stays at TOP by sorting date DESC first
+                const dateA = String(a.svcfrstRegTs || '').replace(/[^0-9]/g, '');
+                const dateB = String(b.svcfrstRegTs || '').replace(/[^0-9]/g, '');
+                if (dateA && dateB && dateA !== dateB) {
+                    return dateB.localeCompare(dateA);
+                }
                 const priorityA = a.priority || 99;
                 const priorityB = b.priority || 99;
-                if (priorityA !== priorityB) {
-                    return priorityA - priorityB;
-                }
-                const dateA = String(a.svcfrstRegTs || '');
-                const dateB = String(b.svcfrstRegTs || '');
-                return dateB.localeCompare(dateA);
+                return priorityA - priorityB;
             });
 
             setApiData(list.slice(0, 100));
@@ -162,6 +164,7 @@ export default function ArticleManagement() {
     };
 
     useEffect(() => {
+        setClientFilter(''); // Reset life-cycle filter when tab changes
         if (activeApiTab === 'LOCAL') {
             loadLocalApiData();
         } else {
@@ -394,7 +397,7 @@ export default function ArticleManagement() {
                         ))}
                     </div>
 
-                    {/* Quick Life-cycle Filters for Welfare Map Series - 중앙부처(NATIONAL) 탭에서만 노출 */}
+                    {/* Quick Life-cycle Filters - Client Side (Ensures 2026 Data Freshness) */}
                     {activeApiTab === 'NATIONAL' && (
                         <div className="flex gap-1.5 bg-blue-100/50 p-1 rounded-xl border border-blue-200/50">
                             {[
@@ -404,16 +407,16 @@ export default function ArticleManagement() {
                             ].map((filter) => (
                                 <button
                                     key={filter.label}
-                                    onClick={() => setApiSearchTerm(filter.label)}
+                                    onClick={() => setClientFilter(filter.label === clientFilter ? '' : filter.label)}
                                     className={`px-3 py-1.5 rounded-lg text-[11px] font-black transition-all ${filter.bg} ${filter.color} 
-                                        ${apiSearchTerm === filter.label ? 'bg-white shadow-sm ring-1 ring-blue-200' : ''}`}
+                                        ${clientFilter === filter.label ? 'bg-white shadow-sm ring-1 ring-blue-200' : ''}`}
                                 >
                                     #{filter.label}
                                 </button>
                             ))}
-                            {apiSearchTerm && (
+                            {clientFilter && (
                                 <button 
-                                    onClick={() => setApiSearchTerm('')}
+                                    onClick={() => setClientFilter('')}
                                     className="p-1.5 text-gray-400 hover:text-red-500 transition-colors"
                                     title="필터 해제"
                                 >
@@ -440,14 +443,42 @@ export default function ArticleManagement() {
                     className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[600px] overflow-y-auto pr-2 custom-scrollbar"
                 >
                     {((activeApiTab === 'LOCAL' ? displayLocalApiData : displayApiData)
-                        .filter(api => !apiSearchTerm || api.servNm.toLowerCase().includes(apiSearchTerm.toLowerCase()) || api.servDgst.toLowerCase().includes(apiSearchTerm.toLowerCase()))
+                        .filter(api => {
+                            const term = (apiSearchTerm || clientFilter || '').toLowerCase();
+                            if (!term) return true;
+                            
+                            const name = String(api?.servNm || '').toLowerCase();
+                            const dgst = String(api?.servDgst || '').toLowerCase();
+                            const keywords = Array.isArray(api?.keywords) ? api.keywords.map(k => String(k).toLowerCase()) : [];
+                            
+                            if (keywords.includes(term)) return true;
+                            const matchesText = name.includes(term) || dgst.includes(term);
+                            const date = String(api?.svcfrstRegTs || '');
+                            const isLatest = date.includes('2026') || date.includes('2025');
+                            
+                            return matchesText || (isLatest && (name.includes('보육') || name.includes('청년') || name.includes('지원')));
+                        })
                     ).length === 0 ? (
                         <div className="col-span-full p-12 text-center text-gray-400 bg-white rounded-xl border border-dashed">
                             {isFetchingApi || isFetchingLocal ? '데이터를 불러오는 중입니다...' : '검색된 항목이 없습니다.'}
                         </div>
                     ) : (
                         (activeApiTab === 'LOCAL' ? displayLocalApiData : displayApiData)
-                        .filter(api => !apiSearchTerm || api.servNm.toLowerCase().includes(apiSearchTerm.toLowerCase()) || api.servDgst.toLowerCase().includes(apiSearchTerm.toLowerCase()))
+                        .filter(api => {
+                            const term = (apiSearchTerm || clientFilter || '').toLowerCase();
+                            if (!term) return true;
+                            
+                            const name = String(api?.servNm || '').toLowerCase();
+                            const dgst = String(api?.servDgst || '').toLowerCase();
+                            const keywords = Array.isArray(api?.keywords) ? api.keywords.map(k => String(k).toLowerCase()) : [];
+                            
+                            if (keywords.includes(term)) return true;
+                            const matchesText = name.includes(term) || dgst.includes(dgst);
+                            const date = String(api?.svcfrstRegTs || '');
+                            const isLatest = date.includes('2026') || date.includes('2025');
+                            
+                            return matchesText || (isLatest && (name.includes('보육') || name.includes('청년') || name.includes('지원')));
+                        })
                         .map(api => {
                             const status = apiStatusHistory[api.servId] || 'default';
                             

@@ -145,7 +145,7 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
                     serviceKey: decodeURIComponent(CORPORATE_API_KEY),
                     callTp: 'L',
                     pageNo: 1,
-                    numOfRows: 500, // 전체 데이터를 한 번에 가져와서 정렬
+                    numOfRows: 500, // Always fetch 500 items for robust 2026 data filtering
                     srchKeyCode: '003',
                     searchWrd: '', // 키워드 없이 전체 호출
                 }
@@ -368,20 +368,7 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
                 const response = await axios.get('/api/public-data', {
                     params: { type: 'SUBSIDY_LIST', pageNo, numOfRows }
                 });
-                list = response.data?.data || response.data?.item;
-                
-                // 프록시 실패 시 클라이언트에서 v1 직접 시도
-                if (!list || list.length === 0) {
-                    const directRes = await axios.get(`https://api.odcloud.kr/api/gov24/v1/list`, {
-                        params: {
-                            serviceKey: decodeURIComponent(CORPORATE_API_KEY),
-                            page: pageNo,
-                            perPage: numOfRows,
-                            returnType: 'json'
-                        }
-                    });
-                    list = directRes.data?.data || directRes.data?.item;
-                }
+                list = response.data?.data || response.data?.item || response.data;
             } catch (proxyError) {
                 console.warn('Proxy failed, trying direct v1 fetch...', proxyError);
                 const directRes = await axios.get(`https://api.odcloud.kr/api/gov24/v1/list`, {
@@ -392,7 +379,7 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
                         returnType: 'json'
                     }
                 });
-                list = directRes.data?.data || directRes.data?.item;
+                list = directRes.data?.data || directRes.data?.item || directRes.data;
             }
         } else {
             const response = await axios.get(`https://api.odcloud.kr/api/gov24/v1/list`, {
@@ -403,32 +390,46 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
                     returnType: 'json'
                 }
             });
-            list = response.data?.data || response.data?.item;
+            list = response.data?.data || response.data?.item || response.data;
         }
 
         if (!list) return [];
-        let arrayList = Array.isArray(list) ? list : (list.item ? (Array.isArray(list.item) ? list.item : [list.item]) : [list]);
-
-        // 데이터가 실제 오브젝트 배열인지 확인 (500 에러 방지)
-        if (arrayList.length > 0 && typeof arrayList[0] !== 'object') {
-            return [];
+        
+        let arrayList: any[] = [];
+        if (Array.isArray(list)) {
+            arrayList = list;
+        } else if (list && list.item && Array.isArray(list.item)) {
+            arrayList = list.item;
+        } else if (list && list.data && Array.isArray(list.data)) {
+            arrayList = list.data;
+        } else if (list) {
+            arrayList = [list];
         }
 
+        if (arrayList.length === 0) return [];
+
         return arrayList.map((item: any) => {
-            const svcContent = item.svcContent || '';
-            // 추출 로직: 간단한 키워드 매칭으로 카테고리 태깅
+            // Ultimate Defensive mapping for v1/v2 API
+            const sTitle = item.svcNm || item.svc_nm || item.title || item.svcName || item.serviceName || item.servNm || item.서비스명 || item['서비스명'] || '제목 없음';
+            const sId = item.svcId || item.svc_id || item.id || item.servId || item.serviceId || String(Math.random());
+            const sContent = item.svcContent || item.svc_content || item.description || item.dgst || item.svcStat || item.content || item.요약 || '';
+            const sUrl = item.dtlResUrl || item.resUrl || item.url || item.dtlUrl || item.link || '';
+            const sDept = item.pdeptNm || item.porgNm || item.dept || item.managePorgNm || item.jurMnofNm || '보조금24';
+            const sDate = String(item.regDt || item.lastModTs || item.date || item.lastModDt || item.svcfrstRegTs || '').replace(/[^0-9]/g, '');
+
             let category = '일반';
-            if (svcContent.includes('아기') || svcContent.includes('출산') || svcContent.includes('영유아') || svcContent.includes('보육')) category = '영유아';
-            else if (svcContent.includes('청년') || svcContent.includes('취업') || svcContent.includes('대학생')) category = '청년';
-            else if (svcContent.includes('어르신') || svcContent.includes('노인') || svcContent.includes('기초연금')) category = '어르신';
+            const searchPool = (sTitle + sContent).toLowerCase();
+            if (searchPool.includes('아기') || searchPool.includes('출산') || searchPool.includes('영유아') || searchPool.includes('보육')) category = '영유아';
+            else if (searchPool.includes('청년') || searchPool.includes('취업') || searchPool.includes('대학생')) category = '청년';
+            else if (searchPool.includes('어르신') || searchPool.includes('노인') || searchPool.includes('기초연금')) category = '어르신';
 
             return {
-                servId: String(item.svcId),
-                servNm: item.svcNm,
-                jurMnofNm: item.pdeptNm || item.porgNm || '보조금24',
-                servDgst: svcContent,
-                servDtlLink: '',
-                svcfrstRegTs: item.regDt?.replace(/-/g, '') || '',
+                servId: String(sId),
+                servNm: sTitle,
+                jurMnofNm: sDept,
+                servDgst: sContent || '상세 내용을 확인하려면 상세보기 버튼을 클릭하세요.',
+                servDtlLink: sUrl,
+                svcfrstRegTs: sDate,
                 apiSource: 'SUBSIDY',
                 priority: 4,
                 isNews: false,

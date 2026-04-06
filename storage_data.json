@@ -1,0 +1,30 @@
+{
+  "buckets": [
+    {
+      "id": "partnership_files",
+      "name": "partnership_files",
+      "owner": "",
+      "public": true,
+      "type": "STANDARD",
+      "file_size_limit": 5242880,
+      "allowed_mime_types": [
+        "image/png",
+        "image/jpeg",
+        "image/webp",
+        "image/gif"
+      ],
+      "created_at": "2026-03-09T01:00:38.652Z",
+      "updated_at": "2026-03-09T01:00:38.652Z"
+    }
+  ],
+  "files_in_partnership": [
+    {
+      "name": "articles",
+      "id": null,
+      "updated_at": null,
+      "created_at": null,
+      "last_accessed_at": null,
+      "metadata": null
+    }
+  ]
+}
