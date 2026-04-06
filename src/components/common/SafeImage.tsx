@@ -14,9 +14,33 @@ export default function SafeImage({ src, fallback, ...props }: SafeImageProps) {
     const [hasError, setHasError] = useState(false);
 
     useEffect(() => {
-        setImgSrc(src || null);
+        let finalSrc = src;
+        
+        // --- Supabase Image Transformation Integration ---
+        // If it's a Supabase storage URL, we use the transformation endpoint to save bandwidth
+        if (src && src.includes('supabase.co/storage/v1/object/public/')) {
+            const width = props.width;
+            const height = props.height;
+            
+            // Only transform if dimensions are provided (to avoid breaking 'fill' layout without dimensions)
+            // or if we want a default quality reduction even for full-size images
+            if (width || height) {
+                // Change /object/public/ to /render/image/public/
+                let transformed = src.replace('/object/public/', '/render/image/public/');
+                
+                // Add transformation parameters
+                const params = new URLSearchParams();
+                if (width) params.append('width', String(width));
+                if (height) params.append('height', String(height));
+                params.append('quality', '75'); // 75% is usually the sweet spot for file size vs quality
+                
+                finalSrc = `${transformed}?${params.toString()}`;
+            }
+        }
+        
+        setImgSrc(finalSrc || null);
         setHasError(false);
-    }, [src]);
+    }, [src, props.width, props.height]);
 
     if (!imgSrc || imgSrc.trim() === '' || hasError) {
         if (fallback) {
