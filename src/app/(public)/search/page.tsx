@@ -1,6 +1,21 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
+import type { Metadata } from 'next';
 import { searchArticles } from '@/lib/services';
+
+export async function generateMetadata(): Promise<Metadata> {
+    return {
+        title: '뉴스 검색',
+        description: 'THE 복지의 기사를 검색하여 원하는 정보를 빠르게 찾아보세요.',
+        robots: {
+            index: false,
+            follow: true,
+        },
+        alternates: {
+            canonical: '/search',
+        },
+    };
+}
 
 export const revalidate = 0; // 검색은 항상 최신 결과를 보장해야 하므로 캐싱 비활성화 또는 짧게 설정
 
@@ -25,7 +40,13 @@ async function SearchResults({ query }: { query: string | null }) {
                 >
                     <div className="flex items-center gap-2 mb-2">
                         <span className="text-primary text-sm font-bold">[{news.category}]</span>
-                        <span className="text-gray-400 text-sm">{new Date(news.date).toLocaleDateString()}</span>
+                                                <span className="text-gray-400 text-sm">
+                            {new Date(news.created_at || news.date || new Date()).toLocaleString('ko-KR', {
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit'
+                            })}
+                        </span>
                     </div>
                     <h3 className="text-xl font-bold text-gray-900 mb-2 group-hover:text-primary transition-colors">
                         {news.title}

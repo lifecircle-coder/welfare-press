@@ -1,12 +1,12 @@
-'use client';
-
-import { useParams } from 'next/navigation';
+import type { Metadata } from 'next';
 import { Shield, Book, UserCheck, Copyright } from 'lucide-react';
+import React from 'react';
 
-const POLICY_CONTENT: Record<string, { title: string, icon: any, content: string }> = {
+const POLICY_CONTENT: Record<string, { title: string, icon: React.ReactNode, description: string, content: string }> = {
     terms: {
         title: '이용약관',
         icon: <Book className="text-blue-500" />,
+        description: '인터넷 복지신문 THE 복지의 서비스 이용 규칙과 회원 간의 권리 및 의무를 규정하는 이용약관입니다.',
         content: `
 제 1 조 (목적)
 본 약관은 [이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복지](이하 '서비스')의 이용조건 및 절차, '회사'와 회원 간의 권리와 의무 등 기본적인 사항을 규정함을 목적으로 합니다.
@@ -48,6 +48,7 @@ const POLICY_CONTENT: Record<string, { title: string, icon: any, content: string
     privacy: {
         title: '개인정보처리방침',
         icon: <Shield className="text-green-500" />,
+        description: 'THE 복지의 개인정보 수집 목적, 보유 기간 및 이용자 권리를 투명하게 안내하는 개인정보처리방침입니다.',
         content: `
 [이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복지](이하 '서비스')는 이용자의 개인정보를 매우 중요하게 생각하며, 개인정보 보호법에 의거하여 다음과 같은 개인정보 처리방침을 운영하고 있습니다.
 
@@ -79,6 +80,7 @@ const POLICY_CONTENT: Record<string, { title: string, icon: any, content: string
     youth: {
         title: '청소년보호정책',
         icon: <UserCheck className="text-orange-500" />,
+        description: '청소년들이 유해한 환경으로부터 보호받으며 건전하게 성장할 수 있도록 하는 THE 복지의 청소년보호정책입니다.',
         content: `
 [이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복지](이하 '서비스')은 청소년이 건전한 인격체로 성장할 수 있도록 정보통신망 이용촉진 및 정보보호 등에 관한 법률에 따라 청소년 보호 정책을 수립하여 시행하고 있습니다.
 
@@ -100,6 +102,7 @@ const POLICY_CONTENT: Record<string, { title: string, icon: any, content: string
     copyright: {
         title: '저작권보호정책',
         icon: <Copyright className="text-red-500" />,
+        description: 'THE 복지 기사 및 콘텐츠의 저작권 보호와 무단 사용 방지를 위한 공식 저작권보호정책안내입니다.',
         content: `
 [이어사리](이하 '회사')가 운영하는 인터넷 복지신문 [THE 복지](이하 '서비스')이 제공하는 모든 뉴스, 정보 등의 저작권은 '회사'에 있으며, 이용자들이 이를 무단으로 사용하는 것을 금지합니다.
 
@@ -122,9 +125,32 @@ const POLICY_CONTENT: Record<string, { title: string, icon: any, content: string
     }
 };
 
-export default function PolicyPage() {
-    const params = useParams();
-    const type = params.type as string;
+export async function generateMetadata({ params }: { params: { type: string } }): Promise<Metadata> {
+    const policy = POLICY_CONTENT[params.type];
+    
+    if (!policy) {
+        return {
+            title: '존재하지 않는 정책 페이지',
+        };
+    }
+
+    return {
+        title: policy.title,
+        description: policy.description,
+        alternates: {
+            canonical: `/policy/${params.type}`,
+        },
+        openGraph: {
+            title: policy.title,
+            description: policy.description,
+            url: `https://thebok.co.kr/policy/${params.type}`,
+            type: 'article',
+        }
+    };
+}
+
+export default function PolicyPage({ params }: { params: { type: string } }) {
+    const type = params.type;
     const policy = POLICY_CONTENT[type];
 
     if (!policy) {

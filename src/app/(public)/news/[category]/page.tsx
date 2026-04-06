@@ -1,9 +1,37 @@
+import { Metadata } from 'next';
 import Link from 'next/link';
 import SafeImage from '@/components/common/SafeImage';
 import { Newspaper } from 'lucide-react';
 import { getArticles, getArticlesByCategory, getTopArticles } from '@/lib/services';
 
 export const revalidate = 60; // 1분 단위 캐싱으로 로딩 속도 개선
+
+export async function generateMetadata({ params }: { params: { category: string } }): Promise<Metadata> {
+    const categoryName = decodeURIComponent(params.category);
+    const categoryTitleMap: Record<string, string> = {
+        'all': '종합',
+        'jobs': '일자리·취업',
+        'housing': '주거·금융',
+        'health': '건강·의료',
+        'safety': '생활·안전',
+        'childcare': '임신·육아'
+    };
+    const displayName = categoryTitleMap[categoryName] || '뉴스';
+
+    return {
+        title: `${displayName} 뉴스`,
+        description: `THE 복지 ${displayName} 카테고리의 최신 복지 정책과 맞춤형 뉴스 정보를 확인하세요.`,
+        alternates: {
+            canonical: `/news/${categoryName}`,
+        },
+        openGraph: {
+            title: `${displayName} 뉴스 | THE 복지`,
+            description: `전국민을 위한 복지 전문 뉴스 - ${displayName} 분야의 핵심 정보를 제공합니다.`,
+            url: `https://thebok.co.kr/news/${categoryName}`,
+            type: 'website',
+        }
+    };
+}
 
 export async function generateStaticParams() {
     return [
