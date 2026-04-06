@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
+import type { Metadata } from 'next'
 import { getArticleById, getArticles, getComments } from '@/lib/services';
 import type { Article, Comment } from '@/lib/services';
 import ViewCounter from '@/components/article/ViewCounter';
@@ -18,6 +19,50 @@ export async function generateStaticParams() {
     return articles.map((article) => ({
         id: article.id,
     }));
+}
+
+export async function generateMetadata({ params }: { params: { id: string } }): Promise<Metadata> {
+    const article = await getArticleById(params.id);
+
+    if (!article) {
+        return {
+            title: '기사를 찾을 수 없습니다',
+        };
+    }
+
+    const title = article.title;
+    const description = article.summary || article.content?.substring(0, 160).replace(/<[^>]*>/g, '') || '';
+    const imageUrl = article.thumbnail || 'https://thebok.co.kr/logo.svg';
+
+    return {
+        title: title,
+        description: description,
+        alternates: {
+            canonical: `/article/${article.id}`,
+        },
+        openGraph: {
+            title: title,
+            description: description,
+            url: `https://thebok.co.kr/article/${article.id}`,
+            type: 'article',
+            publishedTime: article.created_at || article.date,
+            authors: [article.author || 'THE 복지'],
+            images: [
+                {
+                    url: imageUrl,
+                    width: 1200,
+                    height: 630,
+                    alt: title,
+                },
+            ],
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title: title,
+            description: description,
+            images: [imageUrl],
+        },
+    };
 }
 
 export default async function ArticleDetail({ params }: { params: { id: string } }) {
@@ -50,6 +95,28 @@ export default async function ArticleDetail({ params }: { params: { id: string }
 
     return (
         <div className="container mx-auto px-4 py-8 max-w-4xl">
+            {/* JSON-LD Structured Data for NewsArticle */}
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{
+                    __html: JSON.stringify({
+                        "@context": "https://schema.org",
+                        "@type": "NewsArticle",
+                        "headline": article.title,
+                        "description": article.summary,
+                        "image": [
+                            article.thumbnail || "https://thebok.co.kr/logo.svg"
+                        ],
+                        "datePublished": article.created_at || article.date,
+                        "dateModified": article.updated_at || article.created_at || article.date,
+                        "author": [{
+                            "@type": "Person",
+                            "name": article.author || "THE 복지 기자"
+                        }]
+                    })
+                }}
+            />
+
             {/* Handle view increment on client side */}
             <ViewCounter articleId={params.id} />
 
