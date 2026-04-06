@@ -60,6 +60,12 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  verification: {
+    google: "2U7-3FigWK-r7CpCEKcRfxXYTrQeNd55wNyDqZUqB_M",
+    other: {
+      "naver-site-verification": "4b4c529cffd43ccda111b368ef5bfdc4b6179fd3",
+    },
+  },
 };
 
 import VisitorTracker from "@/components/VisitorTracker";
