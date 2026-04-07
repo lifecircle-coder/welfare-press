@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Suspense, useMemo } from 'react';
-import { saveArticle, getUsers, getArticleById } from '@/lib/services';
+import { saveArticle, getUsers, getArticleById, getMenus } from '@/lib/services';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Save, ArrowLeft } from 'lucide-react';
 import { adminSupabase } from '@/lib/supabaseClient';
@@ -45,8 +45,8 @@ function WriteArticleForm() {
         title: '',
         summary: '',
         content: '',
-        category: '일자리·취업',
-        prefix: '일자리', // 말머리
+        category: '', // 초기화는 useEffect에서 수행
+        prefix: '', // 말머리
         author: '관리자', // Default fallback
         hashtags: '',
         status: 'published' as 'published' | 'draft',
@@ -54,6 +54,38 @@ function WriteArticleForm() {
         created_at: '',
         updated_at: ''
     });
+
+    const [categoryMap, setCategoryMap] = useState<Record<string, string[]>>({});
+
+    useEffect(() => {
+        const fetchMenus = async () => {
+            const data = await getMenus(adminSupabase);
+            
+            // 트리 구조를 categoryMap 형태로 변환 (대분류: [소분류들])
+            const map: Record<string, string[]> = {};
+            const mainMenus = data.filter((m: any) => !m.parent_id && m.is_visible);
+            
+            mainMenus.forEach((main: any) => {
+                const subMenus = data
+                    .filter((m: any) => m.parent_id === main.id && m.is_visible)
+                    .map((m: any) => m.name);
+                map[main.name] = subMenus.length > 0 ? subMenus : ['일반'];
+            });
+            setCategoryMap(map);
+
+            // 새 기사 작성 시 첫 번째 유효 카테고리로 초기화
+            if (!editId && mainMenus.length > 0) {
+                const firstCat = mainMenus[0].name;
+                const firstPrefix = map[firstCat]?.[0] || '일반';
+                setFormData(prev => ({ 
+                    ...prev, 
+                    category: firstCat,
+                    prefix: firstPrefix
+                }));
+            }
+        };
+        fetchMenus();
+    }, [editId]);
     // Load existing data if editing
     useEffect(() => {
         if (editId) {
@@ -84,20 +116,12 @@ function WriteArticleForm() {
         }
     }, [editId]);
 
-    const PREFIX_OPTIONS: Record<string, string[]> = {
-        '일자리·취업': ['일자리', '취업', '창업', '교육'],
-        '주거·금융': ['주거', '금융', '청약', '대출'],
-        '건강·의료': ['건강', '의료', '보험', '운동'],
-        '생활·안전': ['생활', '안전', '교통', '환경'],
-        '임신·육아': ['임신', '육아', '보육', '지원']
-    };
-
     const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const cat = e.target.value;
         setFormData(prev => ({
             ...prev,
             category: cat,
-            prefix: PREFIX_OPTIONS[cat]?.[0] || '일반'
+            prefix: categoryMap[cat]?.[0] || '일반'
         }));
     };
     const handleSave = async () => {
@@ -172,7 +196,7 @@ function WriteArticleForm() {
                             value={formData.category}
                             onChange={handleCategoryChange}
                         >
-                            {Object.keys(PREFIX_OPTIONS).map(cat => (
+                            {Object.keys(categoryMap).map(cat => (
                                 <option key={cat} value={cat}>{cat}</option>
                             ))}
                         </select>
@@ -184,7 +208,7 @@ function WriteArticleForm() {
                             value={formData.prefix}
                             onChange={e => setFormData(prev => ({ ...prev, prefix: e.target.value }))}
                         >
-                            {PREFIX_OPTIONS[formData.category]?.map(p => (
+                            {categoryMap[formData.category]?.map(p => (
                                 <option key={p} value={p}>{p}</option>
                             )) || <option value="일반">일반</option>}
                         </select>

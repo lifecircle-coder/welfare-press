@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Search, Menu, ZoomIn, X, User } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import { getMenus } from '@/lib/services';
 
 import { supabase } from '@/lib/supabaseClient';
 
@@ -78,14 +79,39 @@ export default function Header() {
         setIsMenuOpen(false);
     };
 
-    const menuItems = [
-        { name: '종합', href: '/news/all' },
-        { name: '건강·의료', href: '/news/health' },
-        { name: '임신·육아', href: '/news/childcare' },
-        { name: '일자리·취업', href: '/news/jobs' },
-        { name: '생활·안전', href: '/news/safety' },
-        { name: '주거·금융', href: '/news/housing' },
-    ];
+    const [menuItems, setMenuItems] = useState<any[]>([]);
+
+    useEffect(() => {
+        const fetchNavMenus = async () => {
+            const data = await getMenus();
+            // 대분류 중 노출 설정된 메뉴만 필터링 (정렬 순서 반영은 getMenus에서 처리됨)
+            const mainMenus = data.filter((m: any) => !m.parent_id && m.is_visible);
+            
+            // 기존 슬러그 매핑 정보 (하위 호환성 유지)
+            const slugMap: Record<string, string> = {
+                '종합': 'all',
+                '건강·의료': 'health',
+                '임신·육아': 'childcare',
+                '일자리·취업': 'jobs',
+                '생활·안전': 'safety',
+                '주거·금융': 'housing'
+            };
+
+            const formatted = mainMenus.map((m: any) => ({
+                name: m.name,
+                href: `/news/${slugMap[m.name] || encodeURIComponent(m.name)}`,
+                id: m.id
+            }));
+
+            // '종합' 메뉴가 처음에 없으면 추가 (전체보기용)
+            if (!formatted.find(m => m.name === '종합')) {
+                formatted.unshift({ name: '종합', href: '/news/all', id: 'all' });
+            }
+
+            setMenuItems(formatted);
+        };
+        fetchNavMenus();
+    }, []);
 
     // Text Size Toggle
     const toggleTextSize = () => {

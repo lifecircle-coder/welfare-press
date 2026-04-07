@@ -2,21 +2,27 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import SafeImage from '@/components/common/SafeImage';
 import { Newspaper } from 'lucide-react';
-import { getArticles, getArticlesByCategory, getTopArticles } from '@/lib/services';
+import { getArticles, getArticlesByCategory, getTopArticles, getMenus } from '@/lib/services';
 
 export const revalidate = 60; // 1분 단위 캐싱으로 로딩 속도 개선
 
 export async function generateMetadata({ params }: { params: { category: string } }): Promise<Metadata> {
     const categoryName = decodeURIComponent(params.category);
-    const categoryTitleMap: Record<string, string> = {
-        'all': '종합',
+    const menus = await getMenus();
+    
+    // 기존 슬러그 매핑
+    const slugMap: Record<string, string> = {
+        'all': '전체',
         'jobs': '일자리·취업',
         'housing': '주거·금융',
         'health': '건강·의료',
         'safety': '생활·안전',
         'childcare': '임신·육아'
     };
-    const displayName = categoryTitleMap[categoryName] || '뉴스';
+
+    const internalName = slugMap[categoryName] || categoryName;
+    const currentMenu = menus.find((m: any) => m.name === internalName && !m.parent_id);
+    const displayName = currentMenu ? currentMenu.name : (internalName === '전체' ? '종합' : internalName);
 
     return {
         title: `${displayName} 뉴스`,
@@ -34,22 +40,31 @@ export async function generateMetadata({ params }: { params: { category: string 
 }
 
 export async function generateStaticParams() {
-    return [
+    const menus = await getMenus();
+    const mainMenus = menus.filter((m: any) => !m.parent_id);
+    
+    const legacySlugs = ['childcare', 'jobs', 'housing', 'health', 'safety'];
+    const params = [
         { category: 'all' },
-        { category: 'childcare' },
-        { category: 'jobs' },
-        { category: 'housing' },
-        { category: 'health' },
-        { category: 'safety' },
+        ...legacySlugs.map(s => ({ category: s })),
+        ...mainMenus.map((m: any) => ({ category: encodeURIComponent(m.name) }))
     ];
+    return params;
 }
 
-export default async function CategoryNews({ params }: { params: { category: string } }) {
+export default async function CategoryNews({ 
+    params, 
+    searchParams 
+}: { 
+    params: { category: string };
+    searchParams: { prefix?: string };
+}) {
     const categoryName = decodeURIComponent(params.category);
+    const selectedPrefix = searchParams.prefix ? decodeURIComponent(searchParams.prefix) : '전체';
+    const menus = await getMenus();
 
-    // 1. Map URL Slug to Internal Category Name (Full names for exact matching)
-    // [데이터 매핑 전수 조사] URL 슬러그와 DB 실제 값 일치 확인
-    const categoryMap: Record<string, string> = {
+    // 1. Map URL Slug to Internal Category Name
+    const slugMap: Record<string, string> = {
         'all': '전체',
         'jobs': '일자리·취업',
         'housing': '주거·금융',
@@ -57,27 +72,22 @@ export default async function CategoryNews({ params }: { params: { category: str
         'safety': '생활·안전',
         'childcare': '임신·육아'
     };
-    const internalCategory = categoryMap[categoryName];
+    const internalCategoryName = slugMap[categoryName] || categoryName;
+    
+    // Find matching parent menu
+    const currentMenu = menus.find((m: any) => m.name === internalCategoryName && !m.parent_id);
+    const displayName = currentMenu ? currentMenu.name : (internalCategoryName === '전체' ? '종합' : internalCategoryName);
+    
+    // Get sub-categories (child menus)
+    const subMenus = currentMenu ? menus.filter((m: any) => m.parent_id === currentMenu.id && m.is_visible) : [];
 
-    // 2. Fetch Optimized Data in Parallel (Directly from DB using index)
-    // [호출 의존성 조사] 'all' 슬러그에 대해 필터링 없이 모든 기사 호출 보장
+    // 2. Fetch Optimized Data
     const [newsList, topArticles] = await Promise.all([
-        categoryName === 'all' || !internalCategory || internalCategory === '전체'
+        categoryName === 'all' || internalCategoryName === '전체'
             ? getArticles(40)
-            : getArticlesByCategory(internalCategory, 40),
+            : getArticlesByCategory(internalCategoryName, 40, 0, selectedPrefix),
         getTopArticles(10)
     ]);
-
-    // UI Mapping
-    const categoryTitleMap: Record<string, string> = {
-        'all': '종합',
-        'jobs': '일자리·취업',
-        'housing': '주거·금융',
-        'health': '건강·의료',
-        'safety': '생활·안전',
-        'childcare': '임신·육아'
-    };
-    const displayName = categoryTitleMap[categoryName] || '뉴스';
 
     // Helper for Dynamic Border Color
     const getBorderColor = (slug: string) => {
@@ -104,9 +114,42 @@ export default async function CategoryNews({ params }: { params: { category: str
     return (
         <div className="container mx-auto px-4 py-8">
             {/* Page Title with Dynamic Color */}
-            <h1 className={`text-3xl font-bold mb-8 border-b-4 pb-4 inline-block ${getBorderColor(categoryName)}`}>
-                {displayName} 뉴스
-            </h1>
+            <div className="flex flex-col md:flex-row md:items-end gap-4 mb-8 border-b-4 pb-4">
+                <h1 className={`text-3xl font-bold inline-block border-none pb-0 mb-0 ${getBorderColor(categoryName).split(' ')[1]}`}>
+                    {displayName} 뉴스
+                </h1>
+                
+                {/* Sub-category Filter (Prefix) */}
+                {subMenus.length > 0 && (
+                    <div className="flex-1 overflow-x-auto no-scrollbar py-1">
+                        <div className="flex items-center gap-2 px-1">
+                            <Link 
+                                href={`/news/${categoryName}`}
+                                className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                                    selectedPrefix === '전체' 
+                                    ? 'bg-gray-900 text-white shadow-sm' 
+                                    : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                }`}
+                            >
+                                전체
+                            </Link>
+                            {subMenus.sort((a: any, b: any) => a.sort_order - b.sort_order).map((sub: any) => (
+                                <Link
+                                    key={sub.id}
+                                    href={`/news/${categoryName}?prefix=${encodeURIComponent(sub.name)}`}
+                                    className={`px-4 py-1.5 rounded-full text-sm font-medium whitespace-nowrap transition-colors ${
+                                        selectedPrefix === sub.name
+                                        ? 'bg-gray-900 text-white shadow-sm'
+                                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                                    }`}
+                                >
+                                    {sub.name}
+                                </Link>
+                            ))}
+                        </div>
+                    </div>
+                )}
+            </div>
 
             <div className="flex flex-col lg:flex-row gap-8">
                 {/* Main News List (Left) */}

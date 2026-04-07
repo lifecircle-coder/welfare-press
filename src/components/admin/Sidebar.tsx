@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { BarChart, FileText, Users, MessageSquare, Home, LogOut, Mail } from 'lucide-react';
+import { BarChart, FileText, Users, MessageSquare, Home, LogOut, Mail, Settings } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import { getStats } from '@/lib/services';
@@ -73,6 +73,14 @@ export default function AdminSidebar() {
                     label="기사 관리"
                     active={isActive('/admin/articles')}
                 />
+                {!isReporter && (
+                    <NavItem
+                        href="/admin/menus"
+                        icon={<Settings size={20} />}
+                        label="메뉴 관리"
+                        active={isActive('/admin/menus')}
+                    />
+                )}
                 <NavItem
                     href="/admin/users"
                     icon={<Users size={20} />}

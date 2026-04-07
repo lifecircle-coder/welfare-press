@@ -59,6 +59,15 @@ export interface PartnershipInquiry {
     status: 'pending' | 'reviewing' | 'completed';
 }
 
+export interface Menu {
+    id: string;
+    name: string;
+    parent_id: string | null;
+    sort_order: number;
+    is_visible: boolean;
+    created_at?: string;
+}
+
 // --- Constants for Query Stability ---
 export const ARTICLE_LIST_FIELDS = 'id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail, updated_at, created_at';
 
@@ -94,12 +103,18 @@ export const getArticles = async (limit = 20, offset = 0, client = supabase): Pr
     return data || [];
 };
 
-export const getArticlesByCategory = async (category: string, limit = 20, offset = 0): Promise<Article[]> => {
-    const { data, error } = await supabase
+export const getArticlesByCategory = async (category: string, limit = 20, offset = 0, prefix?: string): Promise<Article[]> => {
+    let query = supabase
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
         .eq('category', category)
-        .eq('status', 'published')
+        .eq('status', 'published');
+    
+    if (prefix && prefix !== '전체') {
+        query = query.eq('prefix', prefix);
+    }
+
+    const { data, error } = await query
         .order('created_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -138,6 +153,23 @@ export const getTopArticles = async (limit = 10, client = supabase): Promise<Art
         return [];
     }
     return data || [];
+};
+
+/**
+ * 특정 메뉴(대분류/소분류)에 연결된 기사의 개수를 조회합니다.
+ */
+export const getLinkedArticleCount = async (menuName: string, isSub: boolean): Promise<number> => {
+    const field = isSub ? 'prefix' : 'category';
+    const { count, error } = await supabase
+        .from('articles')
+        .select('*', { count: 'exact', head: true })
+        .eq(field, menuName);
+
+    if (error) {
+        console.error(`Error counting articles for ${menuName}:`, error);
+        return 0;
+    }
+    return count || 0;
 };
 
 export const getArticleById = async (id: string, client = supabase): Promise<Article | undefined> => {
@@ -771,4 +803,84 @@ export const getArticlesWithNewComments = async (hours = 12, client = supabase):
     // 중복 제거된 article_id 목록 반환
     const articleIds = Array.from(new Set(data.map(item => item.article_id)));
     return articleIds;
+};
+
+// --- Menus ---
+
+export const getMenus = async (client = supabase): Promise<Menu[]> => {
+    const { data, error } = await client
+        .from('menus')
+        .select('*')
+        .order('sort_order', { ascending: true });
+
+    if (error) {
+        console.error('Error fetching menus:', error);
+        return [];
+    }
+    return data || [];
+};
+
+/**
+ * 메뉴 목록을 일괄 저장합니다. (순서 및 계층 구조 반영)
+ * 메뉴 명칭이 변경된 경우, 해당 카테고리로 작성된 기존 기사들의 정보도 함께 업데이트합니다.
+ */
+export const saveMenus = async (menus: Menu[], client = supabase): Promise<{ success: boolean; error?: any }> => {
+    try {
+        // 1. 기존 메뉴 정보를 불러와 명칭 변경 감지 준비
+        const { data: existingMenus } = await client.from('menus').select('*');
+        const existingMap = new Map((existingMenus || []).map(m => [m.id, m]));
+
+        // 2. 모든 메뉴를 upsert (id가 있으면 update, 없으면 insert)
+        const { error: upsertError } = await client
+            .from('menus')
+            .upsert(menus.map(m => ({
+                id: m.id,
+                name: m.name,
+                parent_id: m.parent_id,
+                sort_order: m.sort_order,
+                is_visible: m.is_visible
+            })));
+
+        if (upsertError) throw upsertError;
+
+        // 3. 명칭 변경 시 기사 데이터 동기화 (Article Sync)
+        for (const menu of menus) {
+            const oldMenu = existingMap.get(menu.id);
+            if (oldMenu && oldMenu.name !== menu.name) {
+                console.log(`Syncing articles: Category/Prefix [${oldMenu.name}] -> [${menu.name}]`);
+                
+                if (!menu.parent_id) {
+                    // 대분류(Category) 명칭 변경
+                    await client
+                        .from('articles')
+                        .update({ category: menu.name })
+                        .eq('category', oldMenu.name);
+                } else {
+                    // 소분류(Prefix) 명칭 변경
+                    await client
+                        .from('articles')
+                        .update({ prefix: menu.name })
+                        .eq('prefix', oldMenu.name);
+                }
+            }
+        }
+
+        return { success: true };
+    } catch (error) {
+        console.error('Error in saveMenus:', error);
+        return { success: false, error };
+    }
+};
+
+export const deleteMenu = async (id: string, client = supabase): Promise<{ success: boolean; error?: any }> => {
+    const { error } = await client
+        .from('menus')
+        .delete()
+        .eq('id', id);
+
+    if (error) {
+        console.error('Error deleting menu:', error);
+        return { success: false, error };
+    }
+    return { success: true };
 };
