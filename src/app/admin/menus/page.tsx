@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Settings, Plus, Save, Move, Trash2, Eye, EyeOff, Loader2, X, Check } from 'lucide-react';
 import { Menu, getMenus, saveMenus, deleteMenu, getLinkedArticleCount } from '@/lib/services';
+import { adminSupabase } from '@/lib/supabaseClient';
 import { SortableMenuTree } from '@/components/admin/menus/SortableMenuTree';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
@@ -27,7 +28,7 @@ export default function MenuManagementPage() {
     const fetchMenus = async () => {
         setLoading(true);
         try {
-            const data = await getMenus();
+            const data = await getMenus(adminSupabase);
             setMenus(data);
         } catch (err) {
             console.error('Failed to fetch menus', err);
@@ -39,7 +40,7 @@ export default function MenuManagementPage() {
     const handleSaveAll = async () => {
         setSaving(true);
         try {
-            const result = await saveMenus(menus);
+            const result = await saveMenus(menus, adminSupabase);
             if (result.success) {
                 alert('메뉴 구성이 성공적으로 저장되었습니다.');
                 await fetchMenus();
@@ -83,7 +84,7 @@ export default function MenuManagementPage() {
 
         if (!confirm(confirmMsg)) return;
         
-        const result = await deleteMenu(id);
+        const result = await deleteMenu(id, adminSupabase);
         if (result.success) {
             await fetchMenus();
         } else {
