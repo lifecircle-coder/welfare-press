@@ -19,6 +19,8 @@ interface SortableMenuItemProps {
     onDelete: (id: string) => void;
     onToggleVisibility: (menu: Menu) => void;
     childCount?: number;
+    isCollapsed?: boolean;
+    onToggleCollapse?: () => void;
 }
 
 export function SortableMenuItem({
@@ -27,7 +29,9 @@ export function SortableMenuItem({
     onEdit,
     onDelete,
     onToggleVisibility,
-    childCount = 0
+    childCount = 0,
+    isCollapsed = false,
+    onToggleCollapse
 }: SortableMenuItemProps) {
     const {
         attributes,
@@ -73,19 +77,42 @@ export function SortableMenuItem({
                     <div className="flex items-center gap-3">
                         {!isChild ? (
                             <div className="w-10 h-10 bg-blue-50 rounded-xl flex items-center justify-center text-primary">
-                                <ChevronRight className="group-hover:rotate-90 transition-transform" size={20} />
+                                <ChevronRight size={20} />
                             </div>
                         ) : (
                             <div className="w-2 h-2 rounded-full bg-gray-300 ml-2" />
                         )}
                         <div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-3">
                                 <span className={cn(
                                     "font-bold transition-all",
                                     !isChild ? "text-gray-900 text-lg" : "text-gray-600"
                                 )}>
                                     {menu.name}
                                 </span>
+                                {!isChild && childCount > 0 && (
+                                    <button
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            onToggleCollapse?.();
+                                        }}
+                                        className="p-1 hover:bg-gray-100 rounded-md text-gray-400 hover:text-gray-600 transition-all flex items-center gap-1"
+                                        title={isCollapsed ? "펼치기" : "접기"}
+                                    >
+                                        {isCollapsed ? (
+                                            <>
+                                                <ChevronRight size={16} />
+                                                <span className="text-[10px] font-medium">소분류 펼치기</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <ChevronDown size={16} />
+                                                <span className="text-[10px] font-medium">소분류 접기</span>
+                                            </>
+                                        )}
+                                    </button>
+                                )}
                                 {!menu.is_visible && (
                                     <span className="text-[10px] bg-gray-200 text-gray-500 px-2 py-0.5 rounded-full font-medium">미노출</span>
                                 )}

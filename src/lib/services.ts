@@ -843,24 +843,47 @@ export const saveMenus = async (menus: Menu[], client = supabase): Promise<{ suc
 
         if (upsertError) throw upsertError;
 
-        // 3. 명칭 변경 시 기사 데이터 동기화 (Article Sync)
+        // 3. 노출 여부 및 명칭 변경 시 기사 데이터 동기화 (Article Sync)
         for (const menu of menus) {
             const oldMenu = existingMap.get(menu.id);
-            if (oldMenu && oldMenu.name !== menu.name) {
-                console.log(`Syncing articles: Category/Prefix [${oldMenu.name}] -> [${menu.name}]`);
-                
-                if (!menu.parent_id) {
-                    // 대분류(Category) 명칭 변경
-                    await client
-                        .from('articles')
-                        .update({ category: menu.name })
-                        .eq('category', oldMenu.name);
-                } else {
-                    // 소분류(Prefix) 명칭 변경
-                    await client
-                        .from('articles')
-                        .update({ prefix: menu.name })
-                        .eq('prefix', oldMenu.name);
+            if (oldMenu) {
+                // 노출 여부 변경 감지: 미노출 시 'draft', 노출 시 'published'로 일괄 변경
+                if (oldMenu.is_visible !== menu.is_visible) {
+                    const newStatus = menu.is_visible ? 'published' : 'draft';
+                    console.log(`Syncing article status: Menu [${menu.name}] Visibility ${oldMenu.is_visible} -> ${menu.is_visible} (Status: ${newStatus})`);
+                    
+                    if (!menu.parent_id) {
+                        // 대분류 노출 상태 변경 시 해당 카테고리의 모든 기사 상태 업데이트
+                        await client
+                            .from('articles')
+                            .update({ status: newStatus })
+                            .eq('category', menu.name);
+                    } else {
+                        // 소분류 노출 상태 변경 시 해당 소분류(prefix) 기사 상태 업데이트
+                        await client
+                            .from('articles')
+                            .update({ status: newStatus })
+                            .eq('prefix', menu.name);
+                    }
+                }
+
+                // 명칭 변경 감지 (기존 로직)
+                if (oldMenu.name !== menu.name) {
+                    console.log(`Syncing article names: Category/Prefix [${oldMenu.name}] -> [${menu.name}]`);
+                    
+                    if (!menu.parent_id) {
+                        // 대분류(Category) 명칭 변경
+                        await client
+                            .from('articles')
+                            .update({ category: menu.name })
+                            .eq('category', oldMenu.name);
+                    } else {
+                        // 소분류(Prefix) 명칭 변경
+                        await client
+                            .from('articles')
+                            .update({ prefix: menu.name })
+                            .eq('prefix', oldMenu.name);
+                    }
                 }
             }
         }
@@ -873,14 +896,57 @@ export const saveMenus = async (menus: Menu[], client = supabase): Promise<{ suc
 };
 
 export const deleteMenu = async (id: string, client = supabase): Promise<{ success: boolean; error?: any }> => {
-    const { error } = await client
-        .from('menus')
-        .delete()
-        .eq('id', id);
+    try {
+        // 1. 삭제할 메뉴 정보 조회 (연관 기사 처리를 위해 이름과 대/소분류 여부 확인)
+        const { data: menuToDelete, error: fetchError } = await client
+            .from('menus')
+            .select('*')
+            .eq('id', id)
+            .single();
 
-    if (error) {
-        console.error('Error deleting menu:', error);
+        if (fetchError || !menuToDelete) {
+            throw new Error('삭제할 메뉴를 찾을 수 없습니다.');
+        }
+
+        const isSubCategory = !!menuToDelete.parent_id;
+
+        // 2. 연관된 기사 처리 (대표님 지시사항 반영)
+        if (!isSubCategory) {
+            // [대분류 삭제]
+            // - 해당 카테고리의 기사를 '카테고리 없음'으로 변경
+            // - 기사 상태를 'draft'(미게재)로 전환
+            await client
+                .from('articles')
+                .update({ 
+                    category: '카테고리 없음', 
+                    status: 'draft',
+                    prefix: null // 대분류가 사라지면 소분류 의미가 없으므로 함께 제거
+                })
+                .eq('category', menuToDelete.name);
+            
+            // 하위 소분류들도 함께 삭제 처리가 필요할 수 있으나, 
+            // 현재 DB 제약 조건이 없다면 수동으로 하위 메뉴도 삭제하거나 알림창에서 예고한대로 진행
+        } else {
+            // [소분류(말머리) 삭제]
+            // - 기사의 소분류(prefix)만 제거
+            // - 대분류 및 게재 상태(published)는 유지
+            await client
+                .from('articles')
+                .update({ prefix: null })
+                .eq('prefix', menuToDelete.name);
+        }
+
+        // 3. 실제 메뉴 레코드 삭제
+        const { error: deleteError } = await client
+            .from('menus')
+            .delete()
+            .eq('id', id);
+
+        if (deleteError) throw deleteError;
+
+        return { success: true };
+    } catch (error: any) {
+        console.error('Error in deleteMenu (with sync):', error);
         return { success: false, error };
     }
-    return { success: true };
 };

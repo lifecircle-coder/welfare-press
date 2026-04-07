@@ -39,6 +39,7 @@ export function SortableMenuTree({
     onToggleVisibility
 }: SortableMenuTreeProps) {
     const [activeId, setActiveId] = useState<string | null>(null);
+    const [collapsedIds, setCollapsedIds] = useState<string[]>([]);
 
     const sensors = useSensors(
         useSensor(PointerSensor),
@@ -46,6 +47,14 @@ export function SortableMenuTree({
             coordinateGetter: sortableKeyboardCoordinates,
         })
     );
+
+    const toggleCollapse = (id: string) => {
+        setCollapsedIds(prev => 
+            prev.includes(id) 
+                ? prev.filter(item => item !== id) 
+                : [...prev, id]
+        );
+    };
 
     // 메뉴를 트리 구조로 렌더링하기 위해 정렬된 플랫 리스트 생성
     const sortedMenus = [...menus].sort((a, b) => {
@@ -61,10 +70,13 @@ export function SortableMenuTree({
         
         parents.forEach(parent => {
             result.push(parent);
-            const children = menus
-                .filter(m => m.parent_id === parent.id)
-                .sort((a, b) => a.sort_order - b.sort_order);
-            result.push(...children);
+            // 접혀있지 않은 경우에만 자식 메뉴 추가
+            if (!collapsedIds.includes(parent.id)) {
+                const children = menus
+                    .filter(m => m.parent_id === parent.id)
+                    .sort((a, b) => a.sort_order - b.sort_order);
+                result.push(...children);
+            }
         });
         
         return result;
@@ -81,19 +93,44 @@ export function SortableMenuTree({
         setActiveId(null);
 
         if (over && active.id !== over.id) {
-            const oldIndex = flatItems.findIndex(i => i.id === active.id);
-            const newIndex = flatItems.findIndex(i => i.id === over.id);
-
-            const newFlatItems = arrayMove(flatItems, oldIndex, newIndex);
+            const activeMenu = flatItems.find(m => m.id === active.id);
+            const overIndex = flatItems.findIndex(i => i.id === over.id);
             
-            // 변경된 인덱스를 기반으로 sort_order 재계산 및 부모 관계 유추
-            // (간단한 구현을 위해 일단 리스트 순서만 업데이트)
-            const updatedMenus = newFlatItems.map((item, index) => ({
-                ...item,
-                sort_order: index
-            }));
+            if (!activeMenu) return;
 
-            onMenusChange(updatedMenus);
+            // 대분류를 이동하는 경우
+            if (!activeMenu.parent_id) {
+                const activeChildren = menus.filter(m => m.parent_id === activeMenu.id);
+                const activeGroupIds = [activeMenu.id, ...activeChildren.map(c => c.id)];
+                
+                // 기존 위치에서 그룹 제거
+                const remainingItems = flatItems.filter(item => !activeGroupIds.includes(item.id));
+                
+                // 새로운 위치 계산
+                const adjustedOverIndex = remainingItems.findIndex(i => i.id === over.id);
+                const finalNewIndex = adjustedOverIndex === -1 ? 0 : adjustedOverIndex;
+                
+                const result = [...remainingItems];
+                const movingGroup = flatItems.filter(item => activeGroupIds.includes(item.id));
+                result.splice(finalNewIndex, 0, ...movingGroup);
+
+                const updatedMenus = result.map((item, index) => ({
+                    ...item,
+                    sort_order: index
+                }));
+                onMenusChange(updatedMenus);
+            } else {
+                // 소분류 개별 이동 (기존 로직 유지하되 sort_order 동기화)
+                const oldIndex = flatItems.findIndex(i => i.id === active.id);
+                const newIndex = flatItems.findIndex(i => i.id === over.id);
+                const newFlatItems = arrayMove(flatItems, oldIndex, newIndex);
+                
+                const updatedMenus = newFlatItems.map((item, index) => ({
+                    ...item,
+                    sort_order: index
+                }));
+                onMenusChange(updatedMenus);
+            }
         }
     };
 
@@ -130,6 +167,8 @@ export function SortableMenuTree({
                             menu={menu}
                             isChild={!!menu.parent_id}
                             childCount={menus.filter(m => m.parent_id === menu.id).length}
+                            isCollapsed={collapsedIds.includes(menu.id)}
+                            onToggleCollapse={() => toggleCollapse(menu.id)}
                             onEdit={onEdit}
                             onDelete={onDelete}
                             onToggleVisibility={onToggleVisibility}
@@ -143,9 +182,12 @@ export function SortableMenuTree({
                     <SortableMenuItem
                         menu={menus.find(m => m.id === activeId)!}
                         isChild={!!menus.find(m => m.id === activeId)?.parent_id}
+                        childCount={menus.filter(m => m.parent_id === activeId).length}
+                        isCollapsed={collapsedIds.includes(activeId)}
                         onEdit={() => {}}
                         onDelete={() => {}}
                         onToggleVisibility={() => {}}
+                        onToggleCollapse={() => {}}
                     />
                 ) : null}
             </DragOverlay>

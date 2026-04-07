@@ -82,10 +82,14 @@ export default async function CategoryNews({
     const subMenus = currentMenu ? menus.filter((m: any) => m.parent_id === currentMenu.id && m.is_visible) : [];
 
     // 2. Fetch Optimized Data
+    // Valid Prefix Check: If selectedPrefix is not in subMenus, fallback to '전체'
+    const isPrefixValid = selectedPrefix === '전체' || subMenus.some((s: any) => s.name === selectedPrefix);
+    const effectivePrefix = isPrefixValid ? selectedPrefix : '전체';
+
     const [newsList, topArticles] = await Promise.all([
         categoryName === 'all' || internalCategoryName === '전체'
             ? getArticles(40)
-            : getArticlesByCategory(internalCategoryName, 40, 0, selectedPrefix),
+            : getArticlesByCategory(internalCategoryName, 40, 0, effectivePrefix),
         getTopArticles(10)
     ]);
 
@@ -177,6 +181,13 @@ export default async function CategoryNews({
                                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                                                 sizes="(max-width: 768px) 100vw, 192px"
                                             />
+                                            {news.prefix && (
+                                                <div className="absolute top-2 left-2 z-10">
+                                                    <span className="bg-gray-900/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
+                                                        {news.prefix}
+                                                    </span>
+                                                </div>
+                                            )}
                                         </div>
 
                                         <div className="flex-1">

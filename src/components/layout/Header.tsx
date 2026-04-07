@@ -100,12 +100,23 @@ export default function Header() {
             const formatted = mainMenus.map((m: any) => ({
                 name: m.name,
                 href: `/news/${slugMap[m.name] || encodeURIComponent(m.name)}`,
-                id: m.id
+                id: m.id,
+                subMenus: data
+                    .filter((s: any) => s.parent_id === m.id && s.is_visible)
+                    .map((s: any) => ({
+                        name: s.name,
+                        href: `/news/${slugMap[m.name] || encodeURIComponent(m.name)}?prefix=${encodeURIComponent(s.name)}`
+                    }))
             }));
 
             // '종합' 메뉴가 처음에 없으면 추가 (전체보기용)
             if (!formatted.find(m => m.name === '종합')) {
-                formatted.unshift({ name: '종합', href: '/news/all', id: 'all' });
+                formatted.unshift({ 
+                    name: '종합', 
+                    href: '/news/all', 
+                    id: 'all',
+                    subMenus: [] 
+                });
             }
 
             setMenuItems(formatted);
@@ -254,14 +265,35 @@ export default function Header() {
                     <div className="container mx-auto px-4">
                         <ul className="flex items-center justify-center gap-8 py-3 font-medium text-lg text-gray-800">
                             {menuItems.map((item) => (
-                                <li key={item.name}>
+                                <li key={item.name} className="group relative">
                                     <Link
                                         href={item.href}
                                         onClick={() => handleMenuClick(item.href)}
-                                        className="hover:text-primary transition-colors py-2 block"
+                                        className="hover:text-primary transition-colors py-2 block relative after:absolute after:bottom-0 after:left-0 after:w-full after:h-0.5 after:bg-primary after:scale-x-0 group-hover:after:scale-x-100 after:transition-transform"
                                     >
                                         {item.name}
                                     </Link>
+                                    
+                                    {/* Desktop Hover Submenu */}
+                                    {item.subMenus && item.subMenus.length > 0 && (
+                                        <div className="absolute top-full left-1/2 -translate-x-1/2 hidden group-hover:block pt-2 z-50">
+                                            <div className="bg-white border border-gray-100 shadow-[0_10px_40px_-10px_rgba(0,0,0,0.1)] rounded-2xl py-3 px-4 min-w-[140px] animate-in fade-in slide-in-from-top-2 duration-200">
+                                                <ul className="flex flex-col gap-2">
+                                                    {item.subMenus.map((sub: any) => (
+                                                        <li key={sub.name}>
+                                                            <Link 
+                                                                href={sub.href}
+                                                                onClick={() => handleMenuClick(sub.href)}
+                                                                className="whitespace-nowrap text-sm text-gray-500 hover:text-primary hover:bg-blue-50 px-3 py-1.5 rounded-lg block transition-all font-medium"
+                                                            >
+                                                                {sub.name}
+                                                            </Link>
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        </div>
+                                    )}
                                 </li>
                             ))}
                         </ul>

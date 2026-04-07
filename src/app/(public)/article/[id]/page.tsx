@@ -85,16 +85,64 @@ export default async function ArticleDetail({ params }: { params: { id: string }
     ).slice(0, 5);
 
     const getCategoryStyles = (cat: string) => {
-        if (cat.includes('일자리')) return 'bg-cat-job/60 border-cat-job/20';
-        if (cat.includes('건강')) return 'bg-cat-health/60 border-cat-health/20';
-        if (cat.includes('주거')) return 'bg-cat-house/60 border-cat-house/20';
-        if (cat.includes('생활')) return 'bg-cat-living/60 border-cat-living/20';
-        if (cat.includes('육아')) return 'bg-cat-child/60 border-cat-child/20';
-        return 'bg-cat-etc/60 border-cat-etc/20';
+        if (cat.includes('일자리')) return 'bg-cat-job text-white border-cat-job/10';
+        if (cat.includes('건강')) return 'bg-cat-health text-white border-cat-health/10';
+        if (cat.includes('주거')) return 'bg-cat-house text-white border-cat-house/10';
+        if (cat.includes('생활')) return 'bg-cat-living text-white border-cat-living/10';
+        if (cat.includes('육아')) return 'bg-cat-child text-white border-cat-child/10';
+        return 'bg-cat-etc text-white border-cat-etc/10';
     };
 
+    // Category Slug Mapping for Breadcrumb
+    const slugMap: Record<string, string> = {
+        '일자리·취업': 'jobs',
+        '주거·금융': 'housing',
+        '건강·의료': 'health',
+        '생활·안전': 'safety',
+        '임신·육아': 'childcare',
+        '종합': 'all'
+    };
+    const categorySlug = slugMap[article.category] || encodeURIComponent(article.category);
+
     return (
-        <div className="container mx-auto px-4 py-8 max-w-4xl">
+        <div className="container mx-auto px-4 py-6 max-w-4xl">
+            {/* Category Badges & Breadcrumbs */}
+            <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
+                <div className="flex flex-wrap items-center gap-2">
+                    <span className={`inline-block ${getCategoryStyles(article.category)} px-3 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md border`}>
+                        {article.category}
+                    </span>
+                    {article.prefix && (
+                        <span className="inline-block bg-gray-900 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-gray-800">
+                            {article.prefix}
+                        </span>
+                    )}
+                </div>
+
+                {/* Breadcrumbs - Right Aligned & Simple */}
+                <nav className="flex items-center gap-2 text-[10px] md:text-xs text-gray-400">
+                    <Link href="/" className="hover:text-primary transition-colors flex items-center">
+                        <span className="sr-only">홈</span>
+                        🏠
+                    </Link>
+                    <span className="text-gray-300">/</span>
+                    <Link href={`/news/${categorySlug}`} className="hover:text-primary transition-colors">
+                        {article.category}
+                    </Link>
+                    {article.prefix && (
+                        <>
+                            <span className="text-gray-300">/</span>
+                            <Link 
+                                href={`/news/${categorySlug}?prefix=${encodeURIComponent(article.prefix)}`} 
+                                className="hover:text-primary transition-colors font-bold text-gray-500"
+                            >
+                                {article.prefix}
+                            </Link>
+                        </>
+                    )}
+                </nav>
+            </div>
+
             {/* JSON-LD Structured Data for NewsArticle */}
             <script
                 type="application/ld+json"
@@ -120,13 +168,8 @@ export default async function ArticleDetail({ params }: { params: { id: string }
             {/* Handle view increment on client side */}
             <ViewCounter articleId={params.id} />
 
-            {/* Category Badge - Unified with thumbnail labels */}
-            <span className={`inline-block ${getCategoryStyles(article.category)} px-3 py-1 rounded-full text-sm font-bold text-white mb-4 shadow-md backdrop-blur-md border border-white/10`}>
-                {article.category}
-            </span>
-
             {/* Title */}
-            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight">
+            <h1 className="text-3xl md:text-4xl font-bold text-gray-900 mb-6 leading-tight tracking-tight">
                 {article.title}
             </h1>
 

@@ -74,12 +74,18 @@ export default function MenuManagementPage() {
         const menuToDelete = menus.find(m => m.id === id);
         if (!menuToDelete) return;
 
-        // 연결된 기사 확인
-        const count = await getLinkedArticleCount(menuToDelete.name, !!menuToDelete.parent_id);
+        const isSub = !!menuToDelete.parent_id;
+        const count = await getLinkedArticleCount(menuToDelete.name, isSub);
         
-        let confirmMsg = '정말 이 메뉴를 삭제하시겠습니까?\n하위 메뉴가 있다면 함께 삭제됩니다.';
+        let confirmMsg = isSub ? `정말 '${menuToDelete.name}' 소분류를 삭제하시겠습니까?` : '정말 이 메뉴를 삭제하시겠습니까?\n하위 메뉴가 있다면 함께 삭제됩니다.';
+        
         if (count > 0) {
-            confirmMsg = `⚠️ 주의: 이 메뉴('${menuToDelete.name}')로 작성된 기사가 ${count}개 있습니다.\n삭제 시 기사의 카테고리 정보가 유실될 수 있습니다. 정말 삭제하시겠습니까?`;
+            if (!isSub) {
+                confirmMsg = `⚠️ 주의: 이 메뉴('${menuToDelete.name}')로 작성된 기사가 ${count}개 있습니다.\n삭제 시 기사는 '카테고리 없음'으로 변경되고 미게재(Draft) 상태가 됩니다. 정말 삭제하시겠습니까?`;
+            } else {
+                // 소분류 삭제 시 기사가 있는 경우 대분류 삭제 시와 같은 톤의 경고창 노출
+                confirmMsg = `⚠️ 주의: 이 소분류('${menuToDelete.name}')로 작성된 기사가 ${count}개 있습니다.\n삭제 시 소분류 정보만 삭제되며 대분류 기사로 유지됩니다. 정말 삭제하시겠습니까?`;
+            }
         }
 
         if (!confirm(confirmMsg)) return;
