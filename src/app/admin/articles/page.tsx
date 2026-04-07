@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Search, Filter, Copy, Calendar, User, Trash2, MapPin, MessageCircle, Send, X } from 'lucide-react';
+import { Plus, Search, Filter, Copy, Calendar, User, Trash2, MapPin, MessageCircle, Send, X, RotateCcw } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { getAllArticles, deleteArticle, getComments, addComment, getArticlesWithNewComments } from '@/lib/services';
@@ -18,10 +18,26 @@ const parser = new XMLParser({
 export default function ArticleManagement() {
     const router = useRouter();
     const [articles, setArticles] = useState<Article[]>([]);
-    const [searchTerm, setSearchTerm] = useState('');
-    const [filterCategory, setFilterCategory] = useState('전체');
     const [currentUser, setCurrentUser] = useState<any>(null);
     const [newCommentArticleIds, setNewCommentArticleIds] = useState<string[]>([]);
+
+    // Advanced Search States
+    const [allMenus, setAllMenus] = useState<any[]>([]);
+    const [mainCategories, setMainCategories] = useState<any[]>([]);
+    const [subCategories, setSubCategories] = useState<any[]>([]);
+    
+    const [searchFilters, setSearchFilters] = useState({
+        mainCategory: '전체',
+        subCategory: '전체',
+        status: '전체',
+        dateType: 'created', // created(게재일), updated(수정일)
+        startDate: '',
+        endDate: '',
+        keyword: ''
+    });
+    
+    // 이 상태가 실제로 목록 필터링에 사용됩니다 (검색 버튼 클릭 시 업데이트)
+    const [appliedFilters, setAppliedFilters] = useState(searchFilters);
 
     // Public Data State
     const [activeApiTab, setActiveApiTab] = useState<'NATIONAL' | 'LOCAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF' | 'MCST_PRESS' | 'MCST_NEWS' | 'MCST_PHOTO' | 'MOIS_STATS' | 'NEWS_ALL'>('MCST_PRESS');
@@ -71,6 +87,18 @@ export default function ArticleManagement() {
             }
         } else {
             setArticles(data);
+        }
+    };
+
+    const loadMenus = async () => {
+        const { data } = await adminSupabase
+            .from('menus')
+            .select('*')
+            .order('sort_order', { ascending: true });
+        
+        if (data) {
+            setAllMenus(data);
+            setMainCategories(data.filter(m => !m.parent_id));
         }
     };
 
@@ -174,7 +202,21 @@ export default function ArticleManagement() {
 
     useEffect(() => {
         loadArticles();
+        loadMenus(); // 메뉴 데이터 로드
     }, []);
+
+    // 대분류 선택 시 소분류 목록 업데이트
+    useEffect(() => {
+        if (searchFilters.mainCategory === '전체') {
+            setSubCategories([]);
+            setSearchFilters(prev => ({ ...prev, subCategory: '전체' }));
+        } else {
+            const mainId = allMenus.find(m => m.name === searchFilters.mainCategory)?.id;
+            const subs = allMenus.filter(m => m.parent_id === mainId);
+            setSubCategories(subs);
+            setSearchFilters(prev => ({ ...prev, subCategory: '전체' }));
+        }
+    }, [searchFilters.mainCategory, allMenus]);
 
     const handleDelete = async (id: string) => {
         if (confirm('정말로 삭제하시겠습니까?')) {
@@ -336,11 +378,64 @@ export default function ArticleManagement() {
     const displayApiData = apiData.filter(api => !deletedState[api.servId]);
     const displayLocalApiData = localApiData.filter(api => !deletedState[api.servId]);
 
+    const handleSearch = () => {
+        setAppliedFilters(searchFilters);
+    };
+
+    const handleReset = () => {
+        const initial = {
+            mainCategory: '전체',
+            subCategory: '전체',
+            status: '전체',
+            dateType: 'created',
+            startDate: '',
+            endDate: '',
+            keyword: ''
+        };
+        setSearchFilters(initial);
+        setAppliedFilters(initial);
+    };
+
     const filteredArticles = articles.filter(a => {
-        const matchesSearch = a.title.toLowerCase().includes(searchTerm.toLowerCase()) || 
-                             (a.content || '').toLowerCase().includes(searchTerm.toLowerCase());
-        const matchesCategory = filterCategory === '전체' || a.category === filterCategory;
-        return matchesSearch && matchesCategory;
+        // 1. 검색어 필터 (제목 또는 내용)
+        const matchesKeyword = !appliedFilters.keyword || 
+                               a.title.toLowerCase().includes(appliedFilters.keyword.toLowerCase()) || 
+                               (a.content || '').toLowerCase().includes(appliedFilters.keyword.toLowerCase());
+        
+        // 2. 대분류 필터
+        const matchesMainCategory = appliedFilters.mainCategory === '전체' || a.category === appliedFilters.mainCategory;
+        
+        // 3. 소분류 필터 (prefix)
+        const matchesSubCategory = appliedFilters.subCategory === '전체' || a.prefix === appliedFilters.subCategory;
+        
+        // 4. 상태 필터 (게시중/임시저장)
+        const matchesStatus = appliedFilters.status === '전체' || 
+                              (appliedFilters.status === '게시중' && a.status === 'published') ||
+                              (appliedFilters.status === '미게재' && a.status === 'draft');
+        
+        // 5. 날짜 필터
+        let matchesDate = true;
+        const targetDateStr = appliedFilters.dateType === 'created' ? a.date : a.updated_at;
+        
+        if (targetDateStr && (appliedFilters.startDate || appliedFilters.endDate)) {
+            const targetDate = new Date(targetDateStr);
+            targetDate.setHours(0, 0, 0, 0);
+
+            if (appliedFilters.startDate) {
+                const startDate = new Date(appliedFilters.startDate);
+                startDate.setHours(0, 0, 0, 0);
+                if (targetDate < startDate) matchesDate = false;
+            }
+            if (appliedFilters.endDate) {
+                const endDate = new Date(appliedFilters.endDate);
+                endDate.setHours(0, 0, 0, 0);
+                if (targetDate > endDate) matchesDate = false;
+            }
+        } else if (!targetDateStr && (appliedFilters.startDate || appliedFilters.endDate)) {
+            matchesDate = false; // 날짜 데이터가 없는데 필터가 설정된 경우
+        }
+
+        return matchesKeyword && matchesMainCategory && matchesSubCategory && matchesStatus && matchesDate;
     });
 
     return (
@@ -634,6 +729,128 @@ export default function ArticleManagement() {
                 </div>
             </div>
 
+            {/* Article Advanced Search Area */}
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6 mb-8">
+                <div className="flex items-center gap-3 mb-6">
+                    <div className="bg-gray-900 p-2 rounded-lg text-white">
+                        <Filter size={20} />
+                    </div>
+                    <h3 className="text-xl font-bold text-gray-900">상세 검색</h3>
+                </div>
+                
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    {/* 분류 선택 */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-wider">기사 분류 (대분류)</label>
+                        <select 
+                            value={searchFilters.mainCategory}
+                            onChange={(e) => setSearchFilters(prev => ({ ...prev, mainCategory: e.target.value }))}
+                            className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                        >
+                            <option value="전체">전체 대분류</option>
+                            {mainCategories.map(m => (
+                                <option key={m.id} value={m.name}>{m.name}</option>
+                            ))}
+                        </select>
+                    </div>
+                    
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-wider">기사 분류 (소분류)</label>
+                        <select 
+                            value={searchFilters.subCategory}
+                            onChange={(e) => setSearchFilters(prev => ({ ...prev, subCategory: e.target.value }))}
+                            disabled={searchFilters.mainCategory === '전체'}
+                            className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none transition-all disabled:opacity-50"
+                        >
+                            <option value="전체">전체 소분류</option>
+                            {subCategories.map(m => (
+                                <option key={m.id} value={m.name}>{m.name}</option>
+                            ))}
+                        </select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-wider">게시 상태</label>
+                        <select 
+                            value={searchFilters.status}
+                            onChange={(e) => setSearchFilters(prev => ({ ...prev, status: e.target.value }))}
+                            className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                        >
+                            <option value="전체">전체 상태</option>
+                            <option value="게시중">게시중</option>
+                            <option value="미게재">미게재</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
+                    {/* 날짜 필터 */}
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-wider">날짜 구분</label>
+                        <select 
+                            value={searchFilters.dateType}
+                            onChange={(e) => setSearchFilters(prev => ({ ...prev, dateType: e.target.value }))}
+                            className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                        >
+                            <option value="created">게재일 기준</option>
+                            <option value="updated">수정일 기준</option>
+                        </select>
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-wider">시작일</label>
+                        <input 
+                            type="date"
+                            value={searchFilters.startDate}
+                            onChange={(e) => setSearchFilters(prev => ({ ...prev, startDate: e.target.value }))}
+                            className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-wider">종료일</label>
+                        <input 
+                            type="date"
+                            value={searchFilters.endDate}
+                            onChange={(e) => setSearchFilters(prev => ({ ...prev, endDate: e.target.value }))}
+                            className="w-full bg-gray-50 border-none rounded-xl px-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                        />
+                    </div>
+
+                    <div className="space-y-2">
+                        <label className="text-xs font-black text-gray-500 uppercase tracking-wider">검사어</label>
+                        <div className="relative">
+                            <Search size={16} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400" />
+                            <input 
+                                type="text"
+                                placeholder="제목 또는 내용..."
+                                value={searchFilters.keyword}
+                                onChange={(e) => setSearchFilters(prev => ({ ...prev, keyword: e.target.value }))}
+                                onKeyDown={(e) => e.key === 'Enter' && handleSearch()}
+                                className="w-full bg-gray-50 border-none rounded-xl pl-11 pr-4 py-3 text-sm font-bold focus:ring-2 focus:ring-blue-100 outline-none transition-all"
+                            />
+                        </div>
+                    </div>
+                </div>
+
+                <div className="flex justify-end gap-3 pt-6 border-t border-gray-50">
+                    <button 
+                        onClick={handleReset}
+                        className="bg-gray-100 text-gray-600 px-6 py-3 rounded-xl flex items-center gap-2 hover:bg-gray-200 transition-all font-bold"
+                    >
+                        <RotateCcw size={18} />
+                        초기화
+                    </button>
+                    <button 
+                        onClick={handleSearch}
+                        className="bg-gray-900 text-white px-10 py-3 rounded-xl flex items-center gap-2 hover:bg-black transition-all font-bold shadow-lg shadow-gray-200"
+                    >
+                        <Search size={18} />
+                        기사 검색하기
+                    </button>
+                </div>
+            </div>
+
             {/* Article Management List Area */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-6 border-b border-gray-50 flex items-center justify-between bg-gray-50/30">
@@ -643,12 +860,6 @@ export default function ArticleManagement() {
                         </div>
                         작성된 기사 목록
                     </h3>
-                    <div className="flex gap-4">
-                        <div className="flex items-center gap-2 bg-white px-3 py-1.5 rounded-lg border border-gray-100 text-xs shadow-sm">
-                            <Search size={14} className="text-gray-400" />
-                            <input type="text" placeholder="기사 제목 검색..." value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} className="outline-none" />
-                        </div>
-                    </div>
                 </div>
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
