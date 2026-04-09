@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import type { Metadata } from 'next'
-import { getArticleById, getArticles, getComments } from '@/lib/services';
+import { getArticleById, getArticles, getComments, getUserByName } from '@/lib/services';
 import type { Article, Comment } from '@/lib/services';
 import ViewCounter from '@/components/article/ViewCounter';
 
@@ -76,6 +76,9 @@ export default async function ArticleDetail({ params }: { params: { id: string }
     if (!article) {
         return <div className="p-20 text-center">기사를 찾을 수 없습니다.</div>;
     }
+
+    // 작성자의 추가 정보(이메일 등) 조회
+    const authorInfo = await getUserByName(article.author);
 
     // Process related news after fetching
     const currentTags = article.hashtags || [];
@@ -188,43 +191,61 @@ export default async function ArticleDetail({ params }: { params: { id: string }
                 {article.title}
             </h1>
 
-            {/* Metadata */}
-            <div className="flex flex-wrap items-center text-gray-500 text-sm mb-8 border-b border-gray-100 pb-6 gap-y-2">
-                <span className="font-medium text-gray-700 mr-6 whitespace-nowrap">{article.author}</span>
+            {/* Metadata Section - 2 Line Layout */}
+            <div className="flex flex-col gap-4 mb-8 border-b border-gray-100 pb-6">
+                {/* Line 1: Dates */}
+                <div className="flex flex-wrap items-center text-gray-500 text-xs gap-x-6 gap-y-2">
+                    <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-400">발행일</span>
+                        <span className="font-medium text-gray-600">
+                            {(() => {
+                                const date = new Date(article.created_at || article.date || new Date());
+                                return date.toLocaleString('ko-KR', {
+                                    timeZone: 'Asia/Seoul',
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    hour12: false
+                                });
+                            })()}
+                        </span>
+                    </div>
 
-                <span className="mr-6 flex items-center gap-2">
-                    <span className="font-semibold text-gray-400">발행일</span>
-                    {(() => {
-                        const date = new Date(article.created_at || article.date || new Date());
-                        return date.toLocaleString('ko-KR', {
-                            timeZone: 'Asia/Seoul',
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                            hour12: false
-                        });
-                    })()}
-                </span>
+                    <div className="flex items-center gap-2">
+                        <span className="font-semibold text-gray-400">업데이트일</span>
+                        <span className="font-medium text-gray-600">
+                            {(() => {
+                                const date = new Date(article.updated_at || article.created_at || article.date || new Date());
+                                return date.toLocaleString('ko-KR', {
+                                    timeZone: 'Asia/Seoul',
+                                    year: 'numeric',
+                                    month: '2-digit',
+                                    day: '2-digit',
+                                    hour: '2-digit',
+                                    minute: '2-digit',
+                                    second: '2-digit',
+                                    hour12: false
+                                });
+                            })()}
+                        </span>
+                    </div>
+                </div>
 
-                <span className="flex items-center gap-2">
-                    <span className="font-semibold text-gray-400">업데이트일</span>
-                    {(() => {
-                        const date = new Date(article.updated_at || article.created_at || article.date || new Date());
-                        return date.toLocaleString('ko-KR', {
-                            timeZone: 'Asia/Seoul',
-                            year: 'numeric',
-                            month: '2-digit',
-                            day: '2-digit',
-                            hour: '2-digit',
-                            minute: '2-digit',
-                            second: '2-digit',
-                            hour12: false
-                        });
-                    })()}
-                </span>
+                {/* Line 2: Author Info */}
+                <div className="flex items-center gap-4">
+                    <div className="flex items-center gap-2 bg-gray-50 px-3 py-1.5 rounded-lg border border-gray-100">
+                        <span className="text-sm font-bold text-gray-900">{article.author}</span>
+                        {authorInfo?.email_display && (
+                            <>
+                                <span className="text-gray-200">|</span>
+                                <span className="text-sm text-primary font-medium">{authorInfo.email_display}</span>
+                            </>
+                        )}
+                    </div>
+                </div>
             </div>
 
             {/* AI Summary Box */}

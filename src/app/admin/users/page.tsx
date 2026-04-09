@@ -12,7 +12,7 @@ export default function UserManagement() {
     const router = useRouter();
     const [users, setUsers] = useState<User[]>([]);
     const [showCreateModal, setShowCreateModal] = useState(false);
-    const [newUser, setNewUser] = useState({ name: '', loginId: '', specialty: '전체', password: '' });
+    const [newUser, setNewUser] = useState({ name: '', loginId: '', specialty: '전체', password: '', emailDisplay: '' });
     const [currentUser, setCurrentUser] = useState<any>(null);
 
     useEffect(() => {
@@ -68,7 +68,8 @@ export default function UserManagement() {
                 name: newUser.name,
                 loginId: newUser.loginId,
                 password: newUser.password,
-                specialty: newUser.specialty
+                specialty: newUser.specialty,
+                emailDisplay: newUser.emailDisplay
             });
 
             if (!result.success) {
@@ -78,7 +79,7 @@ export default function UserManagement() {
             const data = await getUsers();
             setUsers(data);
             setShowCreateModal(false);
-            setNewUser({ name: '', loginId: '', specialty: '전체', password: '' });
+            setNewUser({ name: '', loginId: '', specialty: '전체', password: '', emailDisplay: '' });
             alert(`기자 계정(${newUser.name})이 성공적으로 등록되었습니다. 아이디: ${newUser.loginId}`);
         } catch (error: any) {
             console.error('Error creating reporter:', error);
@@ -197,6 +198,18 @@ export default function UserManagement() {
                                 minLength={6}
                             />
                             <p className="text-[10px] text-gray-500 mt-1 px-1">※ 보안을 위해 6자 이상으로 설정해야 합니다.</p>
+                            
+                            <div className="space-y-1">
+                                <label className="text-xs font-bold text-gray-600 px-1">기사 노출용 이메일</label>
+                                <input
+                                    className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-primary focus:border-primary outline-none"
+                                    type="email"
+                                    placeholder="이메일 (예: reporter@press.com)"
+                                    value={newUser.emailDisplay}
+                                    onChange={(e) => setNewUser({ ...newUser, emailDisplay: e.target.value })}
+                                />
+                            </div>
+
                             <select
                                 className="w-full border border-gray-300 p-2.5 rounded-lg focus:ring-2 focus:ring-primary outline-none bg-white"
                                 value={newUser.specialty}

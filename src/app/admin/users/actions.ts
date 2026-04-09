@@ -24,9 +24,10 @@ interface CreateReporterParams {
     loginId: string;
     password: string;
     specialty: string;
+    emailDisplay?: string;
 }
 
-export async function createReporterAction({ name, loginId, password, specialty }: CreateReporterParams) {
+export async function createReporterAction({ name, loginId, password, specialty, emailDisplay }: CreateReporterParams) {
     try {
         const internalEmail = `${loginId}@welfare-press.admin`;
 
@@ -61,6 +62,7 @@ export async function createReporterAction({ name, loginId, password, specialty 
                 id: authData.user.id,
                 name: name,
                 email: internalEmail,
+                email_display: emailDisplay || '',
                 role: 'reporter',
                 specialty: specialty,
                 grade: 'Lv.8',

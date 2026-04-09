@@ -22,8 +22,10 @@ export default function UserDetailPage() {
     // Edit states
     const [isEditing, setIsEditing] = useState(false);
     const [isEditingName, setIsEditingName] = useState(false);
+    const [isEditingEmail, setIsEditingEmail] = useState(false);
     const [editGrade, setEditGrade] = useState('');
     const [editName, setEditName] = useState('');
+    const [editEmail, setEditEmail] = useState('');
 
     // Password change states
     const [showPwModal, setShowPwModal] = useState(false);
@@ -56,6 +58,7 @@ export default function UserDetailPage() {
                 setUser(dbUser);
                 setEditGrade(dbUser.grade || 'Lv.1');
                 setEditName(dbUser.name);
+                setEditEmail(dbUser.email_display || '');
 
 
                 // Parallel fetch for stats
@@ -121,7 +124,6 @@ export default function UserDetailPage() {
                 oldName: user.name,
                 newName: editName
             });
-
             if (result.success) {
                 setUser({ ...user, name: editName });
                 setIsEditingName(false);
@@ -129,6 +131,25 @@ export default function UserDetailPage() {
                 router.refresh(); // 전역 반영을 위해 새로고침 유도
             } else {
                 alert('수정 실패: ' + result.error);
+            }
+        }
+    };
+
+    const handleSaveEmail = async () => {
+        if (!user) return;
+        
+        if (confirm('기사 노출용 이메일을 수정하시겠습니까?')) {
+            const { error } = await adminSupabase
+                .from('users')
+                .update({ email_display: editEmail })
+                .eq('id', user.id);
+
+            if (!error) {
+                setUser({ ...user, email_display: editEmail });
+                setIsEditingEmail(false);
+                alert('이메일이 수정되었습니다.');
+            } else {
+                alert('수정 실패: ' + error.message);
             }
         }
     };
@@ -220,6 +241,41 @@ export default function UserDetailPage() {
                         <p className="text-gray-500 text-sm mb-4">
                             {user.email.replace('@welfare-press.admin', '')}
                         </p>
+
+                        {(user.role === 'reporter' || user.email_display) && (
+                            <div className="flex flex-col items-center mb-4 pb-4 border-b border-gray-50">
+                                <span className="text-[10px] font-bold text-gray-400 uppercase tracking-tight mb-1">기사 노출용 이메일</span>
+                                {isEditingEmail ? (
+                                    <div className="flex gap-1 items-center w-full px-4">
+                                        <input 
+                                            type="email" 
+                                            className="border rounded px-2 py-1 text-xs focus:ring-1 focus:ring-primary outline-none flex-1"
+                                            value={editEmail}
+                                            onChange={(e) => setEditEmail(e.target.value)}
+                                            placeholder="이메일을 입력하세요"
+                                            autoFocus
+                                        />
+                                        <button onClick={handleSaveEmail} className="p-1 text-primary hover:bg-blue-50 rounded"><Save size={14}/></button>
+                                        <button onClick={() => { setIsEditingEmail(false); setEditEmail(user.email_display || ''); }} className="p-1 text-gray-400 hover:bg-gray-50 rounded"><ArrowLeft size={14}/></button>
+                                    </div>
+                                ) : (
+                                    <div className="flex items-center gap-1 group">
+                                        <span className="text-sm font-medium text-blue-600">
+                                            {user.email_display || '등록된 이메일 없음'}
+                                        </span>
+                                        {(isAdmin || currentUser?.id === userId) && (
+                                            <button 
+                                                onClick={() => setIsEditingEmail(true)}
+                                                className="p-1 text-gray-300 hover:text-primary opacity-0 group-hover:opacity-100 transition-all"
+                                                title="이메일 수정"
+                                            >
+                                                <Edit size={12} />
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+                            </div>
+                        )}
 
                         <div className="inline-block px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-bold mb-6">
                             {user.grade}

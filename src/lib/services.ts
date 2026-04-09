@@ -4,6 +4,7 @@ export interface User {
     id: string;
     name: string;
     email: string;
+    email_display?: string; // 기사 상세페이지 노출용 이메일
     role: 'admin' | 'reporter' | 'user';
     specialty?: string;
     grade?: string;
@@ -432,6 +433,22 @@ export const getUserById = async (id: string): Promise<User | undefined> => {
         .single();
 
     if (error) return undefined;
+    return { ...data, joinDate: data.join_date };
+};
+
+/**
+ * 작성자 이름(닉네임)으로 유저 정보를 조회합니다.
+ * 기사 상세페이지에서 이메일 매칭을 위해 사용합니다.
+ */
+export const getUserByName = async (name: string): Promise<User | undefined> => {
+    const { data, error } = await supabase
+        .from('users')
+        .select('*')
+        .eq('name', name)
+        .eq('role', 'reporter') // 기자 계정에서만 찾음
+        .maybeSingle();
+
+    if (error || !data) return undefined;
     return { ...data, joinDate: data.join_date };
 };
 
