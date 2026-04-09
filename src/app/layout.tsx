@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
-import Script from "next/script";
+import { GoogleAnalytics, GoogleTagManager } from "@next/third-parties/google";
 import "./globals.css";
 
 const inter = Inter({
@@ -83,63 +83,17 @@ export default function RootLayout({
         <link rel="preconnect" href="https://thebok.co.kr" crossOrigin="anonymous" />
       </head>
       <body className={`${inter.variable} font-sans flex flex-col min-h-screen bg-gray-50`}>
-        {/* ============================================================ */}
-        {/* Google Tag Manager - noscript fallback (body 최상단) */}
-        {/* ============================================================ */}
-        <noscript>
-          <iframe
-            src="https://www.googletagmanager.com/ns.html?id=GTM-PB5L2XHF"
-            height="0"
-            width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
-          />
-        </noscript>
-
-        {/* ============================================================ */}
-        {/* Google Tag Manager - HEAD 스니펫 */}
-        {/* strategy="beforeInteractive" = <head>에 실제로 렌더링 보장 */}
-        {/* ============================================================ */}
-        <Script
-          id="gtm-head"
-          strategy="beforeInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
-new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
-j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
-'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
-})(window,document,'script','dataLayer','GTM-PB5L2XHF');
-            `,
-          }}
-        />
-
-        {/* ============================================================ */}
-        {/* Google Analytics 4 직접 태그 (G-CNETJC7IEC) */}
-        {/* ============================================================ */}
-        <Script
-          id="ga4-init"
-          strategy="afterInteractive"
-          src="https://www.googletagmanager.com/gtag/js?id=G-CNETJC7IEC"
-        />
-        <Script
-          id="ga4-config"
-          strategy="afterInteractive"
-          dangerouslySetInnerHTML={{
-            __html: `
-window.dataLayer = window.dataLayer || [];
-function gtag(){dataLayer.push(arguments);}
-gtag('js', new Date());
-gtag('config', 'G-CNETJC7IEC', {
-  page_path: window.location.pathname,
-  send_page_view: true
-});
-            `,
-          }}
-        />
-
         <VisitorTracker />
         {children}
       </body>
+      {/* ============================================================ */}
+      {/* Google Tag Manager (GTM-PB5L2XHF) - Next.js 공식 방식 */}
+      {/* ============================================================ */}
+      <GoogleTagManager gtmId="GTM-PB5L2XHF" />
+      {/* ============================================================ */}
+      {/* Google Analytics 4 (G-CNETJC7IEC) - Next.js 공식 방식 */}
+      {/* ============================================================ */}
+      <GoogleAnalytics gaId="G-CNETJC7IEC" />
     </html>
   );
 }
