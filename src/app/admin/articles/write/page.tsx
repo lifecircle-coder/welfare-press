@@ -1,9 +1,9 @@
 'use client';
 
 import { useState, useEffect, Suspense, useMemo } from 'react';
-import { saveArticle, getUsers, getArticleById, getMenus } from '@/lib/services';
+import { saveArticle, getUsers, getArticleById, getMenus, Article } from '@/lib/services';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { Save, ArrowLeft } from 'lucide-react';
+import { Save, ArrowLeft, Plus, X } from 'lucide-react';
 import { adminSupabase } from '@/lib/supabaseClient';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
@@ -45,15 +45,17 @@ function WriteArticleForm() {
         title: '',
         summary: '',
         content: '',
-        category: '', // 초기화는 useEffect에서 수행
-        prefix: '', // 말머리
-        author: '관리자', // Default fallback
+        category: '', 
+        prefix: '', 
+        author: '관리자',
         hashtags: '',
         status: 'published' as 'published' | 'draft',
         date: '',
         created_at: '',
         updated_at: ''
     });
+
+    const [selectedCategories, setSelectedCategories] = useState<{ category: string, prefix: string }[]>([]);
 
     const [categoryMap, setCategoryMap] = useState<Record<string, string[]>>({});
 
@@ -97,8 +99,8 @@ function WriteArticleForm() {
                             title: article.title || '',
                             summary: article.summary || '',
                             content: article.content || '',
-                            category: article.category || '일자리·취업',
-                            prefix: article.prefix || '일반', // Fixed: Load saved prefix
+                            category: article.category || '',
+                            prefix: article.prefix || '',
                             author: article.author || '관리자',
                             hashtags: Array.isArray(article.hashtags)
                                 ? article.hashtags.join(', ')
@@ -108,6 +110,17 @@ function WriteArticleForm() {
                             created_at: article.created_at || '',
                             updated_at: article.updated_at || ''
                         });
+                        
+                        // 다중 카테고리 데이터 로드
+                        if (article.category_list && Array.isArray(article.category_list)) {
+                            setSelectedCategories(article.category_list);
+                        } else if (article.category) {
+                            // 기존 단일 카테고리 데이터가 있는 경우
+                            setSelectedCategories([{ 
+                                category: article.category, 
+                                prefix: article.prefix || '일반' 
+                            }]);
+                        }
                     } catch (e) {
                         console.error('Error loading article data:', e);
                     }
@@ -115,6 +128,28 @@ function WriteArticleForm() {
             });
         }
     }, [editId]);
+
+    const addCategory = () => {
+        if (!formData.category) return;
+        
+        const newCat = { category: formData.category, prefix: formData.prefix || '일반' };
+        
+        // 중복 체크
+        const isDuplicate = selectedCategories.some(
+            c => c.category === newCat.category && c.prefix === newCat.prefix
+        );
+        
+        if (isDuplicate) {
+            alert('이미 추가된 카테고리입니다.');
+            return;
+        }
+        
+        setSelectedCategories(prev => [...prev, newCat]);
+    };
+
+    const removeCategory = (index: number) => {
+        setSelectedCategories(prev => prev.filter((_, i) => i !== index));
+    };
 
     const handleCategoryChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const cat = e.target.value;
@@ -125,16 +160,17 @@ function WriteArticleForm() {
         }));
     };
     const handleSave = async () => {
-        if (!formData.title || !formData.content) return alert('제목과 본문을 입력해주세요.');
+        if (selectedCategories.length === 0) return alert('최소 하나 이상의 카테고리를 선택해주세요.');
 
         // Use crypto.randomUUID() for new articles to match Supabase UUID type
-        const newArticle: any = {
+        const newArticle: Article = {
             id: formData.id || crypto.randomUUID(),
             title: formData.title,
-            category: formData.category,
-            prefix: formData.prefix,
+            category_list: selectedCategories,
+            category: selectedCategories[0].category, // 하위 호환성용
+            prefix: selectedCategories[0].prefix,     // 하위 호환성용
             author: formData.author,
-            created_at: formData.id ? undefined : (formData.date || undefined), // 수정 시에는 명시적 전달 안 함 (DB 유지)
+            created_at: formData.id ? (formData.created_at || undefined) : (formData.date || undefined),
             views: 0,
             status: formData.status,
             summary: formData.summary,
@@ -187,31 +223,70 @@ function WriteArticleForm() {
                     ></textarea>
                 </div>
 
-                {/* Category & Prefix */}
-                <div className="grid grid-cols-2 gap-6">
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">카테고리 (대분류)</label>
-                        <select
-                            className="w-full border border-gray-300 rounded-lg p-3 outline-none"
-                            value={formData.category}
-                            onChange={handleCategoryChange}
-                        >
-                            {Object.keys(categoryMap).map(cat => (
-                                <option key={cat} value={cat}>{cat}</option>
-                            ))}
-                        </select>
+                {/* Multi-Category Selection */}
+                <div className="p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <label className="block text-sm font-bold text-gray-700 mb-2">기사 카테고리 설정 (다중 선택 가능)</label>
+                    <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div className="flex flex-col gap-2">
+                            <span className="text-xs text-gray-500 font-medium">대분류</span>
+                            <select
+                                className="w-full border border-gray-300 rounded-lg p-3 outline-none bg-white font-medium"
+                                value={formData.category}
+                                onChange={handleCategoryChange}
+                            >
+                                <option value="" disabled>대분류 선택</option>
+                                {Object.keys(categoryMap).map(cat => (
+                                    <option key={cat} value={cat}>{cat}</option>
+                                ))}
+                            </select>
+                        </div>
+                        <div className="flex flex-col gap-2">
+                            <span className="text-xs text-gray-500 font-medium">소분류 (말머리)</span>
+                            <div className="flex gap-2">
+                                <select
+                                    className="flex-1 border border-gray-300 rounded-lg p-3 outline-none bg-white font-medium"
+                                    value={formData.prefix}
+                                    onChange={e => setFormData(prev => ({ ...prev, prefix: e.target.value }))}
+                                >
+                                    {categoryMap[formData.category]?.map(p => (
+                                        <option key={p} value={p}>{p}</option>
+                                    )) || <option value="일반">일반</option>}
+                                </select>
+                                <button
+                                    type="button"
+                                    onClick={addCategory}
+                                    className="px-4 py-2 bg-gray-800 text-white rounded-lg flex items-center gap-1 hover:bg-black transition-colors"
+                                >
+                                    <Plus size={18} />
+                                    추가
+                                </button>
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">말머리 (소분류 Display)</label>
-                        <select
-                            className="w-full border border-gray-300 rounded-lg p-3 outline-none"
-                            value={formData.prefix}
-                            onChange={e => setFormData(prev => ({ ...prev, prefix: e.target.value }))}
-                        >
-                            {categoryMap[formData.category]?.map(p => (
-                                <option key={p} value={p}>{p}</option>
-                            )) || <option value="일반">일반</option>}
-                        </select>
+
+                    {/* Selected Categories Display (Chips) */}
+                    <div className="flex flex-wrap gap-2 min-h-[42px] p-2 bg-white rounded-md border border-dashed border-gray-300">
+                        {selectedCategories.length === 0 ? (
+                            <span className="text-sm text-gray-400 m-auto">카테고리를 추가해 주세요. (첫 번째 카테고리가 주 분류가 됩니다.)</span>
+                        ) : (
+                            selectedCategories.map((cat, idx) => (
+                                <div 
+                                    key={`${cat.category}-${cat.prefix}-${idx}`}
+                                    className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-bold shadow-sm ${
+                                        idx === 0 ? 'bg-primary text-white' : 'bg-blue-100 text-primary border border-blue-200'
+                                    }`}
+                                >
+                                    <span>{cat.category} &gt; {cat.prefix}</span>
+                                    <button 
+                                        type="button"
+                                        onClick={() => removeCategory(idx)}
+                                        className={`hover:bg-black/10 rounded-full p-0.5 transition-colors ${idx === 0 ? 'text-white/80' : 'text-primary/80'}`}
+                                    >
+                                        <X size={14} />
+                                    </button>
+                                </div>
+                            ))
+                        )}
                     </div>
                 </div>
 

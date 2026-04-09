@@ -181,26 +181,48 @@ export default async function CategoryNews({
                                                 className="object-cover group-hover:scale-105 transition-transform duration-500"
                                                 sizes="(max-width: 768px) 100vw, 192px"
                                             />
-                                            {news.prefix && (
-                                                <div className="absolute top-2 left-2 z-10">
-                                                    <span className="bg-gray-900/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
-                                                        {news.prefix}
-                                                    </span>
-                                                </div>
-                                            )}
+                                            {/* 컨텍스트 기반 라벨링: 현재 카테고리에 맞는 소분류 표시 */}
+                                            {(() => {
+                                                const currentCatInfo = news.category_list?.find((c: any) => c.category === internalCategoryName);
+                                                const displayPrefix = currentCatInfo?.prefix || news.prefix;
+                                                
+                                                if (!displayPrefix || displayPrefix === '전체') return null;
+                                                
+                                                const extraCount = (news.category_list?.length || 0) - 1;
+                                                
+                                                return (
+                                                    <div className="absolute top-2 left-2 z-10">
+                                                        <span className="bg-gray-900/80 backdrop-blur-sm text-white text-[10px] font-bold px-2 py-0.5 rounded shadow-sm flex items-center gap-1">
+                                                            {displayPrefix}
+                                                            {extraCount > 0 && (
+                                                                <span className="text-blue-300">+{extraCount}</span>
+                                                            )}
+                                                        </span>
+                                                    </div>
+                                                );
+                                            })()}
                                         </div>
 
                                         <div className="flex-1">
-                                            <div className="flex items-center gap-2 mb-2">
-                                                <span className={`text-sm font-bold ${getCategoryTextColor(news.category)}`}>[{news.category}]</span>
-                                                <span className="text-gray-400 text-sm">
+                                            <div className="flex items-center gap-2 mb-2 flex-wrap">
+                                                {news.category_list && news.category_list.length > 0 ? (
+                                                    news.category_list.map((cat: any, idx: number) => (
+                                                        <span key={`${cat.category}-${idx}`} className={`text-[11px] font-bold px-1.5 py-0.5 rounded bg-gray-100 ${getCategoryTextColor(cat.category)}`}>
+                                                            {cat.category}
+                                                        </span>
+                                                    ))
+                                                ) : (
+                                                    <span className={`text-sm font-bold ${getCategoryTextColor(news.category)}`}>
+                                                        [{news.category}]
+                                                    </span>
+                                                )}
+                                                <span className="text-gray-400 text-xs ml-auto md:ml-0">
                                                     {new Date(news.created_at || news.date || new Date()).toLocaleString('ko-KR', {
                                                         year: 'numeric',
                                                         month: '2-digit',
                                                         day: '2-digit',
                                                         hour: '2-digit',
                                                         minute: '2-digit',
-                                                        second: '2-digit',
                                                         hour12: false
                                                     })}
                                                 </span>

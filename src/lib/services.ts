@@ -15,6 +15,7 @@ export interface Article {
     title: string;
     category: string;
     prefix?: string;
+    category_list?: { category: string; prefix: string; }[];
     author: string;
     date?: string;
     views: number;
@@ -69,7 +70,7 @@ export interface Menu {
 }
 
 // --- Constants for Query Stability ---
-export const ARTICLE_LIST_FIELDS = 'id, title, category, prefix, author, date, views, status, summary, hashtags, thumbnail, updated_at, created_at';
+export const ARTICLE_LIST_FIELDS = 'id, title, category, prefix, category_list, author, date, views, status, summary, hashtags, thumbnail, updated_at, created_at';
 
 // --- Articles ---
 
@@ -107,11 +108,24 @@ export const getArticlesByCategory = async (category: string, limit = 20, offset
     let query = supabase
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
-        .eq('category', category)
         .eq('status', 'published');
     
-    if (prefix && prefix !== '전체') {
-        query = query.eq('prefix', prefix);
+    // 다중 카테고리 검색 지원 (category_list JSONB 내부에 존재 여부 확인)
+    if (category && category !== 'all' && category !== '전체') {
+        let jsonPart: string;
+        let escapedJson: string;
+
+        if (prefix && prefix !== '전체') {
+            // 특정 소분류(prefix)가 선택된 경우: (레거시 필드 조합) OR (신규 JSONB 내 존재)
+            jsonPart = JSON.stringify([{ category, prefix }]);
+            escapedJson = jsonPart.replace(/"/g, '\\"');
+            query = query.or(`and(category.eq."${category}",prefix.eq."${prefix}"),category_list.cs."${escapedJson}"`);
+        } else {
+            // 특정 소분류가 지정되지 않은 경우: (레거시 대분류) OR (신규 JSONB 내 대분류 존재)
+            jsonPart = JSON.stringify([{ category }]);
+            escapedJson = jsonPart.replace(/"/g, '\\"');
+            query = query.or(`category.eq."${category}",category_list.cs."${escapedJson}"`);
+        }
     }
 
     const { data, error } = await query
@@ -333,7 +347,14 @@ export const saveArticle = async (article: Article, client = supabase): Promise<
         thumbnail: finalThumbnail,
         date: finalizedDate || article.created_at, // date와 created_at 동기화
         created_at: article.created_at || finalizedDate, // 명시적으로 created_at 포함
-        updated_at: now
+        updated_at: now,
+        // 첫 번째 카테고리를 기존 필드에 유지 (하위 호환성 및 메인 표시용)
+        category: article.category_list && article.category_list.length > 0 
+            ? article.category_list[0].category 
+            : article.category,
+        prefix: article.category_list && article.category_list.length > 0
+            ? article.category_list[0].prefix
+            : article.prefix
     };
 
     if (existing) {
@@ -366,7 +387,7 @@ export const searchArticles = async (query: string): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
-        .or(`title.ilike.%${query}%,content.ilike.%${query}%,summary.ilike.%${query}%`)
+        .or(`"title.ilike.%${query}%","content.ilike.%${query}%","summary.ilike.%${query}%"`)
         .order('created_at', { ascending: false })
         .limit(50);
 

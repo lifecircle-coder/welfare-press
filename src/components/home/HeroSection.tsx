@@ -55,8 +55,11 @@ export default function HeroSection({ articles }: HeroSectionProps) {
                             className="object-cover group-hover:scale-105 transition-transform duration-500"
                             sizes="(max-width: 1024px) 100vw, 66vw"
                         />
-                        <span className={`absolute top-4 left-4 ${getCategoryStyles(main.category)} px-3 py-1 rounded-full text-sm font-bold text-white shadow-md backdrop-blur-md border border-white/10`}>
+                        <span className={`absolute top-4 left-4 ${getCategoryStyles(main.category)} px-3 py-1 rounded-full text-sm font-bold text-white shadow-md backdrop-blur-md border border-white/10 flex items-center gap-1.5`}>
                             {main.category}
+                            {main.category_list && main.category_list.length > 1 && (
+                                <span className="bg-white/20 px-1.5 rounded text-[11px]">+{main.category_list.length - 1}</span>
+                            )}
                         </span>
                     </div>
                     <h3 className="text-2xl md:text-3xl font-bold text-gray-900 mb-2 group-hover:text-primary transition-colors leading-tight">
@@ -93,8 +96,11 @@ export default function HeroSection({ articles }: HeroSectionProps) {
                                     className="object-cover group-hover:scale-105 transition-transform duration-500"
                                     sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                 />
-                                <span className={`absolute top-3 left-3 ${getCategoryStyles(article.category)} px-3 py-1 rounded-full text-sm font-bold text-white backdrop-blur-md transition-all shadow-md border border-white/10`}>
+                                <span className={`absolute top-3 left-3 ${getCategoryStyles(article.category)} px-3 py-1 rounded-full text-sm font-bold text-white backdrop-blur-md transition-all shadow-md border border-white/10 flex items-center gap-1`}>
                                     {article.category}
+                                    {article.category_list && article.category_list.length > 1 && (
+                                        <span className="bg-white/20 px-1 rounded text-[10px]">+{article.category_list.length - 1}</span>
+                                    )}
                                 </span>
                             </div>
                             <div className="p-4 flex-1">

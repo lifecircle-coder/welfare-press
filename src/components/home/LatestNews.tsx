@@ -51,7 +51,12 @@ export default function LatestNews({ articles }: LatestNewsProps) {
                         >
                             <div className="flex-1 pr-4">
                                 <div className="flex items-center gap-2 mb-2 md:mb-1">
-                                    <span className={`font-bold text-sm ${getCategoryTextColor(item.category)}`}>[{item.category}]</span>
+                                    <span className={`font-bold text-sm ${getCategoryTextColor(item.category)}`}>
+                                        [{item.category}
+                                        {item.category_list && item.category_list.length > 1 && (
+                                            <span className="text-[11px] font-normal ml-0.5">+{item.category_list.length - 1}</span>
+                                        )}]
+                                    </span>
                                 </div>
                                 <h3 className="text-lg md:text-xl font-medium text-gray-800 group-hover:text-primary">
                                     {item.title}

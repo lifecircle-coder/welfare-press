@@ -402,11 +402,15 @@ export default function ArticleManagement() {
                                a.title.toLowerCase().includes(appliedFilters.keyword.toLowerCase()) || 
                                (a.content || '').toLowerCase().includes(appliedFilters.keyword.toLowerCase());
         
-        // 2. 대분류 필터
-        const matchesMainCategory = appliedFilters.mainCategory === '전체' || a.category === appliedFilters.mainCategory;
+        // 2. 대분류 필터 (가장 중요: category_list 내부에 하나라도 포함되어 있는지 확인)
+        const matchesMainCategory = appliedFilters.mainCategory === '전체' || 
+                                   a.category === appliedFilters.mainCategory || 
+                                   (a.category_list && a.category_list.some(c => c.category === appliedFilters.mainCategory));
         
         // 3. 소분류 필터 (prefix)
-        const matchesSubCategory = appliedFilters.subCategory === '전체' || a.prefix === appliedFilters.subCategory;
+        const matchesSubCategory = appliedFilters.subCategory === '전체' || 
+                                  a.prefix === appliedFilters.subCategory ||
+                                  (a.category_list && a.category_list.some(c => c.prefix === appliedFilters.subCategory));
         
         // 4. 상태 필터 (게시중/임시저장)
         const matchesStatus = appliedFilters.status === '전체' || 
@@ -882,7 +886,19 @@ export default function ArticleManagement() {
                                 >
                                     <td className="p-4 text-gray-900 font-medium truncate max-w-xs">{item.title}</td>
                                     <td className="p-4 text-gray-600">{item.author}</td>
-                                    <td className="p-4"><span className="bg-blue-100 text-primary px-2 py-1 rounded text-[11px] font-bold">{item.category}</span></td>
+                                    <td className="p-4">
+                                        <div className="flex flex-wrap gap-1">
+                                            {item.category_list && item.category_list.length > 0 ? (
+                                                item.category_list.map((cat, idx) => (
+                                                    <span key={idx} className="bg-blue-100 text-primary px-2 py-0.5 rounded text-[10px] font-bold">
+                                                        {cat.category}{cat.prefix && cat.prefix !== '전체' ? ` > ${cat.prefix}` : ''}
+                                                    </span>
+                                                ))
+                                            ) : (
+                                                <span className="bg-blue-100 text-primary px-2 py-1 rounded text-[11px] font-bold">{item.category}</span>
+                                            )}
+                                        </div>
+                                    </td>
                                     <td className="p-4">
                                         <span className={`font-bold ${item.status === 'published' ? 'text-green-600' : 'text-gray-400'}`}>
                                             ● {item.status === 'published' ? '게시중' : '임시저장'}

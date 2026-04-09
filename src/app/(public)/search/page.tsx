@@ -39,7 +39,12 @@ async function SearchResults({ query }: { query: string | null }) {
                     className="block bg-white border border-gray-100 rounded-xl p-6 hover:shadow-lg transition-shadow group"
                 >
                     <div className="flex items-center gap-2 mb-2">
-                        <span className="text-primary text-sm font-bold">[{news.category}]</span>
+                        <span className="text-primary text-sm font-bold">
+                            [{news.category}
+                            {news.category_list && news.category_list.length > 1 && (
+                                <span className="text-xs font-normal ml-0.5">+{news.category_list.length - 1}</span>
+                            )}]
+                        </span>
                                                 <span className="text-gray-400 text-sm">
                             {new Date(news.created_at || news.date || new Date()).toLocaleString('ko-KR', {
                                 year: 'numeric',

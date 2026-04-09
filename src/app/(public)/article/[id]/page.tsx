@@ -109,13 +109,28 @@ export default async function ArticleDetail({ params }: { params: { id: string }
             {/* Category Badges & Breadcrumbs */}
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-4">
                 <div className="flex flex-wrap items-center gap-2">
-                    <span className={`inline-block ${getCategoryStyles(article.category)} px-3 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md border`}>
-                        {article.category}
-                    </span>
-                    {article.prefix && (
-                        <span className="inline-block bg-gray-900 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-gray-800">
-                            {article.prefix}
-                        </span>
+                    {article.category_list && article.category_list.length > 0 ? (
+                        article.category_list.map((cat, idx) => (
+                            <div key={`${cat.category}-${cat.prefix}-${idx}`} className="flex items-center gap-1">
+                                <span className={`inline-block ${getCategoryStyles(cat.category)} px-3 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md border`}>
+                                    {cat.category}
+                                </span>
+                                <span className="inline-block bg-gray-900 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-gray-800">
+                                    {cat.prefix}
+                                </span>
+                            </div>
+                        ))
+                    ) : (
+                        <>
+                            <span className={`inline-block ${getCategoryStyles(article.category)} px-3 py-1 rounded-full text-xs font-bold shadow-sm backdrop-blur-md border`}>
+                                {article.category}
+                            </span>
+                            {article.prefix && (
+                                <span className="inline-block bg-gray-900 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm border border-gray-800">
+                                    {article.prefix}
+                                </span>
+                            )}
+                        </>
                     )}
                 </div>
 
@@ -175,9 +190,10 @@ export default async function ArticleDetail({ params }: { params: { id: string }
 
             {/* Metadata */}
             <div className="flex flex-wrap items-center text-gray-500 text-sm mb-8 border-b border-gray-100 pb-6 gap-y-2">
-                <span className="font-medium text-gray-700 mr-4 whitespace-nowrap">{article.author}</span>
+                <span className="font-medium text-gray-700 mr-6 whitespace-nowrap">{article.author}</span>
 
-                <span className="mr-4">
+                <span className="mr-6 flex items-center gap-2">
+                    <span className="font-semibold text-gray-400">발행일</span>
                     {(() => {
                         const date = new Date(article.created_at || article.date || new Date());
                         return date.toLocaleString('ko-KR', {
@@ -192,7 +208,23 @@ export default async function ArticleDetail({ params }: { params: { id: string }
                         });
                     })()}
                 </span>
-                <span>조회 {article.views}</span>
+
+                <span className="flex items-center gap-2">
+                    <span className="font-semibold text-gray-400">업데이트일</span>
+                    {(() => {
+                        const date = new Date(article.updated_at || article.created_at || article.date || new Date());
+                        return date.toLocaleString('ko-KR', {
+                            timeZone: 'Asia/Seoul',
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                            second: '2-digit',
+                            hour12: false
+                        });
+                    })()}
+                </span>
             </div>
 
             {/* AI Summary Box */}
