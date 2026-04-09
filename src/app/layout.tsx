@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
+import Script from "next/script";
 import "./globals.css";
 
 const inter = Inter({
@@ -80,8 +81,58 @@ export default function RootLayout({
       <head>
         {/* Preconnect to Supabase for faster API calls */}
         <link rel="preconnect" href="https://thebok.co.kr" crossOrigin="anonymous" />
+        {/* ====================================================== */}
+        {/* Google Tag Manager - HEAD 스니펫 (GTM-PB5L2XHF) */}
+        {/* ====================================================== */}
+        <Script
+          id="gtm-head"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-PB5L2XHF');
+            `,
+          }}
+        />
+        {/* ====================================================== */}
+        {/* Google Analytics 4 - 직접 태그 (G-CNETJC7IEC) */}
+        {/* ====================================================== */}
+        <Script
+          id="ga4-init"
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-CNETJC7IEC"
+        />
+        <Script
+          id="ga4-config"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+window.dataLayer = window.dataLayer || [];
+function gtag(){dataLayer.push(arguments);}
+gtag('js', new Date());
+gtag('config', 'G-CNETJC7IEC', {
+  page_path: window.location.pathname,
+  send_page_view: true
+});
+            `,
+          }}
+        />
       </head>
       <body className={`${inter.variable} font-sans flex flex-col min-h-screen bg-gray-50`}>
+        {/* ====================================================== */}
+        {/* Google Tag Manager - BODY 스니펫 (noscript fallback) */}
+        {/* ====================================================== */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-PB5L2XHF"
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          />
+        </noscript>
         <VisitorTracker />
         {children}
       </body>
