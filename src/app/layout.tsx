@@ -91,9 +91,9 @@ export default function RootLayout({
       {/* ============================================================ */}
       <GoogleTagManager gtmId="GTM-PB5L2XHF" />
       {/* ============================================================ */}
-      {/* Google Analytics 4 (G-CNETJC7IEC) - Next.js 공식 방식 */}
+      {/* Google Analytics 4 (G-CWETJC71EC) - Next.js 공식 방식 */}
       {/* ============================================================ */}
-      <GoogleAnalytics gaId="G-CNETJC7IEC" />
+      <GoogleAnalytics gaId="G-CWETJC71EC" />
     </html>
   );
 }
