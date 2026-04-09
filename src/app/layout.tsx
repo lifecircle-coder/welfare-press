@@ -81,12 +81,27 @@ export default function RootLayout({
       <head>
         {/* Preconnect to Supabase for faster API calls */}
         <link rel="preconnect" href="https://thebok.co.kr" crossOrigin="anonymous" />
-        {/* ====================================================== */}
-        {/* Google Tag Manager - HEAD 스니펫 (GTM-PB5L2XHF) */}
-        {/* ====================================================== */}
+      </head>
+      <body className={`${inter.variable} font-sans flex flex-col min-h-screen bg-gray-50`}>
+        {/* ============================================================ */}
+        {/* Google Tag Manager - noscript fallback (body 최상단) */}
+        {/* ============================================================ */}
+        <noscript>
+          <iframe
+            src="https://www.googletagmanager.com/ns.html?id=GTM-PB5L2XHF"
+            height="0"
+            width="0"
+            style={{ display: 'none', visibility: 'hidden' }}
+          />
+        </noscript>
+
+        {/* ============================================================ */}
+        {/* Google Tag Manager - HEAD 스니펫 */}
+        {/* strategy="beforeInteractive" = <head>에 실제로 렌더링 보장 */}
+        {/* ============================================================ */}
         <Script
           id="gtm-head"
-          strategy="afterInteractive"
+          strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `
 (function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
@@ -97,9 +112,10 @@ j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
             `,
           }}
         />
-        {/* ====================================================== */}
-        {/* Google Analytics 4 - 직접 태그 (G-CNETJC7IEC) */}
-        {/* ====================================================== */}
+
+        {/* ============================================================ */}
+        {/* Google Analytics 4 직접 태그 (G-CNETJC7IEC) */}
+        {/* ============================================================ */}
         <Script
           id="ga4-init"
           strategy="afterInteractive"
@@ -120,19 +136,7 @@ gtag('config', 'G-CNETJC7IEC', {
             `,
           }}
         />
-      </head>
-      <body className={`${inter.variable} font-sans flex flex-col min-h-screen bg-gray-50`}>
-        {/* ====================================================== */}
-        {/* Google Tag Manager - BODY 스니펫 (noscript fallback) */}
-        {/* ====================================================== */}
-        <noscript>
-          <iframe
-            src="https://www.googletagmanager.com/ns.html?id=GTM-PB5L2XHF"
-            height="0"
-            width="0"
-            style={{ display: 'none', visibility: 'hidden' }}
-          />
-        </noscript>
+
         <VisitorTracker />
         {children}
       </body>
