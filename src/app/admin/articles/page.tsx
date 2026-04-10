@@ -1,6 +1,6 @@
 'use client';
 
-import { Plus, Search, Filter, Copy, Calendar, User, Trash2, MapPin, MessageCircle, Send, X, RotateCcw } from 'lucide-react';
+import { Plus, Search, Filter, Copy, Calendar, User, Trash2, MapPin, MessageCircle, Send, X, RotateCcw, Briefcase, Home, GraduationCap, Heart, Users } from 'lucide-react';
 import Link from 'next/link';
 import { useState, useEffect } from 'react';
 import { getAllArticles, deleteArticle, getComments, addComment, getArticlesWithNewComments } from '@/lib/services';
@@ -65,6 +65,10 @@ export default function ArticleManagement() {
     const [newAdminComment, setNewAdminComment] = useState('');
     const [replyingToId, setReplyingToId] = useState<string | null>(null);
     const [adminReplyContent, setAdminReplyContent] = useState('');
+    
+    // Youth Policy Specific Filters (Multi-select)
+    const [youthCategories, setYouthCategories] = useState<string[]>(['전체']);
+    const [youthRegions, setYouthRegions] = useState<string[]>(['전체']);
 
     const loadArticles = async () => {
         const data = await getAllArticles(100, 0, adminSupabase);
@@ -138,7 +142,9 @@ export default function ArticleManagement() {
             } else if (tab === 'SUBSIDY') {
                 list = await getSubsidy24List(1, 500); // 50 -> 500: Give more data for filtering
             } else if (tab === 'YOUTH') {
-                list = await getYouthPolicyList(1, 500);
+                const yCat = youthCategories.includes('전체') ? '' : youthCategories.join(',');
+                const yReg = youthRegions.includes('전체') ? '' : youthRegions.join(',');
+                list = await getYouthPolicyList(1, 500, yCat, yReg, apiSearchTerm);
             } else if (tab === 'MOGEF') {
                 list = await getMogefNewsList(1, 100);
             } else if (tab === 'MCST_PRESS') {
@@ -191,6 +197,40 @@ export default function ArticleManagement() {
         }
     };
 
+
+    // Youth Filter Toggle Handlers
+    const toggleYouthCategory = (id: string) => {
+        if (id === '전체') {
+            setYouthCategories(['전체']);
+        } else {
+            setYouthCategories(prev => {
+                const filtered = prev.filter(c => c !== '전체');
+                if (filtered.includes(id)) {
+                    const next = filtered.filter(c => c !== id);
+                    return next.length === 0 ? ['전체'] : next;
+                } else {
+                    return [...filtered, id];
+                }
+            });
+        }
+    };
+
+    const toggleYouthRegion = (id: string) => {
+        if (id === '전체') {
+            setYouthRegions(['전체']);
+        } else {
+            setYouthRegions(prev => {
+                const filtered = prev.filter(c => c !== '전체');
+                if (filtered.includes(id)) {
+                    const next = filtered.filter(c => c !== id);
+                    return next.length === 0 ? ['전체'] : next;
+                } else {
+                    return [...filtered, id];
+                }
+            });
+        }
+    };
+
     useEffect(() => {
         setClientFilter(''); // Reset life-cycle filter when tab changes
         if (activeApiTab === 'LOCAL') {
@@ -198,7 +238,7 @@ export default function ArticleManagement() {
         } else {
             loadApiData(activeApiTab);
         }
-    }, [activeApiTab]);
+    }, [activeApiTab]); // Disconnected from filters to use Search Button
 
     useEffect(() => {
         loadArticles();
@@ -329,6 +369,21 @@ export default function ArticleManagement() {
 3. "이런 분들은 꼭 신청하세요!" 섹션을 만들어 자격 요건을 강조하세요.
 4. 기사 끝에 글자 크기 조절 버튼이 있다는 점을 언급하여 접근성을 강조하세요.`;
                 }
+            } else if (api.apiSource === 'YOUTH') {
+                prompt = `[왕 기자 전용: 청년정책 밀착 가이드 - "청년의 오늘을 응원합니다"]
+                
+정책명: ${title}
+기관: ${sourceName}
+주요 내용: ${summary}
+상세 주소: ${link}
+키워드: ${keywords}
+
+작성 지침 (청년 맞춤형):
+1. '청년의 미래를 바꾸는 한 걸음'이라는 컨셉으로, 2030 청년들이 즉각적으로 체감할 수 있는 혜택을 강조하세요.
+2. 기사 도입부에서 "당신만 몰랐던 청년 꿀팁" 또는 "청년의 삶을 바꾸는 새로운 정책"과 같은 호기심을 유발하는 문구를 사용하세요.
+3. [신청 포인트] 섹션을 별도로 만들어, 신청 자격과 방법을 3줄 요약으로 제공하세요.
+4. '왕 기자'의 논평을 한 줄 추가하여, 이 정책이 청년들에게 어떤 사회적 의미가 있는지 짧게 덧붙이세요.
+5. "청년이 행복한 세상, THE복지가 함께 찾아갑니다."라는 문구로 마무리하세요.`;
             } else if (api.apiSource === 'MOIS_STATS') {
                 prompt = `[왕 기자 전용: 데이터 인사이트 분석 리포트]
 
@@ -473,6 +528,7 @@ export default function ArticleManagement() {
                     <div className="flex bg-white p-1 rounded-xl border border-blue-100 shadow-sm overflow-x-auto no-scrollbar max-w-full">
                         {[
                             { id: 'MCST_PRESS', label: '보도자료', icon: '📢' },
+                            { id: 'YOUTH', label: '청년정책', icon: '✨' },
                             { id: 'MCST_NEWS', label: '정책뉴스', icon: '🗞️' },
                             { id: 'MCST_PHOTO', label: '뉴스포토', icon: '📸' },
                             { id: 'NEWS_ALL', label: '종합뉴스', icon: '⚡' },
@@ -536,6 +592,86 @@ export default function ArticleManagement() {
                         />
                     </div>
                 </div>
+
+                {/* Youth Policy Filter Panel (Shown only for YOUTH tab) */}
+                {activeApiTab === 'YOUTH' && (
+                    <div className="mb-6 space-y-4 animate-in fade-in slide-in-from-top-2 duration-500">
+                        {/* Category Icons */}
+                        <div className="grid grid-cols-3 sm:grid-cols-6 gap-3">
+                            {[
+                                { id: '전체', label: '전체', icon: <RotateCcw size={20} />, color: 'bg-gray-100 text-gray-600' },
+                                { id: '일자리', label: '일자리', icon: <Briefcase size={20} />, color: 'bg-blue-100 text-blue-600' },
+                                { id: '주거', label: '주거', icon: <Home size={20} />, color: 'bg-green-100 text-green-600' },
+                                { id: '교육·훈련', label: '교육·훈련', icon: <GraduationCap size={20} />, color: 'bg-purple-100 text-purple-600' },
+                                { id: '복지·문화', label: '복지·문화', icon: <Heart size={20} />, color: 'bg-pink-100 text-pink-600' },
+                                { id: '참여·기반', label: '참여·기반', icon: <Users size={20} />, color: 'bg-amber-100 text-amber-600' },
+                            ].map((cat) => (
+                                <button
+                                    key={cat.id}
+                                    onClick={() => toggleYouthCategory(cat.id)}
+                                    className={`flex flex-col items-center justify-center p-3 rounded-2xl transition-all duration-300 border-2 
+                                        ${youthCategories.includes(cat.id) 
+                                            ? 'border-blue-500 bg-blue-50/50 shadow-md scale-105' 
+                                            : 'border-transparent bg-white hover:bg-gray-50 hover:border-gray-100'}`}
+                                >
+                                    <div className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center mb-2 shadow-sm ${cat.color}`}>
+                                {cat.icon}
+                                    </div>
+                                    <span className={`text-[10px] sm:text-[11px] font-bold ${youthCategories.includes(cat.id) ? 'text-blue-600' : 'text-gray-500'}`}>
+                                        {cat.label}
+                                    </span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Region Buttons */}
+                        <div className="bg-white/50 backdrop-blur-sm p-4 rounded-2xl border border-blue-50 shadow-sm relative">
+                            <div className="flex flex-wrap gap-1.5 sm:gap-2 pr-24">
+                                {[
+                                    { id: '전체', label: '전체' },
+                                    { id: '003002000', label: '중앙부처' },
+                                    { id: '11000', label: '서울' },
+                                    { id: '41000', label: '경기' },
+                                    { id: '28000', label: '인천' },
+                                    { id: '26000', label: '부산' },
+                                    { id: '27000', label: '대구' },
+                                    { id: '29000', label: '광주' },
+                                    { id: '30000', label: '대전' },
+                                    { id: '31000', label: '울산' },
+                                    { id: '36000', label: '세종' },
+                                    { id: '42000', label: '강원' },
+                                    { id: '43000', label: '충북' },
+                                    { id: '44000', label: '충남' },
+                                    { id: '45000', label: '전북' },
+                                    { id: '46000', label: '전남' },
+                                    { id: '47000', label: '경북' },
+                                    { id: '48000', label: '경남' },
+                                    { id: '50000', label: '제주' },
+                                ].map((reg) => (
+                                    <button
+                                        key={reg.id}
+                                        onClick={() => toggleYouthRegion(reg.id)}
+                                        className={`px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg text-[10px] sm:text-[11px] font-semibold border transition-all duration-200
+                                            ${youthRegions.includes(reg.id) 
+                                                ? 'bg-blue-600 text-white border-blue-600 shadow-sm' 
+                                                : 'bg-white text-gray-500 border-gray-200 hover:border-blue-200 hover:text-blue-500'}`}
+                                    >
+                                        {reg.label}
+                                    </button>
+                                ))}
+                            </div>
+
+                            {/* Search Button */}
+                            <button
+                                onClick={() => loadApiData('YOUTH')}
+                                className="absolute right-4 bottom-4 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl shadow-lg flex items-center gap-2 font-bold transition-all hover:scale-105 active:scale-95"
+                            >
+                                <Search size={18} />
+                                검색하기
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 <div 
                     key={activeApiTab} 

@@ -107,17 +107,22 @@ export async function GET(request: NextRequest) {
         }
 
         if (type === 'YOUTH_LIST') {
-            const response = await axios.get('https://www.youthcenter.go.kr/opi/youthPcyList.do', {
+            const plcyNm = searchParams.get('query') || ''; // 정책명 검색어
+            const lclsfNm = searchParams.get('lclsfNm') || ''; // 정책분야 (명칭)
+            const zipCd = searchParams.get('zipCd') || ''; // 지역코드 (5자리)
+            const youthKey = process.env.NEXT_PUBLIC_YOUTH_API_KEY || 'ed4fce74-0c22-423e-98d8-3d7c7443b0d7';
+            const response = await axios.get('https://www.youthcenter.go.kr/go/ythip/getPlcy', {
                 params: {
-                    openApiVlak: process.env.NEXT_PUBLIC_YOUTH_API_KEY || '35661a33777592868175d717',
-                    pageIndex: pageNo,
-                    display: numOfRows,
-                    query: '수당'
+                    apiKeyNm: youthKey,
+                    pageNum: pageNo,
+                    pageSize: numOfRows,
+                    rtnType: 'json',
+                    plcyNm,
+                    lclsfNm,
+                    zipCd
                 }
             });
-            return new NextResponse(response.data, {
-                headers: { 'Content-Type': 'application/xml; charset=utf-8' }
-            });
+            return NextResponse.json(response.data);
         }
 
         // MCST APIs - Use RAW_API_KEY in URL to avoid double-encoding issues common with data.go.kr

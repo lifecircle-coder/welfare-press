@@ -14,8 +14,8 @@ const RESOURCE_API_URL = 'https://apis.data.go.kr/B554287/resrceInfoInqireServic
 const SUBSIDY_API_URL = 'https://api.odcloud.kr/api/gov24/v3';
 
 // 4. 온라인청년센터_청년정책_API
-const YOUTH_API_URL = 'https://www.youthcenter.go.kr/opi/youthPcyList.do';
-const YOUTH_API_KEY = process.env.NEXT_PUBLIC_YOUTH_API_KEY || '35661a33777592868175d717'; // 기본값은 샘플키
+const YOUTH_API_URL = 'https://www.youthcenter.go.kr/go/ythip/getPlcy';
+const YOUTH_API_KEY = process.env.NEXT_PUBLIC_YOUTH_API_KEY || 'ed4fce74-0c22-423e-98d8-3d7c7443b0d7'; // 인증키 업데이트
 
 // 5. 여성가족부_정책뉴스 (복구)
 const MOGEF_API_URL = 'http://apis.data.go.kr/1383000/mogefNew';
@@ -24,7 +24,6 @@ const MOGEF_API_URL = 'http://apis.data.go.kr/1383000/mogefNew';
 const LOCAL_API_URL = 'http://apis.data.go.kr/B554287/LocalGovernmentWelfareInformations';
 
 // 6. 문화체육관광부_정책브리핑
-// 6. 문화체육관광부_정책브리핑 (정상 엔드포인트 1371000 계열로 통합)
 const MCST_API_URL = 'http://apis.data.go.kr/1371000/pressReleaseService';
 
 // 7. 행정안전부_보조금24_통계
@@ -59,12 +58,11 @@ const parseApiDate = (dateStr: string) => {
     if (!dateStr) return '';
     const clean = dateStr.trim();
     
-    // Check for US Format MM/DD/YYYY or similar
     if (clean.includes('/')) {
         const parts = clean.split(' ')[0].split('/');
         if (parts.length === 3) {
             let y, m, d;
-            if (parts[2].length === 4) { // MM/DD/YYYY (Typical US/MCST)
+            if (parts[2].length === 4) { // MM/DD/YYYY
                 y = parts[2];
                 m = parts[0].padStart(2, '0');
                 d = parts[1].padStart(2, '0');
@@ -78,90 +76,65 @@ const parseApiDate = (dateStr: string) => {
             return `${y}${m}${d}`;
         }
     }
-    
-    // YYYY-MM-DD or YYYY.MM.DD
     return clean.replace(/[^0-9]/g, '').substring(0, 8);
 };
 
-// Mock 데이터 스위치
 const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_DATA === 'true';
 
-// --- 인터페이스 정의 ---
 export interface WelfareService {
     servId: string;
-    servNm: string;         // 서비스명 (제목)
-    jurMnofNm: string;      // 소관부처명
-    servDgst: string;       // 서비스 요약
-    servDtlLink: string;    // 상세 링크
-    // 상세조회 시 추가되는 필드
-    trgterIndvdlArray?: string; // 지원대상 (핵심)
-    slctCritCn?: string;     // 선정기준 (핵심)
-    alwServCn?: string;      // 급여서비스 내용
-    svcfrstRegTs?: string;   // 서비스 등록 일자 (YYYYMMDD 형식 등)
-    apiSource?: 'NATIONAL' | 'LOCAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF' | 'MCST_PRESS' | 'MCST_NEWS' | 'MCST_PHOTO' | 'MOIS_STATS'; // 출처 배지
-    // 신규 추가 필드
-    isNews?: boolean;        // 뉴스/보도자료 여부
-    priority?: number;       // 정렬 우선순위
-    thumbnail?: string;      // 썸네일 이미지 URL
-    deptNm?: string;         // 상세 부서명
-    keywords?: string[];     // 추출 키워드
-    fullContent?: string;    // [풍성한 소스] 전체 본문 데이타
+    servNm: string;
+    jurMnofNm: string;
+    servDgst: string;
+    servDtlLink: string;
+    trgterIndvdlArray?: string;
+    slctCritCn?: string;
+    alwServCn?: string;
+    svcfrstRegTs?: string;
+    apiSource?: 'NATIONAL' | 'LOCAL' | 'SUBSIDY' | 'YOUTH' | 'MOGEF' | 'MCST_PRESS' | 'MCST_NEWS' | 'MCST_PHOTO' | 'MOIS_STATS';
+    isNews?: boolean;
+    priority?: number;
+    thumbnail?: string;
+    deptNm?: string;
+    keywords?: string[];
+    fullContent?: string;
 }
 
 export interface ResourceService {
-    fcltNm: string;          // 시설/기관명
-    svcNm: string;           // 서비스명
+    fcltNm: string;
+    svcNm: string;
     sidoNm: string;
     sggNm: string;
-    rprsNm?: string;         // 대표자명 (상세)
-    telNo?: string;          // 전화번호 (상세)
+    rprsNm?: string;
+    telNo?: string;
 }
 
-// --- API 호출 함수 ---
-
-/**
- * [1순위/2순위] 중앙부처/지자체 복지서비스 목록 조회
- */
 export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchKeyword = ''): Promise<WelfareService[]> => {
-    if (USE_MOCK_DATA) {
-        return getMockNationalData();
-    }
-
+    if (USE_MOCK_DATA) return getMockNationalData();
     try {
         let data;
         if (typeof window !== 'undefined') {
-            // Browser env: Use proxy
             const response = await axios.get('/api/public-data', {
-                params: {
-                    type: 'NATIONAL_LIST',
-                    searchWrd: searchKeyword
-                }
+                params: { type: 'NATIONAL_LIST', searchWrd: searchKeyword }
             });
             data = response.data;
         } else {
-            // Server env: Call direct
             const response = await axios.get(`${NATIONAL_API_URL}/NationalWelfarelistV001`, {
                 params: {
                     serviceKey: decodeURIComponent(CORPORATE_API_KEY),
                     callTp: 'L',
                     pageNo: 1,
-                    numOfRows: 500, // Always fetch 500 items for robust 2026 data filtering
+                    numOfRows: 500,
                     srchKeyCode: '003',
-                    searchWrd: '', // 키워드 없이 전체 호출
+                    searchWrd: '',
                 }
             });
             data = response.data;
         }
-
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
         const servList = jsonObj.wantedList?.servList || jsonObj.response?.body?.items?.item || jsonObj.servList || jsonObj.data;
-
-        if (!servList) {
-            console.warn('No servList found for National Welfare:', jsonObj);
-            return [];
-        }
+        if (!servList) return [];
         let arrayList = Array.isArray(servList) ? servList : [servList];
-
         let mappedList = arrayList.map((item: any) => ({
             servId: item.servId || '',
             servNm: item.servNm || '',
@@ -173,142 +146,85 @@ export const getNationalWelfareList = async (pageNo = 1, numOfRows = 10, searchK
             priority: 3,
             isNews: false
         }));
-
-        mappedList.sort((a, b) => {
-            const dateA = String(a.svcfrstRegTs || '');
-            const dateB = String(b.svcfrstRegTs || '');
-            return dateB.localeCompare(dateA);
-        });
-
+        mappedList.sort((a, b) => String(b.svcfrstRegTs || '').localeCompare(String(a.svcfrstRegTs || '')));
         return mappedList.slice(0, 50);
-
     } catch (error) {
         console.error('API Fetch Error (National Welfare List):', error);
         return [];
     }
 };
 
-/**
- * [1순위] 중앙부처 복지서비스 상세 조회 (AI 기사 작성용 핵심 데이타 추출)
- */
 export const getNationalWelfareDetail = async (servId: string): Promise<WelfareService | null> => {
     if (USE_MOCK_DATA) return null;
-
     try {
         let data;
         if (typeof window !== 'undefined') {
-            const response = await axios.get('/api/public-data', {
-                params: {
-                    type: 'NATIONAL_DETAIL',
-                    servId
-                }
-            });
+            const response = await axios.get('/api/public-data', { params: { type: 'NATIONAL_DETAIL', servId } });
             data = response.data;
         } else {
             const response = await axios.get(`${NATIONAL_API_URL}/NationalWelfaredetailedV001`, {
-                params: {
-                    serviceKey: decodeURIComponent(CORPORATE_API_KEY),
-                    callTp: 'D',
-                    servId,
-                }
+                params: { serviceKey: decodeURIComponent(CORPORATE_API_KEY), callTp: 'D', servId }
             });
             data = response.data;
         }
-
         const jsonObj = parser.parse(data);
-        const detail = jsonObj.wantedDtl;
-        return detail ? (detail as WelfareService) : null;
-
+        return jsonObj.wantedDtl ? (jsonObj.wantedDtl as WelfareService) : null;
     } catch (error) {
         console.error(`API Fetch Error (Detail, ID: ${servId}):`, error);
         return null;
     }
 }
 
-/**
- * [2순위] 지자체 복지서비스 목록 조회 (최신순 arrgOrd=001)
- */
 export const getLocalGovWelfareList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
     if (USE_MOCK_DATA) return [];
     try {
         let data;
         if (typeof window !== 'undefined') {
-            const response = await axios.get('/api/public-data', {
-                params: {
-                    type: 'LOCAL_LIST',
-                    pageNo,
-                    numOfRows
-                }
-            });
+            const response = await axios.get('/api/public-data', { params: { type: 'LOCAL_LIST', pageNo, numOfRows } });
             data = response.data;
         } else {
             const response = await axios.get(`${LOCAL_API_URL}/LcgvWelfarelist`, {
-                params: {
-                    serviceKey: decodeURIComponent(CORPORATE_API_KEY),
-                    callTp: 'L',
-                    pageNo,
-                    numOfRows,
-                    // arrgOrd: '001' 제거 (0건 반환 이슈 해결)
-                }
+                params: { serviceKey: decodeURIComponent(CORPORATE_API_KEY), callTp: 'L', pageNo, numOfRows }
             });
             data = response.data;
         }
-
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
         const servList = jsonObj.wantedList?.servList || jsonObj.servList || jsonObj.data;
-
         if (!servList) return [];
         let arrayList = Array.isArray(servList) ? servList : [servList];
-
-        const mappedList: WelfareService[] = arrayList.map(item => ({
+        return arrayList.map(item => ({
             servId: item.servId,
             servNm: item.servNm,
             jurMnofNm: `${item.ctpvNm || ''} ${item.sggNm || ''}`.trim() || item.bizChrDeptNm || '지자체',
             servDgst: item.servDgst,
             servDtlLink: '',
-            svcfrstRegTs: item.lastModYmd || '', // 최신 수정일 매핑
+            svcfrstRegTs: item.lastModYmd || '',
             apiSource: 'LOCAL',
             priority: 3,
             isNews: false
         }));
-
-        return mappedList;
     } catch (error) {
         console.error('API Fetch Error (Local Gov List):', error);
         return [];
     }
 };
 
-/**
- * [2순위] 지자체 복지서비스 상세 조회 (프롬프트 복사용)
- */
 export const getLocalGovWelfareDetail = async (servId: string): Promise<WelfareService | null> => {
     if (USE_MOCK_DATA) return null;
     try {
         let data;
         if (typeof window !== 'undefined') {
-            const response = await axios.get('/api/public-data', {
-                params: {
-                    type: 'LOCAL_DETAIL',
-                    servId
-                }
-            });
+            const response = await axios.get('/api/public-data', { params: { type: 'LOCAL_DETAIL', servId } });
             data = response.data;
         } else {
             const response = await axios.get(`${LOCAL_API_URL}/LcgvWelfaredetailed`, {
-                params: {
-                    serviceKey: decodeURIComponent(CORPORATE_API_KEY),
-                    callTp: 'D',
-                    servId,
-                }
+                params: { serviceKey: decodeURIComponent(CORPORATE_API_KEY), callTp: 'D', servId }
             });
             data = response.data;
         }
-
         const jsonObj = typeof data === 'object' ? data : parser.parse(data);
         const detail = jsonObj.wantedDtl || jsonObj.data;
         if (!detail) return null;
-
         return {
             servId: detail.servId,
             servNm: detail.servNm,
@@ -327,39 +243,21 @@ export const getLocalGovWelfareDetail = async (servId: string): Promise<WelfareS
     }
 };
 
-
-/**
- * [3순위] 자원정보서비스 조회 (노인일자리, 시설 등)
- */
 export const getResourceInfoList = async (pageNo = 1, numOfRows = 10): Promise<ResourceService[]> => {
-    if (USE_MOCK_DATA) {
-        return getMockResourceData();
-    }
-
+    if (USE_MOCK_DATA) return getMockResourceData();
     try {
         const response = await axios.get(`${RESOURCE_API_URL}/getPrvateResrcInfoInqire`, {
-            params: {
-                ServiceKey: decodeURIComponent(CORPORATE_API_KEY), // 자원정보는 S가 대문자
-                pageNo,
-                numOfRows
-            }
+            params: { ServiceKey: decodeURIComponent(CORPORATE_API_KEY), pageNo, numOfRows }
         });
-
         const jsonObj = parser.parse(response.data);
         const list = jsonObj.response?.body?.items?.item;
-
-        if (!list) return [];
-        return Array.isArray(list) ? list : [list];
-
+        return list ? (Array.isArray(list) ? list : [list]) : [];
     } catch (error) {
         console.error('API Fetch Error (Resource Info List):', error);
         return [];
     }
 }
 
-/**
- * [수정] 보조금24 목록 조회 (행정안전부 ODCloud 버전)
- */
 export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
     try {
         let list;
@@ -370,58 +268,33 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
                 });
                 list = response.data?.data || response.data?.item || response.data;
             } catch (proxyError) {
-                console.warn('Proxy failed, trying direct v1 fetch...', proxyError);
                 const directRes = await axios.get(`https://api.odcloud.kr/api/gov24/v1/list`, {
-                    params: {
-                        serviceKey: decodeURIComponent(CORPORATE_API_KEY),
-                        page: pageNo,
-                        perPage: numOfRows,
-                        returnType: 'json'
-                    }
+                    params: { serviceKey: decodeURIComponent(CORPORATE_API_KEY), page: pageNo, perPage: numOfRows, returnType: 'json' }
                 });
                 list = directRes.data?.data || directRes.data?.item || directRes.data;
             }
         } else {
             const response = await axios.get(`https://api.odcloud.kr/api/gov24/v1/list`, {
-                params: {
-                    serviceKey: decodeURIComponent(CORPORATE_API_KEY),
-                    page: pageNo,
-                    perPage: numOfRows,
-                    returnType: 'json'
-                }
+                params: { serviceKey: decodeURIComponent(CORPORATE_API_KEY), page: pageNo, perPage: numOfRows, returnType: 'json' }
             });
             list = response.data?.data || response.data?.item || response.data;
         }
-
         if (!list) return [];
+        const arrayList = Array.isArray(list) ? list : (list.item || list.data ? (Array.isArray(list.item || list.data) ? (list.item || list.data) : [list.item || list.data]) : [list]);
         
-        let arrayList: any[] = [];
-        if (Array.isArray(list)) {
-            arrayList = list;
-        } else if (list && list.item && Array.isArray(list.item)) {
-            arrayList = list.item;
-        } else if (list && list.data && Array.isArray(list.data)) {
-            arrayList = list.data;
-        } else if (list) {
-            arrayList = [list];
-        }
-
-        if (arrayList.length === 0) return [];
-
         return arrayList.map((item: any) => {
-            // Ultimate Defensive mapping for v1/v2 API
-            const sTitle = item.svcNm || item.svc_nm || item.title || item.svcName || item.serviceName || item.servNm || item.서비스명 || item['서비스명'] || '제목 없음';
-            const sId = item.svcId || item.svc_id || item.id || item.servId || item.serviceId || String(Math.random());
-            const sContent = item.svcContent || item.svc_content || item.description || item.dgst || item.svcStat || item.content || item.요약 || '';
-            const sUrl = item.dtlResUrl || item.resUrl || item.url || item.dtlUrl || item.link || '';
-            const sDept = item.pdeptNm || item.porgNm || item.dept || item.managePorgNm || item.jurMnofNm || '보조금24';
-            const sDate = String(item.regDt || item.lastModTs || item.date || item.lastModDt || item.svcfrstRegTs || '').replace(/[^0-9]/g, '');
+            const sTitle = item.svcNm || item.svc_nm || item.title || item.svcName || '제목 없음';
+            const sId = item.svcId || item.svc_id || item.id || String(Math.random());
+            const sContent = item.svcContent || item.svc_content || item.description || item.dgst || '';
+            const sUrl = item.dtlResUrl || item.resUrl || item.url || '';
+            const sDept = item.pdeptNm || item.porgNm || item.dept || '보조금24';
+            const sDate = String(item.regDt || item.lastModTs || item.date || '').replace(/[^0-9]/g, '');
 
             let category = '일반';
             const searchPool = (sTitle + sContent).toLowerCase();
-            if (searchPool.includes('아기') || searchPool.includes('출산') || searchPool.includes('영유아') || searchPool.includes('보육')) category = '영유아';
-            else if (searchPool.includes('청년') || searchPool.includes('취업') || searchPool.includes('대학생')) category = '청년';
-            else if (searchPool.includes('어르신') || searchPool.includes('노인') || searchPool.includes('기초연금')) category = '어르신';
+            if (searchPool.includes('아기') || searchPool.includes('출산') || searchPool.includes('영유아')) category = '영유아';
+            else if (searchPool.includes('청년') || searchPool.includes('취업')) category = '청년';
+            else if (searchPool.includes('어르신') || searchPool.includes('노인')) category = '어르신';
 
             return {
                 servId: String(sId),
@@ -444,46 +317,98 @@ export const getSubsidy24List = async (pageNo = 1, numOfRows = 50): Promise<Welf
 
 /**
  * [신규] 청년정책 목록 조회 (온라인청년센터)
+ * API 파라미터 제약(다중 선택 미지원)을 해결하기 위해 500건을 먼저 가져온 후 후처리를 수행합니다.
  */
-export const getYouthPolicyList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
+export const getYouthPolicyList = async (
+    pageNo = 1, 
+    numOfRows = 500,
+    lclsfNm?: string, 
+    zipCd?: string,
+    query?: string
+): Promise<WelfareService[]> => {
     try {
         let data;
+        const isMultiSelect = (lclsfNm && lclsfNm.includes(',')) || (zipCd && zipCd.includes(','));
+
         if (typeof window !== 'undefined') {
             const response = await axios.get('/api/public-data', {
                 params: {
                     type: 'YOUTH_LIST',
-                    pageNo,
-                    numOfRows
+                    pageNo: isMultiSelect ? 1 : pageNo,
+                    numOfRows: isMultiSelect ? 500 : numOfRows,
+                    lclsfNm: isMultiSelect ? '' : lclsfNm,
+                    zipCd: isMultiSelect ? '' : zipCd,
+                    query: query || ''
                 }
             });
             data = response.data;
         } else {
             const response = await axios.get(YOUTH_API_URL, {
                 params: {
-                    openApiVlak: YOUTH_API_KEY,
-                    pageIndex: pageNo,
-                    display: numOfRows,
-                    query: '수당'
+                    apiKeyNm: YOUTH_API_KEY,
+                    pageNum: isMultiSelect ? 1 : pageNo,
+                    pageSize: isMultiSelect ? 500 : numOfRows,
+                    rtnType: 'json',
+                    lclsfNm: isMultiSelect ? '' : (lclsfNm || ''),
+                    zipCd: isMultiSelect ? '' : (zipCd || ''),
+                    plcyNm: query || ''
                 }
             });
             data = response.data;
         }
-        const jsonObj = parser.parse(data);
-        const list = jsonObj.youthPolicyList?.youthPolicy;
 
+        const resultData = typeof data === 'string' ? JSON.parse(data) : data;
+        const list = resultData.result?.youthPolicyList;
         if (!list) return [];
         let arrayList = Array.isArray(list) ? list : [list];
 
+        if (zipCd && zipCd !== '전체') {
+            const regionKeywordMap: Record<string, string[]> = {
+                '11000': ['서울'], '41000': ['경기'], '28000': ['인천'], '26000': ['부산'],
+                '27000': ['대구'], '29000': ['광주'], '30000': ['대전'], '31000': ['울산'],
+                '36000': ['세종'], '42000': ['강원'], '43000': ['충북'], '44000': ['충남'],
+                '45000': ['전북'], '46000': ['전남'], '47000': ['경북'], '48000': ['경남'],
+                '50000': ['제주'], '003002000': ['중앙', '국가', '대한민국']
+            };
+            const selectedCodes = zipCd.split(',');
+            const targetKeywords = selectedCodes.flatMap(code => regionKeywordMap[code] || []);
+            if (targetKeywords.length > 0) {
+                arrayList = arrayList.filter((item: any) => {
+                    const reginNm = (item.polyReginNm || '').toLowerCase();
+                    const highInstNm = (item.rgtrHghrkInstCdNm || '').toLowerCase();
+                    const upInstNm = (item.rgtrUpInstCdNm || '').toLowerCase();
+                    const instNm = (item.rgtrInstCdNm || '').toLowerCase();
+                    return targetKeywords.some(kw => {
+                        const lowKw = kw.toLowerCase();
+                        return reginNm.includes(lowKw) || highInstNm.includes(lowKw) || upInstNm.includes(lowKw) || instNm.includes(lowKw);
+                    });
+                });
+            }
+        }
+
+        if (lclsfNm && lclsfNm !== '전체') {
+            const selectedCats = lclsfNm.split(',');
+            arrayList = arrayList.filter((item: any) => {
+                const itemCat = (item.lclsfNm || item.polyBizTyNm || '').toLowerCase();
+                return selectedCats.some(cat => {
+                    const lowCat = cat.toLowerCase().replace('·', '');
+                    const cleanItemCat = itemCat.replace('·', '');
+                    return cleanItemCat.includes(lowCat);
+                });
+            });
+        }
+
         return arrayList.map((item: any) => ({
-            servId: item.bizId,
-            servNm: item.polyBizSjnm,
-            jurMnofNm: item.polyBizTy || '청년정책',
-            servDgst: item.polyItcnCn || '',
-            servDtlLink: '',
-            svcfrstRegTs: '',
+            servId: item.plcyNo,
+            servNm: item.plcyNm,
+            jurMnofNm: item.mngtMvmtNm || item.polyReginNm || item.rgtrInstCdNm || '청년정책',
+            servDgst: item.plcyExplnCn || '',
+            servDtlLink: item.refUrlAddr1 || '',
+            svcfrstRegTs: item.lastMdfcnDt ? item.lastMdfcnDt.replace(/[^0-9]/g, '').substring(0, 8) : '',
             apiSource: 'YOUTH',
             priority: 4,
-            isNews: false
+            isNews: false,
+            keywords: item.plcyKywdNm ? item.plcyKywdNm.split(',').map((k: string) => k.trim()) : (item.lclsfNm ? [item.lclsfNm] : (item.polyBizTyNm ? [item.polyBizTyNm] : ['청년']))
         }));
     } catch (error) {
         console.error('API Fetch Error (Youth Policy):', error);
@@ -491,60 +416,25 @@ export const getYouthPolicyList = async (pageNo = 1, numOfRows = 50): Promise<We
     }
 };
 
-/**
- * [복구] 여성가족부 정책뉴스 조회 서비스
- */
 export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
     try {
         let data;
         if (typeof window !== 'undefined') {
-            const response = await axios.get('/api/public-data', {
-                params: {
-                    type: 'MOGEF_LIST',
-                    pageNo,
-                    numOfRows
-                }
-            });
+            const response = await axios.get('/api/public-data', { params: { type: 'MOGEF_LIST', pageNo, numOfRows } });
             data = response.data;
         } else {
-            // MOGEF API는 Group A (Corporate) 키 사용
             const response = await axios.get(MOGEF_API_URL + '/nwEnwSelectList', {
                 params: { serviceKey: decodeURIComponent(CORPORATE_API_KEY), pageNo, numOfRows },
                 timeout: 10000
             });
-            
-            let list = response.data.response?.body?.items?.item || response.data.items?.item || response.data.row || [];
-            if (typeof response.data === 'string' && response.data.includes('<?xml')) {
-                const jsonObj = parser.parse(response.data);
-                const body = jsonObj.response?.body || jsonObj.Body || jsonObj;
-                const items = body.items || body.NewsItems || body;
-                list = items.item || items.NewsItem || items.row || [];
-            }
-            if (!list || (Array.isArray(list) && list.length === 0)) return [];
-            const arrayList = Array.isArray(list) ? list : [list];
-
-            const mappedList: WelfareService[] = arrayList.map((item: any) => ({
-                servId: item.articleId ? `MOGEF_${item.articleId}` : (item.bbtSn ? `MOGEF_${item.bbtSn}` : `MOGEF_${Math.random().toString(36).substring(7)}`),
-                servNm: decodeHtml(item.title || item.articleTitle || item.pstTtl || ''),
-                jurMnofNm: item.deptNm || '여성가족부',
-                servDgst: decodeHtml(item.cont || item.articleContent || item.pstCn || ''),
-                servDtlLink: item.viewUrl || '',
-                svcfrstRegTs: parseApiDate(item.regDt || item.ntcDt || ''),
-                apiSource: 'MOGEF',
-                priority: 2,
-                isNews: true,
-                fullContent: decodeHtml(item.cont || item.articleContent || item.pstCn || '')
-            }));
-
-            return mappedList;
+            data = response.data;
         }
-        const jsonObj = parser.parse(data);
-        const list = jsonObj.response?.body?.items?.item;
+        
+        let list = (typeof data === 'string' && data.includes('<?xml')) ? parser.parse(data).response?.body?.items?.item : (data.response?.body?.items?.item || data.items?.item || data.row || []);
+        if (!list || (Array.isArray(list) && list.length === 0)) return [];
+        const arrayList = Array.isArray(list) ? list : [list];
 
-        if (!list) return [];
-        let arrayList = Array.isArray(list) ? list : [list];
-
-        const mappedList: WelfareService[] = arrayList.map((item: any) => ({
+        return arrayList.map((item: any) => ({
             servId: item.articleId ? `MOGEF_${item.articleId}` : (item.bbtSn ? `MOGEF_${item.bbtSn}` : `MOGEF_${Math.random().toString(36).substring(7)}`),
             servNm: decodeHtml(item.title || item.articleTitle || item.pstTtl || ''),
             jurMnofNm: item.deptNm || '여성가족부',
@@ -556,25 +446,17 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             isNews: true,
             fullContent: decodeHtml(item.cont || item.articleContent || item.pstCn || '')
         }));
-
-        return mappedList;
     } catch (error) {
         console.error('API Fetch Error (MOGEF):', error);
         return [];
     }
 };
 
-
-/**
- * [신규] 문화체육관광부 정책브리핑 보도자료 조회
- */
 export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
     try {
         let data;
         if (typeof window !== 'undefined') {
-            const response = await axios.get('/api/public-data', {
-                params: { type: 'MCST_PRESS_LIST', pageNo, numOfRows }
-            });
+            const response = await axios.get('/api/public-data', { params: { type: 'MCST_PRESS_LIST', pageNo, numOfRows } });
             data = response.data;
         } else {
             const response = await axios.get(`${MCST_API_URL}/pressReleaseList`, {
@@ -583,8 +465,7 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
             data = response.data;
         }
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
-        const body = jsonObj.response?.body || jsonObj.Body || jsonObj;
-        const items = body.items || body.NewsItems || body;
+        const items = (jsonObj.response?.body || jsonObj.Body || jsonObj).items || (jsonObj.response?.body || jsonObj.Body || jsonObj);
         const list = items.item || items.NewsItem || items.row || [];
         if (!list || (Array.isArray(list) && list.length === 0)) return [];
         const arrayList = Array.isArray(list) ? list : [list];
@@ -593,20 +474,14 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
             servId: `MCST_PR_${item.NewsItemId || item.articleId || item.articleID || Math.random().toString(36).substring(7)}`,
             servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: item.DeptNm || item.deptNm || '문화체육관광부',
-            servDgst: decodeHtml(
-                [item.SubTitle1, item.SubTitle2, item.SubTitle3]
-                    .filter(Boolean)
-                    .join(' | ') || 
-                item.SubTitle || item.subTitle || 
-                (item.DataContents ? item.DataContents.substring(0, 300) : '') || ''
-            ),
+            servDgst: decodeHtml([item.SubTitle1, item.SubTitle2, item.SubTitle3].filter(Boolean).join(' | ') || item.SubTitle || item.subTitle || ''),
             servDtlLink: item.ArticleUrl || item.articleUrl || item.OriginalUrl || '',
             svcfrstRegTs: parseApiDate(item.ApproveDate || item.approveDate || ''),
             apiSource: 'MCST_PRESS',
             isNews: true,
             priority: 1,
             deptNm: item.DeptNm || item.deptNm,
-            fullContent: decodeHtml(item.DataContents || '') // 본문 전체 포함
+            fullContent: decodeHtml(item.DataContents || '')
         }));
     } catch (error) {
         console.error('API Fetch Error (MCST Press):', error);
@@ -614,17 +489,11 @@ export const getMcstPressReleaseList = async (pageNo = 1, numOfRows = 50): Promi
     }
 };
 
-
-/**
- * [신규] 문화체육관광부 정책뉴스 조회
- */
 export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
     try {
         let data;
         if (typeof window !== 'undefined') {
-            const response = await axios.get('/api/public-data', {
-                params: { type: 'MCST_NEWS_LIST', pageNo, numOfRows }
-            });
+            const response = await axios.get('/api/public-data', { params: { type: 'MCST_NEWS_LIST', pageNo, numOfRows } });
             data = response.data;
         } else {
             const response = await axios.get('http://apis.data.go.kr/1371000/policyNewsService/policyNewsList', {
@@ -633,8 +502,7 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
             data = response.data;
         }
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
-        const body = jsonObj.response?.body || jsonObj.Body || jsonObj;
-        const items = body.items || body.NewsItems || body;
+        const items = (jsonObj.response?.body || jsonObj.Body || jsonObj).items || (jsonObj.response?.body || jsonObj.Body || jsonObj);
         const list = items.item || items.NewsItem || items.row || [];
         if (!list || (Array.isArray(list) && list.length === 0)) return [];
         const arrayList = Array.isArray(list) ? list : [list];
@@ -643,13 +511,7 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
             servId: `MCST_NW_${item.NewsItemId || item.articleId || item.articleID || Math.random().toString(36).substring(7)}`,
             servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: '정책브리핑',
-            servDgst: decodeHtml(
-                [item.SubTitle1, item.SubTitle2, item.SubTitle3]
-                    .filter(Boolean)
-                    .join(' | ') || 
-                item.SubTitle || item.subTitle || 
-                (item.DataContents ? item.DataContents.substring(0, 300) : '') || ''
-            ),
+            servDgst: decodeHtml([item.SubTitle1, item.SubTitle2, item.SubTitle3].filter(Boolean).join(' | ') || item.SubTitle || item.subTitle || ''),
             servDtlLink: item.ArticleUrl || item.articleUrl || item.OriginalUrl || '',
             svcfrstRegTs: parseApiDate(item.ApproveDate || item.approveDate || ''),
             apiSource: 'MCST_NEWS',
@@ -664,17 +526,11 @@ export const getMcstNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welfa
     }
 };
 
-
-/**
- * [신규] 문화체육관광부 정책포토 조회
- */
 export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
     try {
         let data;
         if (typeof window !== 'undefined') {
-            const response = await axios.get('/api/public-data', {
-                params: { type: 'MCST_PHOTO_LIST', pageNo, numOfRows }
-            });
+            const response = await axios.get('/api/public-data', { params: { type: 'MCST_PHOTO_LIST', pageNo, numOfRows } });
             data = response.data;
         } else {
             const response = await axios.get('http://apis.data.go.kr/1371000/photoService/photoList', {
@@ -683,8 +539,7 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             data = response.data;
         }
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
-        const body = jsonObj.response?.body || jsonObj.Body || jsonObj;
-        const items = body.items || body.NewsItems || body;
+        const items = (jsonObj.response?.body || jsonObj.Body || jsonObj).items || (jsonObj.response?.body || jsonObj.Body || jsonObj);
         const list = items.item || items.NewsItem || items.row || [];
         if (!list || (Array.isArray(list) && list.length === 0)) return [];
         const arrayList = Array.isArray(list) ? list : [list];
@@ -693,13 +548,7 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             servId: `MCST_PH_${item.NewsItemId || item.articleId || item.articleID || Math.random().toString(36).substring(7)}`,
             servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: '정책포토',
-            servDgst: decodeHtml(
-                [item.SubTitle1, item.SubTitle2, item.SubTitle3]
-                    .filter(Boolean)
-                    .join(' | ') || 
-                item.SubTitle || item.subTitle || 
-                (item.DataContents ? item.DataContents.substring(0, 300) : '') || ''
-            ),
+            servDgst: decodeHtml([item.SubTitle1, item.SubTitle2, item.SubTitle3].filter(Boolean).join(' | ') || item.SubTitle || item.subTitle || ''),
             servDtlLink: item.ArticleUrl || item.articleUrl || item.OriginalUrl || '',
             svcfrstRegTs: parseApiDate(item.ApproveDate || item.approveDate || ''),
             apiSource: 'MCST_PHOTO',
@@ -714,42 +563,27 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
     }
 };
 
-
-/**
- * [신규] 행정안전부 보조금24 통계 정보 조회
- */
 export const getMoisStatsList = async (pageNo = 1, numOfRows = 50): Promise<WelfareService[]> => {
     try {
         let data;
         if (typeof window !== 'undefined') {
-            const response = await axios.get('/api/public-data', {
-                params: { type: 'MOIS_STATS_LIST', pageNo, numOfRows }
-            });
+            const response = await axios.get('/api/public-data', { params: { type: 'MOIS_STATS_LIST', pageNo, numOfRows } });
             data = response.data;
         } else {
-            // Server side or direct call (fallback)
             const response = await axios.get(`https://apis.data.go.kr/1741000/Subsidy24/getSubsidy24`, {
                 params: { serviceKey: decodeURIComponent(GENERAL_API_KEY), pageNo, numOfRows, type: 'json' }
             });
             data = response.data;
         }
-
-        // The proxy returns XML/JSON, ensure parsing
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
-        
-        // MOIS_STATS is now normalized by our route.ts proxy to return { items: [...] }
         const list = jsonObj.items || jsonObj.item || jsonObj.row || [];
-        
-        // Final safety check: if list is still not an array, force it
         const arrayList = Array.isArray(list) ? list : (list ? [list] : []);
-        
         if (arrayList.length === 0) return [];
-
         return arrayList.map((item: any) => ({
             servId: `MOIS_ST_${item.StatsCode || item.statsCode || Math.random().toString(36).substring(7)}`,
             servNm: `[통계] ${item.StatsNm || item.statsNm || '보조금24 이용 통계'}`,
             jurMnofNm: '행정안전부',
-            servDgst: `${item.StatsValue || item.statsValue || ''} (기준: ${item.StatsYear || item.statsYear || ''}년 ${item.StatsMonth || item.statsMonth || ''}월)`,
+            servDgst: `${item.StatsValue || item.statsValue || ''} (기준: ${item.StatsYear || ''}년 ${item.StatsMonth || ''}월)`,
             servDtlLink: 'https://www.gov.kr/portal/rcvfvrSvc/main',
             svcfrstRegTs: (item.StatsYear && item.StatsMonth) ? `${item.StatsYear}${String(item.StatsMonth).padStart(2, '0')}01` : '',
             apiSource: 'MOIS_STATS',
@@ -763,47 +597,16 @@ export const getMoisStatsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
     }
 };
 
-// --- Mock Data ---
 export const getMockNationalData = (): WelfareService[] => {
     return [
-        {
-            servId: 'WLF00001001',
-            servNm: '노인일자리 및 사회활동 지원사업',
-            jurMnofNm: '보건복지부',
-            servDgst: '어르신이 활기차고 건강한 노후생활을 영위할 수 있도록 다양한 일자리와 사회활동을 지원합니다.',
-            servDtlLink: '#',
-            trgterIndvdlArray: '만 65세 이상 기초연금수급자',
-            slctCritCn: '소득인정액이 일정 기준 이하인 노인. 지자체별 상이함.',
-            svcfrstRegTs: '20230101'
-        },
-        {
-            servId: 'WLF00001002',
-            servNm: '청년내일저축계좌',
-            jurMnofNm: '보건복지부',
-            servDgst: '청년이 사회에 안착할 수 있도록 자산형성을 지원합니다.',
-            servDtlLink: '#',
-            trgterIndvdlArray: '만 19세 ~ 34세 청년 중 소득 기준 충족자',
-            slctCritCn: '기준 중위소득 100% 이하인 가구의 청년',
-            svcfrstRegTs: '20230510'
-        }
+        { servId: 'WLF00001001', servNm: '노인일자리 및 사회활동 지원사업', jurMnofNm: '보건복지부', servDgst: '...', servDtlLink: '#', svcfrstRegTs: '20230101' },
+        { servId: 'WLF00001002', servNm: '청년내일저축계좌', jurMnofNm: '보건복지부', servDgst: '...', servDtlLink: '#', svcfrstRegTs: '20230510' }
     ];
 };
 
 export const getMockResourceData = (): ResourceService[] => {
     return [
-        {
-            fcltNm: '종로시니어클럽',
-            svcNm: '노인일자리 알선',
-            sidoNm: '서울특별시',
-            sggNm: '종로구',
-            rprsNm: '김시니어',
-            telNo: '02-1234-5678'
-        },
-        {
-            fcltNm: '강남구 치매안심센터',
-            svcNm: '치매예방상담',
-            sidoNm: '서울특별시',
-            sggNm: '강남구',
-        }
+        { fcltNm: '종로시니어클럽', svcNm: '노인일자리 알선', sidoNm: '서울특별시', sggNm: '종로구' },
+        { fcltNm: '강남구 치매안심센터', svcNm: '치매예방상담', sidoNm: '서울특별시', sggNm: '강남구' }
     ];
 };
