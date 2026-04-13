@@ -52,7 +52,9 @@ function WriteArticleForm() {
         status: 'published' as 'published' | 'draft',
         date: '',
         created_at: '',
-        updated_at: ''
+        updated_at: '',
+        link_button_text: '',
+        link_url: ''
     });
 
     const [selectedCategories, setSelectedCategories] = useState<{ category: string, prefix: string }[]>([]);
@@ -108,7 +110,9 @@ function WriteArticleForm() {
                             status: (article.status as 'published' | 'draft') || 'published',
                             date: article.date || '',
                             created_at: article.created_at || '',
-                            updated_at: article.updated_at || ''
+                            updated_at: article.updated_at || '',
+                            link_button_text: article.link_button_text || '',
+                            link_url: article.link_url || ''
                         });
                         
                         // 다중 카테고리 데이터 로드
@@ -175,7 +179,9 @@ function WriteArticleForm() {
             status: formData.status,
             summary: formData.summary,
             content: formData.content,
-            hashtags: formData.hashtags.split(',').map(tag => tag.trim()).filter(Boolean)
+            hashtags: formData.hashtags.split(',').map(tag => tag.trim()).filter(Boolean),
+            link_button_text: formData.link_button_text,
+            link_url: formData.link_url
         };
 
         const result = await saveArticle(newArticle, adminSupabase);
@@ -213,14 +219,15 @@ function WriteArticleForm() {
                 </div>
 
                 {/* Summary */}
-                <div>
+                <div className="h-64 mb-16">
                     <label className="block text-sm font-bold text-gray-700 mb-2">요약본 (썸네일/리스트 노출)</label>
-                    <textarea
-                        className="w-full h-24 border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-primary outline-none resize-none"
-                        placeholder="기사 요약 내용을 입력하세요..."
+                    <ClientQuillEditor
                         value={formData.summary}
-                        onChange={e => setFormData(prev => ({ ...prev, summary: e.target.value }))}
-                    ></textarea>
+                        onChange={(value: string) => setFormData(prev => ({ ...prev, summary: value }))}
+                        articleId={formData.id}
+                        height="150px"
+                        placeholder="기사 요약 내용을 입력하세요..."
+                    />
                 </div>
 
                 {/* Multi-Category Selection */}
@@ -297,6 +304,31 @@ function WriteArticleForm() {
                         onChange={(value: string) => setFormData(prev => ({ ...prev, content: value }))}
                         articleId={formData.id}
                     />
+                </div>
+
+                {/* Optional Link Button */}
+                <div className="p-6 bg-gray-50 rounded-xl border border-gray-200 space-y-4">
+                    <h3 className="text-lg font-bold text-gray-900 border-b pb-2">링크 (선택 사항)</h3>
+                    <div className="grid grid-cols-2 gap-6">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">버튼명</label>
+                            <input
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-primary outline-none"
+                                placeholder="예: 자세히 보기, 신청하기"
+                                value={formData.link_button_text}
+                                onChange={e => setFormData(prev => ({ ...prev, link_button_text: e.target.value }))}
+                            />
+                        </div>
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-2">링크 URL</label>
+                            <input
+                                className="w-full border border-gray-300 rounded-lg p-3 focus:ring-2 focus:ring-primary outline-none"
+                                placeholder="https://..."
+                                value={formData.link_url}
+                                onChange={e => setFormData(prev => ({ ...prev, link_url: e.target.value }))}
+                            />
+                        </div>
+                    </div>
                 </div>
 
                 {/* Author & Hashtags */}

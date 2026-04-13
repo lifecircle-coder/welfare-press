@@ -430,20 +430,21 @@ export const getMogefNewsList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             data = response.data;
         }
         
-        let list = (typeof data === 'string' && data.includes('<?xml')) ? parser.parse(data).response?.body?.items?.item : (data.response?.body?.items?.item || data.items?.item || data.row || []);
-        if (!list || (Array.isArray(list) && list.length === 0)) return [];
-        const arrayList = Array.isArray(list) ? list : [list];
+        const listData = (typeof data === 'string' && data.includes('<?xml')) ? parser.parse(data).response?.body?.items?.item : (data.response?.body?.items?.item || data.items?.item || data.row || []);
+        if (!listData || (Array.isArray(listData) && listData.length === 0)) return [];
+        const arrayList = Array.isArray(listData) ? listData : [listData];
 
         return arrayList.map((item: any) => ({
             servId: item.articleId ? `MOGEF_${item.articleId}` : (item.bbtSn ? `MOGEF_${item.bbtSn}` : `MOGEF_${Math.random().toString(36).substring(7)}`),
             servNm: decodeHtml(item.title || item.articleTitle || item.pstTtl || ''),
             jurMnofNm: item.deptNm || '여성가족부',
-            servDgst: decodeHtml(item.cont || item.articleContent || item.pstCn || ''),
+            servDgst: decodeHtml(item.cont || item.articleContent || item.pstCn || item.title || ''),
             servDtlLink: item.viewUrl || '',
             svcfrstRegTs: parseApiDate(item.regDt || item.ntcDt || ''),
             apiSource: 'MOGEF',
             priority: 2,
             isNews: true,
+            thumbnail: item.thumbUrl || item.thumbnailUrl || null,
             fullContent: decodeHtml(item.cont || item.articleContent || item.pstCn || '')
         }));
     } catch (error) {
@@ -539,8 +540,8 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             data = response.data;
         }
         const jsonObj = typeof data === 'object' && !(data instanceof Document) ? data : parser.parse(String(data));
-        const items = (jsonObj.response?.body || jsonObj.Body || jsonObj).items || (jsonObj.response?.body || jsonObj.Body || jsonObj);
-        const list = items.item || items.NewsItem || items.row || [];
+        const items = jsonObj.response?.body?.items || jsonObj.Body?.Items || jsonObj.items || jsonObj;
+        const list = items.item || items.NewsItem || items.row || (Array.isArray(items) ? items : []);
         if (!list || (Array.isArray(list) && list.length === 0)) return [];
         const arrayList = Array.isArray(list) ? list : [list];
 
@@ -548,13 +549,13 @@ export const getMcstPhotoList = async (pageNo = 1, numOfRows = 50): Promise<Welf
             servId: `MCST_PH_${item.NewsItemId || item.articleId || item.articleID || Math.random().toString(36).substring(7)}`,
             servNm: decodeHtml(item.Title || item.title || '제목 없음'),
             jurMnofNm: '정책포토',
-            servDgst: decodeHtml([item.SubTitle1, item.SubTitle2, item.SubTitle3].filter(Boolean).join(' | ') || item.SubTitle || item.subTitle || ''),
-            servDtlLink: item.ArticleUrl || item.articleUrl || item.OriginalUrl || '',
+            servDgst: decodeHtml([item.SubTitle1, item.SubTitle2, item.SubTitle3].filter(Boolean).join(' | ') || item.SubTitle || item.subTitle || item.title || ''),
+            servDtlLink: item.ArticleUrl || item.articleUrl || item.OriginalUrl || item.viewUrl || '',
             svcfrstRegTs: parseApiDate(item.ApproveDate || item.approveDate || ''),
             apiSource: 'MCST_PHOTO',
             isNews: true,
             priority: 2,
-            thumbnail: item.ThumbnailUrl || item.thumbnailUrl,
+            thumbnail: item.ThumbnailUrl || item.thumbnailUrl || item.thumbUrl || null,
             fullContent: decodeHtml(item.DataContents || '')
         }));
     } catch (error) {

@@ -2,6 +2,7 @@ import { Suspense } from 'react';
 import Link from 'next/link';
 import type { Metadata } from 'next';
 import { searchArticles } from '@/lib/services';
+import { stripHtml } from '@/lib/utils';
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
@@ -57,7 +58,7 @@ async function SearchResults({ query }: { query: string | null }) {
                         {news.title}
                     </h3>
                     <p className="text-gray-600 line-clamp-2">
-                        {news.summary}
+                        {stripHtml(news.summary || '')}
                     </p>
                 </Link>
             ))}

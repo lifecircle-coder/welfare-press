@@ -2,6 +2,7 @@ import Link from 'next/link';
 import SafeImage from '@/components/common/SafeImage';
 import { Newspaper } from 'lucide-react';
 import type { Article } from '@/lib/services';
+import { stripHtml } from '@/lib/utils';
 
 interface HeroSectionProps {
     articles: Article[];
@@ -66,7 +67,7 @@ export default function HeroSection({ articles }: HeroSectionProps) {
                         {main.title}
                     </h3>
                     <p className="text-lg text-gray-600 line-clamp-2 leading-relaxed">
-                        {main.summary}
+                        {stripHtml(main.summary)}
                     </p>
                     <div className="mt-4 flex items-center text-sm text-gray-500 gap-4">
                         <span>{main.author}</span>
@@ -108,7 +109,7 @@ export default function HeroSection({ articles }: HeroSectionProps) {
                                     {article.title}
                                 </h4>
                                 <p className="text-gray-600 text-sm line-clamp-2">
-                                    {article.summary}
+                                    {stripHtml(article.summary)}
                                 </p>
                             </div>
                         </Link>

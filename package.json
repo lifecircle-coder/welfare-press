@@ -16,6 +16,7 @@
     "@next/third-parties": "^16.2.3",
     "@supabase/auth-helpers-nextjs": "^0.15.0",
     "@supabase/supabase-js": "^2.97.0",
+    "@tailwindcss/typography": "^0.5.19",
     "axios": "^1.13.5",
     "clsx": "^2.1.1",
     "fast-xml-parser": "^5.3.6",

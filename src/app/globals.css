@@ -76,7 +76,6 @@ html.text-lg-mode {
 }
 
 /* Image alignment within prose - Force override Tailwind defaults */
-/* IMPORTANT: For centered images, the image itself must have margin: auto and display: block to override Tailwind's block/left-align defaults */
 .prose .ql-align-center img,
 .prose img.ql-align-center,
 .prose [style*="text-align: center"] img,
@@ -123,3 +122,40 @@ html.text-lg-mode {
   margin-left: auto;
   display: block;
 }
+
+
+/* Admin Editor Toolbar - Standard Formatting Labels */
+.ql-snow .ql-picker.ql-size .ql-picker-label::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item::before {
+  content: '보통' !important;
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
+  content: '작게' !important;
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
+  content: '크게' !important;
+}
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="36px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="36px"]::before {
+  content: '아주 크게' !important;
+}
+
+/* Custom Special Character Picker Label */
+.ql-snow .ql-picker.ql-special-char .ql-picker-label::before {
+  content: '특수기호' !important;
+}
+
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="●"]::before { content: '● 점' !important; }
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="◆"]::before { content: '◆ 마름모' !important; }
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="■"]::before { content: '■ 사각형' !important; }
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="○"]::before { content: '○ 원형' !important; }
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="❖"]::before { content: '❖ 별표형' !important; }
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="➔"]::before { content: '➔ 화살표' !important; }
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="✓"]::before { content: '✓ 체크' !important; }
+
+.ql-snow .ql-picker.ql-special-char {
+  width: 100px !important;
+}
+

@@ -27,6 +27,8 @@ export interface Article {
     thumbnail?: string;
     updated_at?: string;
     created_at?: string;
+    link_button_text?: string;
+    link_url?: string;
 }
 
 export interface Inquiry {
@@ -355,7 +357,9 @@ export const saveArticle = async (article: Article, client = supabase): Promise<
             : article.category,
         prefix: article.category_list && article.category_list.length > 0
             ? article.category_list[0].prefix
-            : article.prefix
+            : article.prefix,
+        link_button_text: article.link_button_text,
+        link_url: article.link_url
     };
 
     if (existing) {

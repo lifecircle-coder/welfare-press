@@ -2,6 +2,7 @@ import Link from 'next/link';
 import SafeImage from '@/components/common/SafeImage';
 import { Newspaper } from 'lucide-react';
 import type { Article } from '@/lib/services';
+import { stripHtml } from '@/lib/utils';
 
 interface LatestNewsProps {
     articles: Article[];

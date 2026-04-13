@@ -3,6 +3,7 @@ import dynamic from 'next/dynamic';
 import type { Metadata } from 'next'
 import { getArticleById, getArticles, getComments, getUserByName } from '@/lib/services';
 import type { Article, Comment } from '@/lib/services';
+import { stripHtml } from '@/lib/utils';
 import ViewCounter from '@/components/article/ViewCounter';
 
 const CommentSection = dynamic(() => import('@/components/article/CommentSection'), {
@@ -31,7 +32,7 @@ export async function generateMetadata({ params }: { params: { id: string } }): 
     }
 
     const title = article.title;
-    const description = article.summary || article.content?.substring(0, 160).replace(/<[^>]*>/g, '') || '';
+    const description = stripHtml(article.summary || article.content || '').substring(0, 160);
     const imageUrl = article.thumbnail || 'https://thebok.co.kr/logo.svg';
 
     return {
@@ -249,13 +250,14 @@ export default async function ArticleDetail({ params }: { params: { id: string }
             </div>
 
             {/* AI Summary Box */}
-            <div className="bg-gray-50 border-l-4 border-primary p-6 rounded-r-lg mb-10">
-                <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
+            <div className="bg-gray-50 border-l-4 border-primary p-6 pl-8 rounded-r-lg mb-10 overflow-hidden shadow-sm">
+                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
                     🤖 AI 기사 요약
                 </h3>
-                <p className="text-lg text-gray-700 leading-relaxed">
-                    {article.summary}
-                </p>
+                <div 
+                    className="prose prose-sm max-w-none text-gray-700 leading-relaxed prose-summary prose-p:my-1"
+                    dangerouslySetInnerHTML={{ __html: article.summary || '' }}
+                />
             </div>
 
             {/* Content Body */}
@@ -272,6 +274,28 @@ export default async function ArticleDetail({ params }: { params: { id: string }
                     </span>
                 ))}
             </div>
+
+            {/* Link Button Section */}
+            {article.link_url && (
+                <div className="mt-12 mb-8 flex justify-center">
+                    <a 
+                        href={article.link_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary to-blue-600 text-white rounded-full font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
+                    >
+                        <span>{article.link_button_text || '자세히 보기'}</span>
+                        <svg 
+                            className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" 
+                            fill="none" 
+                            stroke="currentColor" 
+                            viewBox="0 0 24 24"
+                        >
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
+                    </a>
+                </div>
+            )}
 
             {/* Related News */}
             <div className="mt-12 mb-16">

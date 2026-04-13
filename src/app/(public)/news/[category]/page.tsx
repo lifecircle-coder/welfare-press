@@ -2,7 +2,8 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import SafeImage from '@/components/common/SafeImage';
 import { Newspaper } from 'lucide-react';
-import { getArticles, getArticlesByCategory, getTopArticles, getMenus } from '@/lib/services';
+import { getArticles, getArticlesByCategory, getTopArticles, getMenus, searchArticles } from '@/lib/services';
+import { stripHtml } from '@/lib/utils';
 
 export const revalidate = 60; // 1분 단위 캐싱으로 로딩 속도 개선
 
@@ -231,7 +232,7 @@ export default async function CategoryNews({
                                                 {news.title}
                                             </h3>
                                             <p className="text-gray-600 line-clamp-2">
-                                                {news.summary}
+                                                {stripHtml(news.summary || '')}
                                             </p>
                                         </div>
                                     </div>
