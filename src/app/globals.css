@@ -160,13 +160,13 @@ html.text-lg-mode {
 }
 
 /* Reduce line break (paragraph) spacing in article content */
-.prose p {
-  margin-top: 0.5em !important;
-  margin-bottom: 0.5em !important;
+.prose p, .prose-lg p, .prose-xl p {
+  margin-top: 0.35em !important;
+  margin-bottom: 0.35em !important;
 }
 
 /* Adjust heading margins slightly to match reduced paragraph spacing */
-.prose h1, .prose h2, .prose h3 {
-  margin-top: 1em !important;
-  margin-bottom: 0.5em !important;
+.prose h1, .prose-lg h1, .prose h2, .prose-lg h2, .prose h3, .prose-lg h3 {
+  margin-top: 0.8em !important;
+  margin-bottom: 0.4em !important;
 }

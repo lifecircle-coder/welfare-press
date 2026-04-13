@@ -127,18 +127,18 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                 }
                 .quill-editor-container .ql-editor {
                     min-height: ${height};
-                    padding: 1.5rem;
+                    padding: ${parseInt(height) < 100 ? '0.75rem 1rem' : '1.5rem'};
                     line-height: 1.7;
                     color: #1f2937;
                 }
                 .quill-editor-container .ql-editor.ql-blank::before {
-                    left: 1.5rem;
+                    left: ${parseInt(height) < 100 ? '1rem' : '1.5rem'};
                     color: #9ca3af;
                     font-style: normal;
                 }
                 .quill-editor-container .ql-toolbar {
                     border: none !important;
-                    padding: 0.5rem !important;
+                    padding: ${parseInt(height) < 100 ? '0.25rem 0.5rem' : '0.5rem'} !important;
                 }
                 .quill-editor-container .ql-container.ql-snow {
                     border: none !important;
