@@ -45,31 +45,44 @@ html.text-lg-mode {
 .prose .ql-align-center {
   text-align: center !important;
 }
+
 .prose .ql-align-right {
   text-align: right !important;
 }
+
 .prose .ql-align-justify {
   text-align: justify !important;
 }
 
 /* Quill Size Classes */
-.prose .ql-size-12px { font-size: 12px !important; }
-.prose .ql-size-24px { font-size: 24px !important; }
-.prose .ql-size-36px { font-size: 36px !important; }
+.prose .ql-size-12px {
+  font-size: 12px !important;
+}
+
+.prose .ql-size-24px {
+  font-size: 24px !important;
+}
+
+.prose .ql-size-36px {
+  font-size: 36px !important;
+}
 
 /* Admin Editor Toolbar Label Fix - Show Korean labels instead of 'Normal' */
 .ql-snow .ql-picker.ql-size .ql-picker-label::before,
 .ql-snow .ql-picker.ql-size .ql-picker-item::before {
   content: '보통' !important;
 }
+
 .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
 .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
   content: '작게' !important;
 }
+
 .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
 .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
   content: '크게' !important;
 }
+
 .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="36px"]::before,
 .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="36px"]::before {
   content: '아주 크게' !important;
@@ -98,17 +111,27 @@ html.text-lg-mode {
 .prose .ql-align-center {
   text-align: center;
 }
+
 .prose .ql-align-right {
   text-align: right;
 }
+
 .prose .ql-align-justify {
   text-align: justify;
 }
 
 /* Quill Size Classes */
-.prose .ql-size-small { font-size: 0.75em; }
-.prose .ql-size-large { font-size: 1.5em; }
-.prose .ql-size-huge { font-size: 2.5em; }
+.prose .ql-size-small {
+  font-size: 0.75em;
+}
+
+.prose .ql-size-large {
+  font-size: 1.5em;
+}
+
+.prose .ql-size-huge {
+  font-size: 2.5em;
+}
 
 /* Image alignment within prose */
 .prose img.ql-align-center,
@@ -117,6 +140,7 @@ html.text-lg-mode {
   margin-right: auto;
   display: block;
 }
+
 .prose img.ql-align-right,
 .prose .ql-align-right img {
   margin-left: auto;
@@ -129,14 +153,17 @@ html.text-lg-mode {
 .ql-snow .ql-picker.ql-size .ql-picker-item::before {
   content: '보통' !important;
 }
+
 .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
 .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
   content: '작게' !important;
 }
+
 .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
 .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
   content: '크게' !important;
 }
+
 .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="36px"]::before,
 .ql-snow .ql-picker.ql-size .ql-picker-item[data-value="36px"]::before {
   content: '아주 크게' !important;
@@ -147,26 +174,50 @@ html.text-lg-mode {
   content: '특수기호' !important;
 }
 
-.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="●"]::before { content: '● 점' !important; }
-.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="◆"]::before { content: '◆ 마름모' !important; }
-.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="■"]::before { content: '■ 사각형' !important; }
-.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="○"]::before { content: '○ 원형' !important; }
-.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="❖"]::before { content: '❖ 별표형' !important; }
-.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="➔"]::before { content: '➔ 화살표' !important; }
-.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="✓"]::before { content: '✓ 체크' !important; }
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="●"]::before {
+  content: '● 점' !important;
+}
+
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="◆"]::before {
+  content: '◆ 마름모' !important;
+}
+
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="■"]::before {
+  content: '■ 사각형' !important;
+}
+
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="○"]::before {
+  content: '○ 원형' !important;
+}
+
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="❖"]::before {
+  content: '❖ 별표형' !important;
+}
+
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="➔"]::before {
+  content: '➔ 화살표' !important;
+}
+
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="✓"]::before {
+  content: '✓ 체크' !important;
+}
 
 .ql-snow .ql-picker.ql-special-char {
   width: 100px !important;
 }
 
-/* Reduce line break (paragraph) spacing in article content */
-.prose p, .prose-lg p, .prose-xl p {
-  margin-top: 0.35em !important;
-  margin-bottom: 0.35em !important;
+/* Tight Paragraph Spacing for Articles */
+/* 모든 본문 단락의 여백을 0으로 강제 고정 */
+.prose p {
+  margin-top: 0px !important;
+  margin-bottom: 5px !important;
+  line-height: 1.6 !important;
+  /* 이 줄을 추가하면 줄간격이 즉시 변합니다 */
 }
 
-/* Adjust heading margins slightly to match reduced paragraph spacing */
-.prose h1, .prose-lg h1, .prose h2, .prose-lg h2, .prose h3, .prose-lg h3 {
-  margin-top: 0.8em !important;
-  margin-bottom: 0.4em !important;
+/* 엔터로 생긴 빈 줄(<p><br></p>)의 높이를 강제로 줄임 */
+.prose p:has(br) {
+  margin: 0 !important;
+  line-height: 0.5 !important;
+  /* 빈 줄의 높이를 절반으로 축소 */
 }

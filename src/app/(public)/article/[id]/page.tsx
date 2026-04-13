@@ -151,8 +151,8 @@ export default async function ArticleDetail({ params }: { params: { id: string }
                     {article.prefix && (
                         <>
                             <span className="text-gray-300">/</span>
-                            <Link 
-                                href={`/news/${categorySlug}?prefix=${encodeURIComponent(article.prefix)}`} 
+                            <Link
+                                href={`/news/${categorySlug}?prefix=${encodeURIComponent(article.prefix)}`}
                                 className="hover:text-primary transition-colors font-bold text-gray-500"
                             >
                                 {article.prefix}
@@ -250,19 +250,19 @@ export default async function ArticleDetail({ params }: { params: { id: string }
             </div>
 
             {/* AI Summary Box */}
-            <div className="bg-gray-50 border-l-4 border-primary p-6 pl-8 rounded-r-lg mb-10 overflow-hidden shadow-sm">
-                <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center gap-2">
+            <div className="bg-gray-50 border-l-4 border-primary p-6 rounded-r-lg mb-10">
+                <h3 className="text-lg font-bold text-gray-900 mb-2 flex items-center gap-2">
                     🤖 AI 기사 요약
                 </h3>
-                <div 
-                    className="prose prose-sm max-w-none text-gray-700 leading-relaxed prose-summary prose-p:my-1"
+                <div
+                    className="prose prose-sm max-w-none text-gray-700 leading-snug prose-summary prose-p:my-[0.25em]"
                     dangerouslySetInnerHTML={{ __html: article.summary || '' }}
                 />
             </div>
 
             {/* Content Body */}
             <article
-                className="prose prose-lg max-w-none text-gray-800 leading-loose prose-headings:font-bold prose-a:text-primary"
+                className="prose prose-lg max-w-none text-gray-800 leading-loose prose-headings:font-bold prose-a:text-primary prose-p:my-[0.1em]"
                 dangerouslySetInnerHTML={{ __html: article.content || '' }}
             />
 
@@ -278,17 +278,17 @@ export default async function ArticleDetail({ params }: { params: { id: string }
             {/* Link Button Section */}
             {article.link_url && (
                 <div className="mt-12 mb-8 flex justify-center">
-                    <a 
+                    <a
                         href={article.link_url}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="inline-flex items-center justify-center px-8 py-4 bg-gradient-to-r from-primary to-blue-600 text-white rounded-full font-bold text-lg shadow-xl hover:shadow-2xl hover:scale-105 transition-all duration-300 group"
                     >
                         <span>{article.link_button_text || '자세히 보기'}</span>
-                        <svg 
-                            className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform" 
-                            fill="none" 
-                            stroke="currentColor" 
+                        <svg
+                            className="w-5 h-5 ml-2 group-hover:translate-x-1 transition-transform"
+                            fill="none"
+                            stroke="currentColor"
                             viewBox="0 0 24 24"
                         >
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
