@@ -21,9 +21,26 @@ const ReactQuill = dynamic(
 
         if (Quill) {
             try {
-                // Remove custom registrations to restore standard behavior
+                // Register custom format for Special Characters Picker
+                const Parchment = Quill.import('parchment');
+                const SpecialChar = new Parchment.Attributor.Class('special-char', 'ql-special-char', {
+                    scope: Parchment.Scope.INLINE
+                });
+                Quill.register(SpecialChar, true);
+
+                // Register Numerical Font Sizes as Inline Styles
+                const SizeStyle = Quill.import('attributors/style/size');
+                SizeStyle.whitelist = ['12px', '13px', '14px', '15px', '16px', '17px', '18px', '19px', '20px', '21px', '22px', '23px', '24px'];
+                Quill.register(SizeStyle, true);
+
+                // Register Line Height as Block Styles
+                const LineHeightStyle = new Parchment.Attributor.Style('line-height', 'line-height', {
+                    scope: Parchment.Scope.BLOCK
+                });
+                LineHeightStyle.whitelist = ['1.0', '1.2', '1.5', '1.6', '1.8', '2.0', '2.4', '2.8', '3.0'];
+                Quill.register(LineHeightStyle, true);
             } catch (e) {
-                console.error('Error during cleanup:', e);
+                console.error('Error during registration:', e);
             }
         }
 
@@ -72,7 +89,8 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
         'header', 'font', 'size',
         'bold', 'italic', 'underline', 'strike', 'blockquote',
         'list', 'bullet',
-        'link', 'image', 'video', 'color', 'background', 'align'
+        'link', 'image', 'video', 'color', 'background', 'align',
+        'special-char', 'line-height' // Added line-height
     ];
 
     return (
@@ -80,11 +98,20 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
             {/* Custom Toolbar - Restored with Special Character Dropdown */}
             <div id={toolbarId} className="border-b border-gray-200 bg-gray-50/80 backdrop-blur-sm flex flex-wrap items-center p-2 gap-1 sticky top-0 z-[10]">
                 <span className="ql-formats">
-                    <select className="ql-header" defaultValue="">
-                        <option value="1">제목 1</option>
-                        <option value="2">제목 2</option>
-                        <option value="3">제목 3</option>
-                        <option value="">본문</option>
+                    <select className="ql-size" defaultValue="16px">
+                        <option value="12px">12</option>
+                        <option value="13px">13</option>
+                        <option value="14px">14</option>
+                        <option value="15px">15</option>
+                        <option value="16px">16</option>
+                        <option value="17px">17</option>
+                        <option value="18px">18</option>
+                        <option value="19px">19</option>
+                        <option value="20px">20</option>
+                        <option value="21px">21</option>
+                        <option value="22px">22</option>
+                        <option value="23px">23</option>
+                        <option value="24px">24</option>
                     </select>
                 </span>
                 <span className="ql-formats">
@@ -98,15 +125,28 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                     <button className="ql-list transition-colors hover:text-primary" value="bullet" />
                     
                     {/* Special Character Dropdown */}
-                    <select className="ql-special-char ml-1 bg-white border border-gray-200 rounded px-1 text-xs font-medium outline-none" defaultValue="">
+                    <select className="ql-special-char" defaultValue="">
                         <option value="" disabled>특수문자</option>
                         <option value="●">● 점</option>
-                        <option value="◆">◆ 마름모</option>
-                        <option value="■">■ 사각형</option>
+                        <option value="◇">◇ 마름모</option>
+                        <option value="▲">▲ 삼각형</option>
                         <option value="○">○ 원형</option>
                         <option value="❖">❖ 별표형</option>
                         <option value="➔">➔ 화살표</option>
                         <option value="✓">✓ 체크</option>
+                    </select>
+
+                    {/* Line Height Dropdown - Moved to the right of Special Characters */}
+                    <select className="ql-line-height" defaultValue="2.0">
+                        <option value="1.0">1.0</option>
+                        <option value="1.2">1.2</option>
+                        <option value="1.5">1.5</option>
+                        <option value="1.6">1.6</option>
+                        <option value="1.8">1.8</option>
+                        <option value="2.0">2.0</option>
+                        <option value="2.4">2.4</option>
+                        <option value="2.8">2.8</option>
+                        <option value="3.0">3.0</option>
                     </select>
                 </span>
                 <span className="ql-formats">

@@ -148,26 +148,42 @@ html.text-lg-mode {
 }
 
 
-/* Admin Editor Toolbar - Standard Formatting Labels */
+/* Admin Editor Toolbar - Numerical Font Size Labels */
+.ql-snow .ql-picker.ql-size {
+  width: 58px !important;
+}
+
 .ql-snow .ql-picker.ql-size .ql-picker-label::before,
 .ql-snow .ql-picker.ql-size .ql-picker-item::before {
-  content: '보통' !important;
+  content: '16' !important;
 }
 
 .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="12px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before {
-  content: '작게' !important;
-}
-
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="12px"]::before { content: '12' !important; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="13px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="13px"]::before { content: '13' !important; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="14px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="14px"]::before { content: '14' !important; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="15px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="15px"]::before { content: '15' !important; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="16px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="16px"]::before { content: '16' !important; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="17px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="17px"]::before { content: '17' !important; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="18px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="18px"]::before { content: '18' !important; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="19px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="19px"]::before { content: '19' !important; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="20px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="20px"]::before { content: '20' !important; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="21px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="21px"]::before { content: '21' !important; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="22px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="22px"]::before { content: '22' !important; }
+.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="23px"]::before,
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="23px"]::before { content: '23' !important; }
 .ql-snow .ql-picker.ql-size .ql-picker-label[data-value="24px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before {
-  content: '크게' !important;
-}
-
-.ql-snow .ql-picker.ql-size .ql-picker-label[data-value="36px"]::before,
-.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="36px"]::before {
-  content: '아주 크게' !important;
-}
+.ql-snow .ql-picker.ql-size .ql-picker-item[data-value="24px"]::before { content: '24' !important; }
 
 /* Custom Special Character Picker Label */
 .ql-snow .ql-picker.ql-special-char .ql-picker-label::before {
@@ -178,16 +194,16 @@ html.text-lg-mode {
   content: '● 점' !important;
 }
 
-.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="◆"]::before {
-  content: '◆ 마름모' !important;
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="◇"]::before {
+  content: '◇ 마름모' !important;
 }
 
-.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="■"]::before {
-  content: '■ 사각형' !important;
+.ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="▲"]::before {
+  content: '▲ 삼각형' !important;
 }
 
 .ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="○"]::before {
-  content: '○ 원형' !important;
+  content: '○원형' !important;
 }
 
 .ql-snow .ql-picker.ql-special-char .ql-picker-item[data-value="❖"]::before {
@@ -206,13 +222,42 @@ html.text-lg-mode {
   width: 100px !important;
 }
 
+/* Admin Editor Toolbar - Line Height Labels */
+.ql-snow .ql-picker.ql-line-height {
+  width: 65px !important;
+}
+
+.ql-snow .ql-picker.ql-line-height .ql-picker-label::before,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item::before {
+  content: '2.0' !important;
+}
+
+.ql-snow .ql-picker.ql-line-height .ql-picker-label[data-value="1.0"]::before,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item[data-value="1.0"]::before { content: '1.0' !important; }
+.ql-snow .ql-picker.ql-line-height .ql-picker-label[data-value="1.2"]::before,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item[data-value="1.2"]::before { content: '1.2' !important; }
+.ql-snow .ql-picker.ql-line-height .ql-picker-label[data-value="1.5"]::before,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item[data-value="1.5"]::before { content: '1.5' !important; }
+.ql-snow .ql-picker.ql-line-height .ql-picker-label[data-value="1.6"]::before,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item[data-value="1.6"]::before { content: '1.6' !important; }
+.ql-snow .ql-picker.ql-line-height .ql-picker-label[data-value="1.8"]::before,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item[data-value="1.8"]::before { content: '1.8' !important; }
+.ql-snow .ql-picker.ql-line-height .ql-picker-label[data-value="2.0"]::before,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item[data-value="2.0"]::before { content: '2.0' !important; }
+.ql-snow .ql-picker.ql-line-height .ql-picker-label[data-value="2.4"]::before,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item[data-value="2.4"]::before { content: '2.4' !important; }
+.ql-snow .ql-picker.ql-line-height .ql-picker-label[data-value="2.8"]::before,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item[data-value="2.8"]::before { content: '2.8' !important; }
+.ql-snow .ql-picker.ql-line-height .ql-picker-label[data-value="3.0"]::before,
+.ql-snow .ql-picker.ql-line-height .ql-picker-item[data-value="3.0"]::before { content: '3.0' !important; }
+
 /* Tight Paragraph Spacing for Articles */
 /* 모든 본문 단락의 여백을 0으로 강제 고정 */
 .prose p {
   margin-top: 0px !important;
-  margin-bottom: 5px !important;
-  line-height: 1.6 !important;
-  /* 이 줄을 추가하면 줄간격이 즉시 변합니다 */
+  margin-bottom: 0.8px !important;
+  line-height: 2.0;
+  /* !important를 제거하여 에디터의 인라인 스타일이 적용되도록 허용 */
 }
 
 /* 엔터로 생긴 빈 줄(<p><br></p>)의 높이를 강제로 줄임 */
