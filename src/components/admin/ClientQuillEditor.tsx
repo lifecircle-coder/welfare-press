@@ -76,11 +76,7 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
     ];
 
     return (
-<<<<<<< HEAD
-        <div className="quill-editor-container flex flex-col border rounded-xl overflow-hidden bg-white shadow-sm border-gray-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all duration-200">
-=======
         <div className="quill-editor-container border rounded-lg bg-white shadow-sm border-gray-200">
->>>>>>> bc8d840 (Fix: resolve admin editor layout breakage and refine article spacing)
             {/* Custom Toolbar - Restored with Special Character Dropdown */}
             <div id={toolbarId} className="border-b border-gray-200 bg-gray-50/80 backdrop-blur-sm flex flex-wrap items-center p-2 gap-1 sticky top-0 z-[10]">
                 <span className="ql-formats">
@@ -147,23 +143,6 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                 .quill-editor-container :global(.ql-container.ql-snow) {
                     border: none !important;
                 }
-<<<<<<< HEAD
-                /* Custom scrollbar for the editor */
-                .quill-editor-container .ql-editor::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .quill-editor-container .ql-editor::-webkit-scrollbar-track {
-                    background: transparent;
-                }
-                .quill-editor-container .ql-editor::-webkit-scrollbar-thumb {
-                    background: #e5e7eb;
-                    border-radius: 10px;
-                }
-                .quill-editor-container .ql-editor::-webkit-scrollbar-thumb:hover {
-                    background: #d1d5db;
-                }
-=======
->>>>>>> bc8d840 (Fix: resolve admin editor layout breakage and refine article spacing)
             `}</style>
 
             <ReactQuill
