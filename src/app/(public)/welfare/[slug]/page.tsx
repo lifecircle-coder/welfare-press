@@ -121,14 +121,14 @@ export default function WelfarePSeoPage({ params }: { params: { slug: string } }
 
         {/* 인라인 계산기 (사용자 참여 유도) */}
         <section className="mb-16">
-          <div className="bg-gray-900 text-white p-8 rounded-[40px] mb-[-40px] relative z-20 text-center">
-            <h2 className="text-2xl font-black mb-2">나는 얼마나 받을 수 있을까?</h2>
-            <p className="text-gray-400 text-sm">지금 바로 내 자격을 판독하고 혜택을 확인하세요</p>
+          <div className="bg-gray-900 text-white p-6 rounded-[32px] mb-8 relative z-20 text-center">
+            <h2 className="text-xl font-black mb-1">나는 얼마나 받을 수 있을까?</h2>
+            <p className="text-gray-400 text-xs">30초 만에 내 자격을 판독하고 혜택을 확인하세요</p>
           </div>
           <YouthRentCalculator regionName={region.name} />
         </section>
 
-        {/* 후반 정보 */}
+        {/* 필요 서류 */}
         <section className="mb-16">
           <h2 className="text-2xl font-black text-gray-900 mb-6">필요 서류</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -140,16 +140,8 @@ export default function WelfarePSeoPage({ params }: { params: { slug: string } }
           </div>
         </section>
 
-        {/* 신청 버튼 */}
-        <div className="sticky bottom-6 left-0 right-0 z-50 px-5 md:px-0">
-          <a
-            href={policy.applicationUrl}
-            target="_blank"
-            className="block w-full bg-blue-600 hover:bg-blue-700 text-white text-center font-black py-5 rounded-3xl shadow-2xl hover:scale-[1.02] transition-all text-xl"
-          >
-             공식 홈페이지에서 신청하기 →
-          </a>
-        </div>
+        {/* 하단 여백 확보 */}
+        <div className="mb-16"></div>
 
         {/* 기타 정책 링크 (내부 링크 빌딩) */}
         <footer className="mt-20 pt-10 border-t border-gray-100">
