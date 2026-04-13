@@ -159,3 +159,14 @@ html.text-lg-mode {
   width: 100px !important;
 }
 
+/* Reduce line break (paragraph) spacing in article content */
+.prose p {
+  margin-top: 0.5em !important;
+  margin-bottom: 0.5em !important;
+}
+
+/* Adjust heading margins slightly to match reduced paragraph spacing */
+.prose h1, .prose h2, .prose h3 {
+  margin-top: 1em !important;
+  margin-bottom: 0.5em !important;
+}

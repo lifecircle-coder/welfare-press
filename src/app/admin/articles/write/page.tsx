@@ -282,15 +282,14 @@ function WriteArticleForm() {
                     </div>
                 </div>
 
-                {/* Summary */}
                 <div className="space-y-2">
                     <label className="block text-sm font-bold text-gray-700">요약본 (썸네일/리스트 노출)</label>
-                    <div className="min-h-[150px] bg-white rounded-lg">
+                    <div className="min-h-[100px] bg-white rounded-lg">
                         <ClientQuillEditor
                             value={formData.summary}
                             onChange={(value: string) => setFormData(prev => ({ ...prev, summary: value }))}
                             articleId={formData.id}
-                            height="120px"
+                            height="80px"
                             placeholder="기사 요약 내용을 입력하세요..."
                         />
                     </div>
