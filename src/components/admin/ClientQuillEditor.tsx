@@ -76,9 +76,9 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
     ];
 
     return (
-        <div className="quill-editor-container border rounded-lg overflow-hidden bg-white shadow-sm border-gray-200">
+        <div className="quill-editor-container flex flex-col border rounded-xl overflow-hidden bg-white shadow-sm border-gray-200 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary transition-all duration-200">
             {/* Custom Toolbar - Restored with Special Character Dropdown */}
-            <div id={toolbarId} className="border-b border-gray-200 bg-gray-50 flex flex-wrap items-center p-1 gap-1">
+            <div id={toolbarId} className="border-b border-gray-200 bg-gray-50/80 backdrop-blur-sm flex flex-wrap items-center p-2 gap-1 sticky top-0 z-[10]">
                 <span className="ql-formats">
                     <select className="ql-header" defaultValue="">
                         <option value="1">제목 1</option>
@@ -88,17 +88,18 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                     </select>
                 </span>
                 <span className="ql-formats">
-                    <button className="ql-bold" />
-                    <button className="ql-italic" />
-                    <button className="ql-underline" />
-                    <button className="ql-strike" />
+                    <button className="ql-bold transition-colors hover:text-primary" />
+                    <button className="ql-italic transition-colors hover:text-primary" />
+                    <button className="ql-underline transition-colors hover:text-primary" />
+                    <button className="ql-strike transition-colors hover:text-primary" />
                 </span>
                 <span className="ql-formats">
-                    <button className="ql-list" value="ordered" />
-                    <button className="ql-list" value="bullet" />
+                    <button className="ql-list transition-colors hover:text-primary" value="ordered" />
+                    <button className="ql-list transition-colors hover:text-primary" value="bullet" />
                     
                     {/* Special Character Dropdown */}
-                    <select className="ql-special-char ml-1" defaultValue="">
+                    <select className="ql-special-char ml-1 bg-white border border-gray-200 rounded px-1 text-xs font-medium outline-none" defaultValue="">
+                        <option value="" disabled>특수문자</option>
                         <option value="●">● 점</option>
                         <option value="◆">◆ 마름모</option>
                         <option value="■">■ 사각형</option>
@@ -107,15 +108,14 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                         <option value="➔">➔ 화살표</option>
                         <option value="✓">✓ 체크</option>
                     </select>
-
                 </span>
                 <span className="ql-formats">
-                    <button className="ql-link" />
-                    <button className="ql-image" />
-                    <button className="ql-video" />
+                    <button className="ql-link transition-colors hover:text-primary" />
+                    <button className="ql-image transition-colors hover:text-primary" />
+                    <button className="ql-video transition-colors hover:text-primary" />
                 </span>
                 <span className="ql-formats">
-                    <button className="ql-clean" />
+                    <button className="ql-clean transition-colors hover:text-primary" />
                 </span>
             </div>
 
@@ -123,14 +123,40 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                 .quill-editor-container .ql-container {
                     min-height: ${height};
                     font-size: 16px;
+                    border: none !important;
+                }
+                .quill-editor-container .ql-editor {
+                    min-height: ${height};
+                    padding: 1.5rem;
+                    line-height: 1.7;
+                    color: #1f2937;
+                }
+                .quill-editor-container .ql-editor.ql-blank::before {
+                    left: 1.5rem;
+                    color: #9ca3af;
+                    font-style: normal;
                 }
                 .quill-editor-container .ql-toolbar {
                     border: none !important;
+                    padding: 0.5rem !important;
                 }
                 .quill-editor-container .ql-container.ql-snow {
                     border: none !important;
                 }
-                    /* Custom label for list styles - Handled in globals.css for higher specificity and picker support */
+                /* Custom scrollbar for the editor */
+                .quill-editor-container .ql-editor::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .quill-editor-container .ql-editor::-webkit-scrollbar-track {
+                    background: transparent;
+                }
+                .quill-editor-container .ql-editor::-webkit-scrollbar-thumb {
+                    background: #e5e7eb;
+                    border-radius: 10px;
+                }
+                .quill-editor-container .ql-editor::-webkit-scrollbar-thumb:hover {
+                    background: #d1d5db;
+                }
             `}</style>
 
             <ReactQuill

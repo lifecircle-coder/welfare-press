@@ -43,6 +43,7 @@ function WriteArticleForm() {
     const [formData, setFormData] = useState({
         id: '',
         title: '',
+        thumbnail: '',
         summary: '',
         content: '',
         category: '', 
@@ -99,6 +100,7 @@ function WriteArticleForm() {
                         setFormData({
                             id: article.id,
                             title: article.title || '',
+                            thumbnail: article.thumbnail || '',
                             summary: article.summary || '',
                             content: article.content || '',
                             category: article.category || '',
@@ -170,6 +172,7 @@ function WriteArticleForm() {
         const newArticle: Article = {
             id: formData.id || crypto.randomUUID(),
             title: formData.title,
+            thumbnail: formData.thumbnail,
             category_list: selectedCategories,
             category: selectedCategories[0].category, // 하위 호환성용
             prefix: selectedCategories[0].prefix,     // 하위 호환성용
@@ -218,16 +221,79 @@ function WriteArticleForm() {
                     />
                 </div>
 
+                {/* Thumbnail Image Selection */}
+                <div className="p-6 bg-blue-50/30 rounded-xl border border-blue-100 flex flex-col md:flex-row gap-6 items-start">
+                    <div className="w-full md:w-48 h-32 bg-gray-100 rounded-lg border-2 border-dashed border-gray-300 flex items-center justify-center overflow-hidden relative group">
+                        {formData.thumbnail ? (
+                            <>
+                                <img src={formData.thumbnail} alt="Thumbnail" className="w-full h-full object-cover" />
+                                <button 
+                                    onClick={() => setFormData(prev => ({ ...prev, thumbnail: '' }))}
+                                    className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white"
+                                >
+                                    <X size={24} />
+                                </button>
+                            </>
+                        ) : (
+                            <div className="text-center p-4">
+                                <Plus size={24} className="mx-auto text-gray-400 mb-1" />
+                                <span className="text-[10px] text-gray-400 font-medium">이미지 없음</span>
+                            </div>
+                        )}
+                    </div>
+                    <div className="flex-1 space-y-3">
+                        <label className="block text-sm font-bold text-gray-700">메인 썸네일 이미지</label>
+                        <p className="text-xs text-gray-500 leading-relaxed">
+                            기사 리스트와 메인 화면에 노출될 대표 이미지입니다.<br />
+                            선택하지 않으면 본문의 첫 번째 이미지가 자동으로 사용됩니다.
+                        </p>
+                        <div className="flex gap-2">
+                            <input
+                                type="file"
+                                id="thumbnail-upload"
+                                className="hidden"
+                                accept="image/*"
+                                onChange={(e) => {
+                                    const file = e.target.files?.[0];
+                                    if (file) {
+                                        const reader = new FileReader();
+                                        reader.onloadend = () => {
+                                            setFormData(prev => ({ ...prev, thumbnail: reader.result as string }));
+                                        };
+                                        reader.readAsDataURL(file);
+                                    }
+                                }}
+                            />
+                            <label
+                                htmlFor="thumbnail-upload"
+                                className="px-4 py-2 bg-white border border-gray-300 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-50 cursor-pointer shadow-sm transition-all active:scale-95"
+                            >
+                                이미지 선택
+                            </label>
+                            {formData.thumbnail && (
+                                <button
+                                    onClick={() => setFormData(prev => ({ ...prev, thumbnail: '' }))}
+                                    className="px-4 py-2 text-sm font-bold text-red-500 hover:text-red-600 transition-colors"
+                                >
+                                    삭제
+                                </button>
+                            )}
+                        </div>
+                    </div>
+                </div>
+
                 {/* Summary */}
-                <div className="h-64 mb-16">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">요약본 (썸네일/리스트 노출)</label>
-                    <ClientQuillEditor
-                        value={formData.summary}
-                        onChange={(value: string) => setFormData(prev => ({ ...prev, summary: value }))}
-                        articleId={formData.id}
-                        height="150px"
-                        placeholder="기사 요약 내용을 입력하세요..."
-                    />
+                <div className="space-y-2">
+                    <label className="block text-sm font-bold text-gray-700">요약본 (썸네일/리스트 노출)</label>
+                    <div className="min-h-[150px] bg-white rounded-lg">
+                        <ClientQuillEditor
+                            value={formData.summary}
+                            onChange={(value: string) => setFormData(prev => ({ ...prev, summary: value }))}
+                            articleId={formData.id}
+                            height="120px"
+                            placeholder="기사 요약 내용을 입력하세요..."
+                        />
+                    </div>
                 </div>
 
                 {/* Multi-Category Selection */}
@@ -297,13 +363,15 @@ function WriteArticleForm() {
                     </div>
                 </div>
 
-                <div className="h-[500px] mb-12">
-                    <label className="block text-sm font-bold text-gray-700 mb-2">본문 (상세 내용)</label>
-                    <ClientQuillEditor
-                        value={formData.content}
-                        onChange={(value: string) => setFormData(prev => ({ ...prev, content: value }))}
-                        articleId={formData.id}
-                    />
+                <div className="space-y-2">
+                    <label className="block text-sm font-bold text-gray-700">본문 (상세 내용)</label>
+                    <div className="min-h-[500px] bg-white rounded-lg">
+                        <ClientQuillEditor
+                            value={formData.content}
+                            onChange={(value: string) => setFormData(prev => ({ ...prev, content: value }))}
+                            articleId={formData.id}
+                        />
+                    </div>
                 </div>
 
                 {/* Optional Link Button */}
