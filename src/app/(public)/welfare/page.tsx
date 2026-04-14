@@ -3,6 +3,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { WELFARE_POLICIES, TARGET_REGIONS, formatAmount } from '@/lib/welfare-data';
 import { MapPin, ArrowRight, Sparkles, ShieldCheck, Zap } from 'lucide-react';
+import HierarchicalRegionSelector from '@/components/welfare/HierarchicalRegionSelector';
 
 export const metadata: Metadata = {
   title: '청년 복지 정책 지역별 맞춤 가이드 | THE복지',
@@ -71,47 +72,34 @@ export default function WelfareIndexPage() {
             </div>
         </div>
 
-        {/* 정책 카드 그리드 */}
+        {/* 정책 카드 섹션 (청년월세지원 고정) */}
         <div className="grid gap-12">
           {WELFARE_POLICIES.map((policy, i) => (
             <div key={policy.slug} className="group relative">
               <div className="absolute -inset-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[3rem] opacity-0 group-hover:opacity-100 transition-opacity" />
               <div className="relative bg-white rounded-[2.5rem] p-8 md:p-12 border border-gray-100 shadow-sm group-hover:shadow-xl transition-all">
-                <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-10">
+                <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-16">
                   <div className="flex-1">
                     <div className="flex items-center gap-3 mb-6">
                       <span className="bg-blue-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter">{policy.category}</span>
                       <span className="bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter">{policy.targetAge}</span>
                     </div>
-                    <h3 className="text-3xl md:text-4xl font-black text-gray-900 leading-tight mb-4">
+                    <h3 className="text-3xl md:text-5xl font-black text-gray-900 leading-tight mb-4">
                       {policy.policyName}
                     </h3>
                     <p className="text-lg text-gray-500 leading-relaxed font-medium line-clamp-2">
                         {policy.description}
                     </p>
                   </div>
-                  <div className="bg-blue-50/50 p-6 rounded-3xl min-w-[200px] text-right border border-blue-100">
+                  <div className="bg-blue-50/50 p-8 rounded-3xl min-w-[240px] text-right border border-blue-100">
                     <p className="text-[10px] text-blue-400 font-black mb-1 uppercase tracking-widest">MAX SUPPORT</p>
-                    <p className="text-3xl font-black text-blue-700">{formatAmount(policy.maxAmount)}</p>
+                    <p className="text-4xl font-black text-blue-700">{formatAmount(policy.maxAmount)}</p>
                   </div>
                 </div>
 
-                {/* 지역별 빠른 이동 */}
-                <div className="pt-8 border-t border-gray-50">
-                  <h4 className="text-xs font-black text-gray-900 mb-6 flex items-center gap-2 uppercase tracking-tighter">
-                    <MapPin className="w-4 h-4 text-blue-600" /> 맞춤형 지역별 정보 바로가기
-                  </h4>
-                  <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-5 gap-3">
-                    {TARGET_REGIONS.map(region => (
-                      <Link
-                        key={region.code}
-                        href={`/welfare/${region.code}-${policy.slug}`}
-                        className="bg-gray-50 hover:bg-white text-gray-500 hover:text-blue-600 border border-transparent hover:border-blue-500 p-4 rounded-2xl text-xs font-black transition-all text-center shadow-sm hover:shadow-blue-100 flex items-center justify-center group/btn"
-                      >
-                        {region.name} <ArrowRight className="w-3 h-3 ml-1 opacity-0 group-hover/btn:opacity-100 transition-all -translate-x-1 group-hover/btn:translate-x-0" />
-                      </Link>
-                    ))}
-                  </div>
+                {/* 2단계 계층적 지역 선택 (Hotfix Applied) */}
+                <div className="pt-12 border-t border-gray-50">
+                   <HierarchicalRegionSelector />
                 </div>
               </div>
             </div>

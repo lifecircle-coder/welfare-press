@@ -3,7 +3,7 @@
 
 import React from 'react';
 import { motion } from 'framer-motion';
-import { Phone, Users, ShieldCheck, MapPin, ExternalLink, HelpCircle } from 'lucide-react';
+import { Phone, Users, ShieldCheck, MapPin, ExternalLink, HelpCircle, Sparkles } from 'lucide-react';
 
 interface LocalWelfareGuideProps {
   regionName: string;
