@@ -67,8 +67,11 @@ export default function DistrictBenefitSuggestor({ zipCd, regionName, excludePol
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {policies.map((policy, idx) => (
-          <motion.div
+          <motion.a
             key={policy.servId}
+            href={policy.servDtlLink || '#'}
+            target="_blank"
+            rel="noopener noreferrer"
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: idx * 0.1 }}
@@ -90,22 +93,11 @@ export default function DistrictBenefitSuggestor({ zipCd, regionName, excludePol
             </p>
 
             <div className="flex items-center justify-between mt-auto">
-              <span className="text-[10px] font-black text-indigo-600 group-hover:underline flex items-center gap-1">
+              <span className="text-[10px] font-black text-indigo-600 group-hover:underline flex items-center gap-1 transition-all">
                 상세보기 <ArrowRight className="w-3 h-3" />
               </span>
-              {policy.servDtlLink && (
-                 <a 
-                   href={policy.servDtlLink} 
-                   target="_blank" 
-                   rel="noopener noreferrer"
-                   className="p-2 text-slate-400 hover:text-indigo-500"
-                   onClick={(e) => e.stopPropagation()}
-                 >
-                   <ExternalLink className="w-3 h-3" />
-                 </a>
-              )}
             </div>
-          </motion.div>
+          </motion.a>
         ))}
       </div>
     </div>
