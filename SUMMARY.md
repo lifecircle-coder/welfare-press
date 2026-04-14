@@ -358,6 +358,7 @@
     - **기술적 최적화**: ISR(1시간 캐시) 적용으로 API 부하 최소화 및 무중단 고속 렌더링 확보.
     - **UI/UX 혁신**: `WelfareDiagnoser`(다단계 진단), `ViralShareCard`(이타적 공유), `LocalLiveFeed`(실시간 지역 뉴스) 컴포넌트 신규 개발 및 적용.
     - **허브 페이지 개편**: `/welfare` 메인 페이지를 프리미엄 디자인으로 전면 개편하여 사용자 유입 최적화.
+    - **빌드 오류 수정**: Vercel 배포 중 발생한 `framer-motion` 누락 오류를 해결하기 위해 의존성 추가 및 빌드 무결성 확보.
 
 ---
 ### 🚨 절대 규칙 준수 요망 (Reminder for Next Session)
