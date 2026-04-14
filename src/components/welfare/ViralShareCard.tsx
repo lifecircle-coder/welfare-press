@@ -3,7 +3,6 @@
 
 import { motion } from 'framer-motion';
 import { Send, Share2, Copy, Gift, MessageSquare, Heart } from 'lucide-react';
-import { toast } from 'react-hot-toast'; // Assuming toast is available, fallback to alert
 
 export default function ViralShareCard({ policyName, regionName, amount }: { policyName: string, regionName: string, amount: string }) {
   const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
