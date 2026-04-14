@@ -1,104 +1,97 @@
 // src/components/welfare/ViralShareCard.tsx
 'use client';
 
+import React, { useRef } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Share2, Copy, Gift, MessageSquare, Heart } from 'lucide-react';
+import { Share2, Download, CheckCircle2, Trophy, Sparkles } from 'lucide-react';
 
-export default function ViralShareCard({ policyName, regionName, amount }: { policyName: string, regionName: string, amount: string }) {
-  const shareUrl = typeof window !== 'undefined' ? window.location.href : '';
-  
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(shareUrl);
-    alert('링크가 복사되었습니다! 지인에게 혜택을 선물하세요. 🎁');
-  };
+interface ViralShareCardProps {
+  regionName: string;
+  policyName: string;
+  maxAmount: string;
+  userName?: string;
+}
 
-  const handleShare = () => {
+export default function ViralShareCard({ regionName, policyName, maxAmount, userName = '청년' }: ViralShareCardProps) {
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  const handleShare = async () => {
     if (navigator.share) {
-      navigator.share({
-        title: `[THE복지] ${regionName} 지인을 위한 혜택 선물`,
-        text: `${regionName}에 사는 지인이 있다면 이 소식을 꼭 전해주세요! ${policyName}으로 최대 ${amount} 혜택을 받을 수 있습니다.`,
-        url: shareUrl,
-      });
+      try {
+        await navigator.share({
+          title: `[${regionName}] ${policyName} 확인 완료!`,
+          text: `축하합니다! ${userName}님은 최대 ${maxAmount} 혜택 대상입니다. 지금 바로 확인해보세요.`,
+          url: window.location.href,
+        });
+      } catch (err) {
+        console.error('Share failed:', err);
+      }
     } else {
-      handleCopyLink();
+      // Fallback: Copy to clipboard
+      navigator.clipboard.writeText(window.location.href);
+      alert('링크가 복사되었습니다!');
     }
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto my-16">
-      <motion.div
+    <div className="w-full max-w-lg mx-auto mt-12 mb-16 px-4">
+      <motion.div 
         initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        viewport={{ once: true }}
-        className="relative group mt-8"
+        animate={{ opacity: 1, y: 0 }}
+        className="relative p-[2px] rounded-[2.5rem] bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 shadow-2xl shadow-blue-500/20"
       >
-        {/* Glow Effect */}
-        <div className="absolute -inset-1 bg-gradient-to-r from-pink-500 via-purple-500 to-indigo-500 rounded-[2.5rem] blur opacity-25 group-hover:opacity-50 transition duration-1000 group-hover:duration-200"></div>
-        
-        <div className="relative bg-white border border-gray-100 rounded-[2.5rem] overflow-hidden shadow-2xl">
-          <div className="flex flex-col md:flex-row">
-            {/* Left Decor */}
-            <div className="w-full md:w-2/5 bg-gradient-to-br from-indigo-600 to-purple-700 p-8 flex flex-col items-center justify-center text-white text-center">
-              <motion.div
-                animate={{ 
-                  scale: [1, 1.1, 1],
-                  rotate: [0, 5, -5, 0]
-                }}
-                transition={{ 
-                  repeat: Infinity, 
-                  duration: 4,
-                  ease: "easeInOut"
-                }}
-                className="w-24 h-24 bg-white/20 backdrop-blur-md rounded-full flex items-center justify-center mb-6 border border-white/30 shadow-inner"
-              >
-                <Gift className="w-12 h-12 text-white" />
-              </motion.div>
-              <h4 className="text-xl font-black leading-tight">지인에게<br />혜택을 선물하세요</h4>
-              <p className="text-indigo-100 text-[10px] mt-4 font-bold opacity-80 uppercase tracking-widest leading-relaxed">ALTRUISTIC SHARING<br />CAMPAIGN</p>
+        <div ref={cardRef} className="bg-slate-900 rounded-[2.4rem] overflow-hidden p-8 md:p-10">
+          <div className="flex justify-between items-start mb-10">
+            <div className="flex items-center gap-2">
+              <div className="w-10 h-10 rounded-full bg-blue-500/20 flex items-center justify-center border border-blue-500/30">
+                <Trophy className="w-5 h-5 text-blue-400" />
+              </div>
+              <span className="text-blue-400 text-xs font-black tracking-tighter uppercase">Benefit Confirmed</span>
             </div>
+            <Sparkles className="w-6 h-6 text-yellow-500 animate-pulse" />
+          </div>
 
-            {/* Right Content */}
-            <div className="w-full md:w-3/5 p-8 flex flex-col justify-center">
-              <div className="mb-6">
-                <div className="flex items-center gap-2 mb-2">
-                    <Heart className="w-4 h-4 text-pink-500 fill-pink-500" />
-                    <span className="text-xs font-black text-pink-500 uppercase tracking-tighter">나만 알기 아까운 정보</span>
-                </div>
-                <h5 className="text-xl font-bold text-gray-900 leading-snug">
-                  "<span className="text-indigo-600">{regionName}</span>에 사는<br />친구가 생각나나요?"
-                </h5>
-                <p className="text-sm text-gray-500 mt-3 font-medium leading-relaxed">
-                  본인이 아니더라도, 주변 친구나 가족이 <strong>최대 {amount}</strong>의 혜택을 놓치고 있을 수 있습니다. 지금 알려주세요!
-                </p>
-              </div>
+          <div className="mb-10">
+            <h3 className="text-white text-3xl md:text-4xl font-black leading-tight mb-4">
+              <span className="text-blue-400">{regionName}</span> 가구<br />
+              예상 혜택 <span className="underline decoration-purple-500 underline-offset-8">{maxAmount}</span>
+            </h3>
+            <p className="text-slate-400 text-sm font-medium leading-relaxed">
+              {policyName} 자격 진단 결과,<br />
+              {userName}님은 위 금액의 수혜 대상자로 예상됩니다.
+            </p>
+          </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <button
-                  onClick={handleShare}
-                  className="bg-indigo-600 hover:bg-indigo-700 text-white py-4 rounded-2xl flex items-center justify-center gap-2 font-black transition-all shadow-lg shadow-indigo-200"
-                >
-                  <Share2 className="w-5 h-5" /> 공유하기
-                </button>
-                <button
-                  onClick={handleCopyLink}
-                  className="bg-gray-100 hover:bg-gray-200 text-gray-600 py-4 rounded-2xl flex items-center justify-center gap-2 font-black transition-all border border-gray-200"
-                >
-                  <Copy className="w-5 h-5" /> 링크복사
-                </button>
-              </div>
-              
-              <div className="mt-6 pt-6 border-t border-gray-100 flex items-center justify-between">
-                <div className="flex -space-x-2">
-                    {[1,2,3,4].map(i => (
-                        <div key={i} className={`w-8 h-8 rounded-full border-2 border-white bg-gray-200 flex items-center justify-center overflow-hidden`}>
-                            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${i + 10}`} alt="user" className="w-full h-full object-cover" />
-                        </div>
-                    ))}
-                    <div className="w-8 h-8 rounded-full border-2 border-white bg-indigo-50 flex items-center justify-center text-[10px] font-black text-indigo-600">+12k</div>
-                </div>
-                <span className="text-[10px] text-gray-400 font-bold">현재 1.2만명 이상이 공유했습니다</span>
-              </div>
+          <div className="space-y-4 mb-10">
+            <div className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+              <CheckCircle2 className="w-5 h-5 text-green-400" />
+              <span className="text-slate-200 text-sm font-bold">자격 판독 점수: 98/100</span>
             </div>
+            <div className="flex items-center gap-3 bg-white/5 p-4 rounded-2xl border border-white/10">
+              <CheckCircle2 className="w-5 h-5 text-green-400" />
+              <span className="text-slate-200 text-sm font-bold">지역 특화 가산점 적용됨</span>
+            </div>
+          </div>
+
+          <div className="flex flex-col sm:flex-row gap-3">
+            <button 
+              onClick={handleShare}
+              className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-500 text-white py-4 rounded-2xl font-black transition-all active:scale-95"
+            >
+              <Share2 className="w-5 h-5" /> 친구에게 공유하기
+            </button>
+            <button 
+              className="sm:w-16 flex items-center justify-center bg-white/10 hover:bg-white/20 text-white py-4 rounded-2xl font-black transition-all active:scale-95"
+              title="이미지로 저장"
+            >
+              <Download className="w-5 h-5" />
+            </button>
+          </div>
+          
+          <div className="mt-6 text-center">
+            <p className="text-slate-500 text-[10px] font-bold tracking-widest uppercase">
+              Powered by THE복지 Hyper-Local Engine
+            </p>
           </div>
         </div>
       </motion.div>

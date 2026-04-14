@@ -334,10 +334,10 @@ export const getYouthPolicyList = async (
             const response = await axios.get('/api/public-data', {
                 params: {
                     type: 'YOUTH_LIST',
-                    pageNo: isMultiSelect ? 1 : pageNo,
-                    numOfRows: isMultiSelect ? 500 : numOfRows,
-                    lclsfNm: isMultiSelect ? '' : lclsfNm,
-                    zipCd: isMultiSelect ? '' : zipCd,
+                    pageNo: 1, // 필터링을 위해 항상 첫 페이지에서 대량(500건) 호출
+                    numOfRows: 500,
+                    lclsfNm: (lclsfNm && !lclsfNm.includes(',')) ? lclsfNm : '',
+                    zipCd: (zipCd && !zipCd.includes(',')) ? zipCd : '',
                     query: query || ''
                 }
             });
@@ -346,16 +346,17 @@ export const getYouthPolicyList = async (
             const response = await axios.get(YOUTH_API_URL, {
                 params: {
                     apiKeyNm: YOUTH_API_KEY,
-                    pageNum: isMultiSelect ? 1 : pageNo,
-                    pageSize: isMultiSelect ? 500 : numOfRows,
+                    pageNum: 1,
+                    pageSize: 500,
                     rtnType: 'json',
-                    lclsfNm: isMultiSelect ? '' : (lclsfNm || ''),
-                    zipCd: isMultiSelect ? '' : (zipCd || ''),
-                    plcyNm: query || ''
+                    plcyNm: query || '',
+                    lclsfNm: (lclsfNm && !lclsfNm.includes(',')) ? lclsfNm : '',
+                    zipCd: (zipCd && !zipCd.includes(',')) ? zipCd : ''
                 }
             });
             data = response.data;
         }
+
 
         const resultData = typeof data === 'string' ? JSON.parse(data) : data;
         const list = resultData.result?.youthPolicyList;
@@ -364,8 +365,9 @@ export const getYouthPolicyList = async (
 
         if (zipCd && zipCd !== '전체') {
             const regionKeywordMap: Record<string, string[]> = {
-                '11000': ['서울'], '41000': ['경기'], '28000': ['인천'], '26000': ['부산'],
-                '27000': ['대구'], '29000': ['광주'], '30000': ['대전'], '31000': ['울산'],
+                '11000': ['서울'], '41000': ['경기', '수원', '성남', '고양', '용인', '부천', '안산', '남양주', '안양', '화성', '평택', '의정부', '시흥', '파주', '김포', '광명', '군포', '하남', '오산', '이천', '안성'],
+                '28000': ['인천', '부평'], '26000': ['부산', '해운대', '사하', '연제', '수영', '사상', '금정', '동래'],
+                '27000': ['대구', '수성'], '29000': ['광주', '광산'], '30000': ['대전', '유성'], '31000': ['울산'],
                 '36000': ['세종'], '42000': ['강원'], '43000': ['충북'], '44000': ['충남'],
                 '45000': ['전북'], '46000': ['전남'], '47000': ['경북'], '48000': ['경남'],
                 '50000': ['제주'], '003002000': ['중앙', '국가', '대한민국']

@@ -127,18 +127,31 @@ export async function GET(request: NextRequest) {
 
         // MCST APIs - Use RAW_API_KEY in URL to avoid double-encoding issues common with data.go.kr
         // MCST APIs - 신규 일반형 키(GEN_API_KEY) 사용
-        if (type === 'MCST_PRESS_LIST') {
+        if (type === 'MCST_PRESS' || type === 'MCST_PRESS_LIST') {
+            const query = searchParams.get('query') || '';
             const today = new Date();
             const startDay = new Date(today);
-            startDay.setDate(today.getDate() - 3);
+            startDay.setDate(today.getDate() - 30); // 30일로 확장하여 뉴스 확보
             const startDate = startDay.toISOString().split('T')[0].replace(/-/g, '');
             const endDate = today.toISOString().split('T')[0].replace(/-/g, '');
             
-            const url = `http://apis.data.go.kr/1371000/pressReleaseService/pressReleaseList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&startDate=${startDate}&endDate=${endDate}`;
+            // _type=json 추가 시도 (공공데이터포털 표준)
+            const url = `http://apis.data.go.kr/1371000/pressReleaseService/pressReleaseList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&startDate=${startDate}&endDate=${endDate}&_type=json${query ? `&searchWrd=${encodeURIComponent(query)}` : ''}`;
+            
             const response = await axios.get(url);
-            return new NextResponse(response.data, {
-                headers: { 'Content-Type': 'application/xml; charset=utf-8' }
-            });
+            
+            // 응답이 XML일 경우 가공 (일부 API는 _type=json을 무시함)
+            if (typeof response.data === 'string' && response.data.includes('<?xml')) {
+                return new NextResponse(response.data, {
+                    headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+                });
+            }
+            
+            // 항목 추출 및 정규화
+            const items = response.data?.response?.body?.items?.item || [];
+            const normalized = Array.isArray(items) ? items : [items].filter(Boolean);
+            
+            return NextResponse.json(normalized);
         }
 
         if (type === 'MCST_NEWS_LIST') {

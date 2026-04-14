@@ -3,81 +3,99 @@
 
 import { useState, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Target, CheckCircle2, XCircle, ChevronRight, RefreshCcw, Gift, Search, Info } from 'lucide-react';
-import { WelfarePolicyData, WELFARE_POLICIES } from '@/lib/welfare-data';
+import { 
+  CheckCircle2, 
+  XCircle, 
+  ChevronRight, 
+  RefreshCcw, 
+  Sparkles, 
+  Home, 
+  Users, 
+  Wallet, 
+  Calendar,
+  Building2,
+  AlertCircle
+} from 'lucide-react';
+import { WelfarePolicyData } from '@/lib/welfare-data';
+import ViralShareCard from './ViralShareCard';
 
 interface DiagnoserInput {
   age: number;
   isStudent: boolean;
   isWorking: boolean;
-  monthlyIncome: number;
+  monthlyIncome: number; // 만원 단위
+  deposit: number;      // 만원 단위
+  monthlyRent: number;   // 만원 단위
   hasHouse: boolean;
   isIndependent: boolean;
-  regionZip: string;
+  parentIncome: number;  // 만원 단위 (선택 사항)
 }
 
 interface MatchResult {
-  policy: WelfarePolicyData;
   isMatch: boolean;
   reasons: { type: 'pass' | 'fail'; text: string }[];
+  userName: string;
 }
 
-export default function WelfareDiagnoser({ regionName }: { regionName: string }) {
+export default function WelfareDiagnoser({ 
+  regionName, 
+  policy 
+}: { 
+  regionName: string, 
+  policy: WelfarePolicyData 
+}) {
   const [step, setStep] = useState(1);
   const [input, setInput] = useState<DiagnoserInput>({
     age: 25,
     isStudent: false,
     isWorking: true,
     monthlyIncome: 150,
+    deposit: 1000,
+    monthlyRent: 50,
     hasHouse: false,
     isIndependent: true,
-    regionZip: '',
+    parentIncome: 450,
   });
   const [isCalculating, setIsCalculating] = useState(false);
 
-  // 자격 판정 엔진
-  const diagnosisResults = useMemo(() => {
-    return WELFARE_POLICIES.map(policy => {
-      const reasons: { type: 'pass' | 'fail'; text: string }[] = [];
-      let isMatch = true;
+  // 청년월세지원 전용 정밀 판정 엔진
+  const result: MatchResult = useMemo(() => {
+    const reasons: { type: 'pass' | 'fail'; text: string }[] = [];
+    let isMatch = true;
 
-      // 1. 연령 (Youth 전용 필터링 예시)
-      if (policy.targetAge.includes('19~34세')) {
-        if (input.age >= 19 && input.age <= 34) {
-          reasons.push({ type: 'pass', text: `연령 기준 충족 (만 ${input.age}세)` });
-        } else {
-          isMatch = false;
-          reasons.push({ type: 'fail', text: '만 19~34세 정책 대상이 아닙니다.' });
-        }
-      }
+    // 1. 연령 (만 19~34세)
+    if (input.age >= 19 && input.age <= 34) {
+      reasons.push({ type: 'pass', text: `연령 기준 이상 없음 (만 ${input.age}세)` });
+    } else {
+      isMatch = false;
+      reasons.push({ type: 'fail', text: '정책 대상 연령(만 19~34세)이 아닙니다.' });
+    }
 
-      // 2. 소득 (정책별 상세 로직)
-      if (policy.slug === 'youth-rent-support') {
-        if (input.monthlyIncome <= 134) {
-          reasons.push({ type: 'pass', text: '소득 기준 충족 (월 134만원 이하)' });
-        } else {
-          isMatch = false;
-          reasons.push({ type: 'fail', text: '소득 기준 초과 (기준 134만원 이하)' });
-        }
-        if (input.isIndependent) {
-          reasons.push({ type: 'pass', text: '독립 거주 요건 충족' });
-        } else {
-          isMatch = false;
-          reasons.push({ type: 'fail', text: '부모님과 별도 거주가 필요합니다.' });
-        }
-      }
+    // 2. 주거 요건 (보증금 5천 & 월세 70이하)
+    if (input.deposit <= 5000 && input.monthlyRent <= 70) {
+      reasons.push({ type: 'pass', text: '임차보증금 및 월세액 요건 충족' });
+    } else {
+      isMatch = false;
+      reasons.push({ type: 'fail', text: '임차보증금(5천만) 또는 월세(70만) 기준을 초과합니다.' });
+    }
 
-      if (policy.slug === 'youth-savings-account') {
-        if (input.isWorking && input.monthlyIncome <= 230) {
-          reasons.push({ type: 'pass', text: '소득/근로 기준 충족 (중위 100% 이하)' });
-        } else {
-          isMatch = false;
-          reasons.push({ type: 'fail', text: '소득 기준 초과 또는 미근로 상태입니다.' });
-        }
-      }
+    // 3. 무주택 여부
+    if (!input.hasHouse) {
+      reasons.push({ type: 'pass', text: '무주택자 자격 확인 완료' });
+    } else {
+      isMatch = false;
+      reasons.push({ type: 'fail', text: '주택 소유자는 지원 대상에서 제외됩니다.' });
+    }
 
-      return { policy, isMatch, reasons };
-    });
+    // 4. 소득 기준 (청년가구 중위 60% 이하 - 약 134만원)
+    if (input.monthlyIncome <= 134) {
+      reasons.push({ type: 'pass', text: '청년가구 소득 기준 충족 (월 134만원 이하)' });
+    } else {
+      isMatch = false;
+      reasons.push({ type: 'fail', text: '청년가구 소득 기준 초과 (중위 60% 초과)' });
+    }
+
+    return { isMatch, reasons, userName: '청년' };
   }, [input]);
 
   const handleNext = () => {
@@ -100,324 +118,253 @@ export default function WelfareDiagnoser({ regionName }: { regionName: string })
       isStudent: false,
       isWorking: true,
       monthlyIncome: 150,
+      deposit: 1000,
+      monthlyRent: 50,
       hasHouse: false,
       isIndependent: true,
-      regionZip: '',
+      parentIncome: 450,
     });
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto my-12 relative">
-      {/* 장식용 요소 */}
-      <div className="absolute -top-10 -right-10 w-32 h-32 bg-blue-100 rounded-full blur-3xl opacity-50" />
-      <div className="absolute -bottom-10 -left-10 w-32 h-32 bg-purple-100 rounded-full blur-3xl opacity-50" />
+    <div className="w-full max-w-2xl mx-auto">
+      <AnimatePresence mode="wait">
+        {step <= 4 && (
+          <motion.div
+            key="diagnoser-form"
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-blue-500/5 overflow-hidden"
+          >
+            {/* Progress Bar */}
+            <div className="h-1.5 w-full bg-slate-100">
+              <motion.div 
+                className="h-full bg-blue-600"
+                initial={{ width: '0%' }}
+                animate={{ width: `${(step / 4) * 100}%` }}
+              />
+            </div>
 
-      <div className="bg-white/80 backdrop-blur-xl border border-blue-100 rounded-[2.5rem] shadow-2xl overflow-hidden relative z-10">
-        <div className="bg-gradient-to-r from-blue-600 to-indigo-700 px-8 py-6 text-white text-center">
-          <h3 className="text-2xl font-black mb-1">복지 혜택 정밀 진단</h3>
-          <p className="text-blue-100 text-sm opacity-90">당신이 놓치고 있는 {regionName} 혜택을 찾아드립니다</p>
-        </div>
+            <div className="p-8 md:p-12">
+              <div className="flex items-center gap-2 mb-8 uppercase tracking-widest text-[10px] font-black text-blue-500">
+                <Sparkles className="w-4 h-4" /> Eligibility Checker
+              </div>
 
-        <div className="p-8 md:p-12 min-h-[450px] flex flex-col justify-center">
-          <AnimatePresence mode="wait">
-            {step === 1 && (
-              <motion.div
-                key="step1"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-8"
-              >
-                <div className="text-center">
-                  <span className="inline-block px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold mb-4">STEP 01</span>
-                  <h4 className="text-2xl font-bold text-gray-900">본인의 나이를 알려주세요</h4>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="text-6xl font-black text-blue-600 mb-8">{input.age}<span className="text-2xl text-gray-400 ml-2">세</span></div>
-                  <input
-                    type="range"
-                    min="15"
-                    max="65"
-                    value={input.age}
-                    onChange={(e) => setInput({ ...input, age: parseInt(e.target.value) })}
-                    className="w-full max-w-md h-3 bg-blue-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
-                  />
-                  <div className="flex justify-between w-full max-w-md mt-4 text-sm font-bold text-gray-400 px-1">
-                    <span>만 15세</span>
-                    <span>만 65세</span>
+              {step === 1 && (
+                <div className="space-y-8">
+                  <h2 className="text-2xl font-black text-slate-900 leading-tight">
+                    먼저 <span className="text-blue-600">본인의 기본 정보</span>를<br />입력해 주세요
+                  </h2>
+                  <div className="grid grid-cols-1 gap-6">
+                    <div className="space-y-3">
+                      <label className="text-sm font-bold text-slate-500 flex items-center gap-2">
+                         <Calendar className="w-4 h-4" /> 현재 만 나이
+                      </label>
+                      <input 
+                        type="range" min="15" max="45" step="1"
+                        value={input.age}
+                        onChange={(e) => setInput({...input, age: parseInt(e.target.value)})}
+                        className="w-full h-2 bg-slate-100 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                      />
+                      <div className="flex justify-between text-xl font-black text-slate-900">
+                        <span>15세</span>
+                        <span className="text-blue-600">만 {input.age}세</span>
+                        <span>45세</span>
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </motion.div>
-            )}
+              )}
 
-            {step === 2 && (
-              <motion.div
-                key="step2"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-8"
-              >
-                <div className="text-center">
-                  <span className="inline-block px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold mb-4">STEP 02</span>
-                  <h4 className="text-2xl font-bold text-gray-900">현재 경제 활동 상태는 어떠신가요?</h4>
+              {step === 2 && (
+                <div className="space-y-8">
+                  <h2 className="text-2xl font-black text-slate-900 leading-tight">
+                    현재 <span className="text-blue-600">거주 중인 주택</span>의<br />임대차 정보를 알려주세요
+                  </h2>
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-2 gap-4">
+                      <div className="p-6 rounded-3xl border-2 border-slate-100 hover:border-blue-500 transition-all">
+                        <label className="text-xs font-bold text-slate-400 block mb-2">보증금 (만원)</label>
+                        <input 
+                          type="number"
+                          value={input.deposit}
+                          onChange={(e) => setInput({...input, deposit: parseInt(e.target.value)})}
+                          className="text-2xl font-black w-full outline-none bg-transparent"
+                        />
+                      </div>
+                      <div className="p-6 rounded-3xl border-2 border-slate-100 hover:border-blue-500 transition-all">
+                        <label className="text-xs font-bold text-slate-400 block mb-2">월세 (만원)</label>
+                        <input 
+                          type="number"
+                          value={input.monthlyRent}
+                          onChange={(e) => setInput({...input, monthlyRent: parseInt(e.target.value)})}
+                          className="text-2xl font-black w-full outline-none bg-transparent"
+                        />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3 p-4 bg-slate-50 rounded-2xl">
+                       <AlertCircle className="w-4 h-4 text-slate-400" />
+                       <p className="text-[11px] font-bold text-slate-500">전세 거주자나 주택 소유주는 지원 대상에서 제외됩니다.</p>
+                    </div>
+                  </div>
                 </div>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[
-                    { id: 'isWorking', label: '직장에 다니고 있어요 💼', desc: '정규직, 계약직, 알바 등 근로자' },
-                    { id: 'isStudent', label: '학업에 집중하고 있어요 🎓', desc: '대학(원)생, 취준생' },
-                  ].map((item) => (
+              )}
+
+              {step === 3 && (
+                <div className="space-y-8">
+                  <h2 className="text-2xl font-black text-slate-900 leading-tight">
+                    본인의 <span className="text-blue-600">월 평균 건강보험료</span><br />또는 소득을 선택하세요
+                  </h2>
+                  <div className="space-y-4">
+                    {[
+                      { label: '낮음 (월 134만원 이하)', val: 100 },
+                      { label: '중간 (월 200만원 이하)', val: 180 },
+                      { label: '높음 (월 200만원 초과)', val: 300 },
+                    ].map((opt) => (
+                      <button
+                        key={opt.val}
+                        onClick={() => setInput({...input, monthlyIncome: opt.val})}
+                        className={`w-full p-6 rounded-[2rem] border-2 text-left transition-all flex justify-between items-center ${
+                          input.monthlyIncome === opt.val ? 'border-blue-600 bg-blue-50/50' : 'border-slate-50 hover:border-slate-200'
+                        }`}
+                      >
+                        <span className="font-bold text-slate-900">{opt.label}</span>
+                        {input.monthlyIncome === opt.val && <CheckCircle2 className="w-5 h-5 text-blue-600" />}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {step === 4 && (
+                <div className="space-y-8">
+                  <h2 className="text-2xl font-black text-slate-900 leading-tight">
+                    마지막으로<br /><span className="text-blue-600">무주택 여부</span>를 확인합니다
+                  </h2>
+                  <div className="grid grid-cols-2 gap-4">
                     <button
-                      key={item.id}
-                      onClick={() => setInput({ ...input, [item.id]: !input[item.id as keyof DiagnoserInput] })}
-                      className={`p-6 rounded-[1.5rem] border-2 text-left transition-all ${
-                        input[item.id as keyof DiagnoserInput]
-                          ? 'border-blue-500 bg-blue-50 shadow-md'
-                          : 'border-gray-100 bg-gray-50 hover:border-blue-200'
+                      onClick={() => setInput({...input, hasHouse: false})}
+                      className={`p-10 rounded-[2.5rem] border-2 transition-all flex flex-col items-center gap-4 ${
+                        !input.hasHouse ? 'border-blue-600 bg-blue-50/50' : 'border-slate-50 hover:border-slate-200'
                       }`}
                     >
-                      <div className="font-bold text-lg mb-1">{item.label}</div>
-                      <div className="text-xs text-gray-500">{item.desc}</div>
+                      <Home className={`w-8 h-8 ${!input.hasHouse ? 'text-blue-600' : 'text-slate-300'}`} />
+                      <span className="font-black">무주택</span>
                     </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {step === 3 && (
-              <motion.div
-                key="step3"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-8"
-              >
-                <div className="text-center">
-                  <span className="inline-block px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold mb-4">STEP 03</span>
-                  <h4 className="text-2xl font-bold text-gray-900">월 평균 소득 규모를 선택해주세요</h4>
-                  <p className="text-gray-500 text-sm mt-2">중위소득 기반 혜택 판정에 사용됩니다 (세전 기준)</p>
-                </div>
-                <div className="space-y-4">
-                  {[
-                    { val: 100, label: '100만원 이하 (저소득층 혜택 집중)', icon: '🌱' },
-                    { val: 200, label: '100 ~ 230만원 (청년 정책 최적화)', icon: '🚀' },
-                    { val: 350, label: '230 ~ 380만원 (일반 근로 혜택)', icon: '🏢' },
-                    { val: 500, label: '380만원 이상 (금융/자산 혜택)', icon: '💰' },
-                  ].map((item) => (
                     <button
-                      key={item.val}
-                      onClick={() => setInput({ ...input, monthlyIncome: item.val })}
-                      className={`w-full p-5 rounded-2xl border-2 flex items-center justify-between transition-all ${
-                        input.monthlyIncome === item.val
-                          ? 'border-blue-500 bg-blue-50'
-                          : 'border-gray-100 bg-white hover:border-blue-100'
+                      onClick={() => setInput({...input, hasHouse: true})}
+                      className={`p-10 rounded-[2.5rem] border-2 transition-all flex flex-col items-center gap-4 ${
+                        input.hasHouse ? 'border-blue-600 bg-blue-50/50' : 'border-slate-50 hover:border-slate-200'
                       }`}
                     >
-                      <div className="flex items-center gap-4">
-                        <span className="text-2xl">{item.icon}</span>
-                        <span className="font-bold text-gray-800">{item.label}</span>
-                      </div>
-                      <div className={`w-6 h-6 rounded-full border-2 flex items-center justify-center ${input.monthlyIncome === item.val ? 'border-blue-500 bg-blue-500' : 'border-gray-200'}`}>
-                        {input.monthlyIncome === item.val && <div className="w-2 h-2 bg-white rounded-full" />}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </motion.div>
-            )}
-
-            {step === 4 && (
-              <motion.div
-                key="step4"
-                initial={{ opacity: 0, x: 20 }}
-                animate={{ opacity: 1, x: 0 }}
-                exit={{ opacity: 0, x: -20 }}
-                className="space-y-8"
-              >
-                <div className="text-center">
-                  <span className="inline-block px-4 py-1.5 bg-blue-50 text-blue-600 rounded-full text-xs font-bold mb-4">STEP 04</span>
-                  <h4 className="text-2xl font-bold text-gray-900">마지막으로 주거 상황을 알려주세요</h4>
-                </div>
-                <div className="grid grid-cols-1 gap-4">
-                  <div className="p-6 rounded-2xl bg-gray-50 border border-gray-100">
-                    <p className="font-bold text-gray-800 mb-4 flex items-center gap-2 px-1">
-                      <Target className="w-4 h-4 text-blue-600" />
-                      현재 부모님과 같이 거주하고 계신가요?
-                    </p>
-                    <div className="flex gap-3">
-                      {[true, false].map((val) => (
-                        <button
-                          key={String(val)}
-                          onClick={() => setInput({ ...input, isIndependent: !val })}
-                          className={`flex-1 py-4 rounded-xl font-black transition-all ${
-                            input.isIndependent === !val ? 'bg-white border-2 border-blue-500 text-blue-600 shadow-sm' : 'bg-gray-100 text-gray-400 border-2 border-transparent'
-                          }`}
-                        >
-                          {val ? '네, 같이 살아요' : '아니요, 따로 살아요'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                  <div className="p-6 rounded-2xl bg-gray-50 border border-gray-100">
-                    <p className="font-bold text-gray-800 mb-4 flex items-center gap-2 px-1">
-                      <Search className="w-4 h-4 text-blue-600" />
-                      본인 명의의 집(부동산)을 소유하고 계신가요?
-                    </p>
-                    <div className="flex gap-3">
-                      {[true, false].map((val) => (
-                        <button
-                          key={String(val)}
-                          onClick={() => setInput({ ...input, hasHouse: val })}
-                          className={`flex-1 py-4 rounded-xl font-black transition-all ${
-                            input.hasHouse === val ? 'bg-white border-2 border-blue-500 text-blue-600 shadow-sm' : 'bg-gray-100 text-gray-400 border-2 border-transparent'
-                          }`}
-                        >
-                          {val ? '네, 내 집이에요' : '아니요, 무주택이에요'}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              </motion.div>
-            )}
-
-            {isCalculating && (
-              <motion.div
-                key="loading"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                className="flex flex-col items-center justify-center space-y-6"
-              >
-                <div className="relative w-24 h-24">
-                  <motion.div
-                    animate={{ rotate: 360 }}
-                    transition={{ repeat: Infinity, duration: 2, ease: "linear" }}
-                    className="absolute inset-0 border-4 border-blue-100 border-t-blue-600 rounded-full"
-                  />
-                  <div className="absolute inset-0 flex items-center justify-center text-4xl">🔬</div>
-                </div>
-                <div className="text-center">
-                  <h4 className="text-xl font-black text-gray-800">분석 중...</h4>
-                  <p className="text-sm text-gray-500 mt-1">행정 구역 및 정책 데이터를 대조하고 있습니다</p>
-                </div>
-              </motion.div>
-            )}
-
-            {step === 5 && !isCalculating && (
-              <motion.div
-                key="result"
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                className="space-y-8 pb-4"
-              >
-                <div className="text-center mb-10">
-                  <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 text-4xl">🏆</div>
-                  <h4 className="text-3xl font-black text-gray-900">진단 결과 보고서</h4>
-                  <p className="text-gray-500 mt-2">{regionName} 지역 맞춤 정책 분석 결과입니다</p>
-                </div>
-
-                <div className="space-y-6">
-                  {diagnosisResults.map((res, i) => (
-                    <div key={i} className={`p-6 rounded-3xl border ${res.isMatch ? 'border-blue-200 bg-blue-50/50' : 'border-gray-100 bg-gray-50 opacity-80'}`}>
-                      <div className="flex justify-between items-start mb-4">
-                        <div>
-                          <span className={`px-3 py-1 rounded-full text-[10px] font-black tracking-tighter uppercase ${res.isMatch ? 'bg-blue-600 text-white' : 'bg-gray-400 text-white'}`}>
-                            {res.isMatch ? '🎯 매칭 완료' : '🚧 기준 미달'}
-                          </span>
-                          <h5 className="text-lg font-black text-gray-900 mt-2">{res.policy.policyName}</h5>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-xs text-gray-400 font-bold">지원 규모</p>
-                          <p className="text-xl font-black text-blue-700">최대 {Math.floor(res.policy.maxAmount / 10000)}만원</p>
-                        </div>
-                      </div>
-                      
-                      <div className="space-y-2 mb-6">
-                        {res.reasons.map((reason, ri) => (
-                          <div key={ri} className={`flex items-center gap-2 text-xs font-bold ${reason.type === 'pass' ? 'text-green-700' : 'text-red-600'}`}>
-                            {reason.type === 'pass' ? <CheckCircle2 className="w-3.5 h-3.5" /> : <XCircle className="w-3.5 h-3.5" />}
-                            {reason.text}
-                          </div>
-                        ))}
-                      </div>
-
-                      {res.isMatch ? (
-                        <a href={res.policy.applicationUrl} target="_blank" className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl flex items-center justify-center gap-2 font-black transition-all shadow-lg shadow-blue-200">
-                          지금 바로 신청하기 <ChevronRight className="w-5 h-5" />
-                        </a>
-                      ) : (
-                        <div className="w-full py-4 bg-white border border-gray-200 text-gray-400 rounded-2xl flex items-center justify-center gap-2 font-black">
-                          <Info className="w-4 h-4" /> 상세 요건 확인하기
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-
-                {/* Derived Benefit (파생 혜택) */}
-                <div className="mt-8 p-8 bg-gradient-to-br from-amber-400 to-orange-500 rounded-[2rem] text-white shadow-xl relative overflow-hidden">
-                  <div className="absolute top-0 right-0 p-4 text-7xl opacity-20"><Gift /></div>
-                  <div className="relative z-10">
-                    <h5 className="text-xl font-black flex items-center gap-2 mb-2">
-                      <Gift className="w-6 h-6" /> 깜짝 보너스 혜택!
-                    </h5>
-                    <p className="text-sm font-medium text-amber-50 mb-6">
-                      {input.isWorking ? '근로 청년' : '구직 청년'}이시군요? {regionName}에서 제공하는{' '}
-                      <strong>{input.isWorking ? '청년 중소기업 소득세 감면' : '청년 구직활동지원금'}</strong>도 놓치지 마세요!
-                    </p>
-                    <button className="px-6 py-3 bg-white text-orange-600 rounded-xl font-black text-sm hover:scale-105 transition-transform shadow-lg shadow-orange-900/20">
-                      파생 혜택 모두 보기
+                      <Building2 className={`w-8 h-8 ${input.hasHouse ? 'text-blue-600' : 'text-slate-300'}`} />
+                      <span className="font-black">주택소유</span>
                     </button>
                   </div>
                 </div>
+              )}
 
-                <div className="flex gap-3 pt-4">
-                  <button onClick={reset} className="flex-1 py-5 bg-gray-100 hover:bg-gray-200 text-gray-600 rounded-[1.5rem] font-black flex items-center justify-center gap-2 transition-all">
-                    <RefreshCcw className="w-5 h-5" /> 다시 진단하기
+              {/* Action Buttons */}
+              <div className="flex gap-3 mt-12">
+                {step > 1 && (
+                  <button 
+                    onClick={handleBack}
+                    className="px-8 py-5 rounded-2xl font-black text-slate-400 hover:text-slate-600 transition-colors"
+                  >
+                    이전으로
                   </button>
-                </div>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
-
-        {/* 하단 버튼 (스텝 모드일 때) */}
-        {step < 5 && !isCalculating && (
-          <div className="px-8 pb-10 flex gap-4">
-            {step > 1 && (
-              <button
-                onClick={handleBack}
-                className="flex-1 py-5 border-2 border-gray-100 text-gray-400 font-black rounded-2xl hover:bg-gray-50 transition-all"
-              >
-                이전으로
-              </button>
-            )}
-            <button
-              onClick={handleNext}
-              className="flex-[2] py-5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-2xl flex items-center justify-center gap-2 shadow-xl shadow-blue-200 transition-all text-lg group"
-            >
-              {step === 4 ? '최종 결과 분석하기' : '다음 단계로'}
-              <ChevronRight className="w-6 h-6 group-hover:translate-x-1 transition-transform" />
-            </button>
-          </div>
+                )}
+                <button 
+                  onClick={handleNext}
+                  disabled={isCalculating}
+                  className="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-slate-800 transition-all flex items-center justify-center gap-2 group"
+                >
+                  {isCalculating ? (
+                    <RefreshCcw className="w-5 h-5 animate-spin" />
+                  ) : (
+                    <>
+                      {step === 4 ? '판독 결과 확인하기' : '다음 단계로'}
+                      <ChevronRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </motion.div>
         )}
-      </div>
 
-      {/* 신뢰도 뱃지 */}
-      <div className="mt-8 flex items-center justify-center gap-8 opacity-60 grayscale hover:grayscale-0 transition-all">
-        <div className="flex flex-col items-center">
-            <Search className="w-8 h-8 text-gray-400 mb-1" />
-            <span className="text-[10px] font-bold text-gray-500">실시간 데이터</span>
-        </div>
-        <div className="flex flex-col items-center">
-            <CheckCircle2 className="w-8 h-8 text-gray-400 mb-1" />
-            <span className="text-[10px] font-bold text-gray-500">공식 출처 대조</span>
-        </div>
-        <div className="flex flex-col items-center">
-            <Target className="w-8 h-8 text-gray-400 mb-1" />
-            <span className="text-[10px] font-bold text-gray-500">맞춤형 필터링</span>
-        </div>
-      </div>
+        {step === 5 && (
+          <motion.div
+            key="diagnoser-result"
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="space-y-6"
+          >
+            {/* Detailed Result Card */}
+            <div className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-blue-500/5 p-8 md:p-12 overflow-hidden">
+              <div className="flex items-center justify-between mb-8">
+                <div className={`px-4 py-2 rounded-full text-xs font-black uppercase tracking-widest flex items-center gap-2 ${
+                  result.isMatch ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                }`}>
+                  {result.isMatch ? <CheckCircle2 className="w-4 h-4" /> : <XCircle className="w-4 h-4" />}
+                  {result.isMatch ? 'Qualified' : 'Not Qualified'}
+                </div>
+                <button 
+                  onClick={reset}
+                  className="p-2 text-slate-300 hover:text-blue-500 transition-colors"
+                >
+                  <RefreshCcw className="w-5 h-5" />
+                </button>
+              </div>
+
+              <h2 className="text-3xl font-black text-slate-900 mb-8 leading-tight">
+                {result.isMatch ? (
+                  <>축하합니다! <span className="text-blue-600">혜택 대상</span> 가망성이 매우 높습니다</>
+                ) : (
+                  <>아쉽지만 소득 또는 거주 요건이<br /><span className="text-red-500">기준과 조금 다릅니다</span></>
+                )}
+              </h2>
+
+              <div className="space-y-4 mb-10">
+                {result.reasons.map((r, i) => (
+                  <div key={i} className="flex gap-3 items-start p-4 bg-slate-50 rounded-2xl">
+                    {r.type === 'pass' ? <CheckCircle2 className="w-5 h-5 text-green-500 mt-0.5" /> : <AlertCircle className="w-5 h-5 text-red-500 mt-0.5" />}
+                    <span className="text-sm font-bold text-slate-600">{r.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              {result.isMatch && (
+                 <motion.div 
+                   initial={{ opacity: 0, y: 10 }}
+                   animate={{ opacity: 1, y: 0 }}
+                   className="bg-blue-600 text-white p-8 rounded-[2rem] text-center"
+                 >
+                   <p className="text-xs font-black opacity-60 uppercase tracking-widest mb-2">Estimated Amount</p>
+                   <h3 className="text-4xl font-black mb-6">최대 240만원</h3>
+                   <a 
+                     href={policy.applicationUrl} 
+                     target="_blank" 
+                     className="block w-full bg-white text-blue-600 py-4 rounded-xl font-black shadow-lg shadow-blue-700/20 active:scale-95 transition-all"
+                   >
+                     공식 신청 페이지로 이동
+                   </a>
+                 </motion.div>
+              )}
+            </div>
+
+            {/* Viral Card (Result Graduation) */}
+            {result.isMatch && (
+              <ViralShareCard 
+                regionName={regionName} 
+                policyName={policy.policyName}
+                maxAmount="240만원"
+              />
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }
