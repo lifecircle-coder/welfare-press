@@ -122,7 +122,7 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                                 
                                 if (url) {
                                     const quill = quillRef.current.getEditor();
-                                    const range = quill.getSelection(true);
+                                    const range = quill.getSelection(true) || { index: quill.getLength() };
                                     quill.insertEmbed(range.index, 'image', url);
                                     quill.setSelection(range.index + 1);
                                 } else {
@@ -157,9 +157,14 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                                 
                                 if (url) {
                                     const quill = quillRef.current.getEditor();
-                                    const html = quill.root.innerHTML;
-                                    const updatedHtml = html.replace(src, url);
-                                    quill.root.innerHTML = updatedHtml;
+                                    // Use range to insert at current position if possible, otherwise append
+                                    const range = quill.getSelection(true) || { index: quill.getLength() };
+                                    quill.insertEmbed(range.index, 'image', url);
+                                    quill.setSelection(range.index + 1);
+                                    
+                                    // Also remove the original base64 image if it was inserted as a delta
+                                    // In this specific matcher implementation, we let the delta pass 
+                                    // but we can also opt to replace the whole content if needed.
                                 }
                             } catch (error) {
                                 console.error('Pasted image processing failed:', error);
@@ -172,6 +177,7 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                 }]
             ]
         },
+
 
     }), [toolbarId]); // STABLE: articleId removed from deps
 
