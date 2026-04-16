@@ -4,7 +4,7 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css';
 import { uploadArticleImage } from '@/lib/services';
-import { adminSupabase } from '@/lib/supabaseClient';
+import { supabase } from '@/lib/supabaseClient';
 
 const ReactQuill = dynamic(
     async () => {
@@ -120,8 +120,8 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                                 // 1. Strict Optimization (No Fallback to Original)
                                 const optimized = await resizeImage(file);
 
-                                // 2. Upload with admin client
-                                const url = await uploadArticleImage(optimized, articleIdRef.current || 'temp', adminSupabase);
+                                // 2. Upload with standard client (proven session stability)
+                                const url = await uploadArticleImage(optimized, articleIdRef.current || 'temp', supabase);
                                 
                                 if (url) {
                                     const quill = quillRef.current?.getEditor();
@@ -131,7 +131,7 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                                         quill.setSelection(range.index + 1);
                                     }
                                 } else {
-                                    alert('이미지 업로드에 실패했습니다. (스토리지 권한 오류)');
+                                    alert('이미지 업로드에 실패했습니다. (서버/권한 오류)\n브라우저 캐시를 삭제하거나 다시 로그인해 주세요.');
                                 }
                             } catch (error: any) {
                                 console.error('Image processing fault:', error);

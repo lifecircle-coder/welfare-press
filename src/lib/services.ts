@@ -237,11 +237,12 @@ export const uploadArticleImage = async (source: File | string, articleId: strin
             .from('partnership_files')
             .upload(filePath, body, {
                 contentType,
+                cacheControl: '3600',
                 upsert: true
             });
 
         if (uploadError) {
-            console.error('Error uploading to storage:', uploadError);
+            console.error('Storage Upload Error Detail:', uploadError);
             return null;
         }
 
