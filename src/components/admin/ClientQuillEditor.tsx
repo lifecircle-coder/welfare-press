@@ -112,12 +112,14 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                                 console.log('업로드 결과 URL:', url);
                                 
                                 if (url) {
-                                    const quill = quillRef.current.getEditor();
+                                    // Use this.quill which is the internal Quill instance for handlers
+                                    const quill = (this as any).quill;
                                     const range = quill.getSelection(true) || { index: quill.getLength() };
                                     quill.insertEmbed(range.index, 'image', url);
                                     quill.setSelection(range.index + 1);
                                     console.log('에디터에 이미지 삽입 완료');
                                 } else {
+
                                     alert('이미지 업로드에 실패했습니다. (URL 반환 실패)');
                                 }
                             } catch (err) {
