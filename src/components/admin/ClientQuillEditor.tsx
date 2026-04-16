@@ -1,4 +1,4 @@
-﻿'use client';
+'use client';
 
 import React, { useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
@@ -46,7 +46,7 @@ const ReactQuill = dynamic(
 
         return RQ;
     },
-    { ssr: false, loading: () => <div className="h-[400px] bg-gray-50 animate-pulse rounded-lg border border-gray-200 flex items-center justify-center text-gray-400">?먮뵒??珥덇린??以?..</div> }
+    { ssr: false, loading: () => <div className="h-[400px] bg-gray-50 animate-pulse rounded-lg border border-gray-200 flex items-center justify-center text-gray-400">에디터 초기화 중...</div> }
 );
 
 interface EditorProps {
@@ -144,11 +144,11 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                                     quill.insertEmbed(range.index, 'image', url);
                                     quill.setSelection(range.index + 1);
                                 } else {
-                                    alert('?대?吏 ?낅줈?쒖뿉 ?ㅽ뙣?덉뒿?덈떎.');
+                                    alert('이미지 업로드에 실패했습니다.');
                                 }
                             } catch (error) {
                                 console.error('Image upload error:', error);
-                                alert('?대?吏 泥섎━ 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎.');
+                                alert('이미지 처리 중 오류가 발생했습니다.');
                             } finally {
                                 setIsUploading(false);
                             }
@@ -210,7 +210,7 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
             {isUploading && (
                 <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/50 backdrop-blur-[1px]">
                     <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-rotate mb-2" />
-                    <span className="text-sm font-bold text-primary animate-pulse">?대?吏 理쒖쟻??諛??낅줈??以?..</span>
+                    <span className="text-sm font-bold text-primary animate-pulse">이미지 최적화 및 업로드 중...</span>
                 </div>
             )}
             
@@ -240,14 +240,14 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                     <button className="ql-list" value="bullet" />
                     
                     <select className="ql-special-char" defaultValue="">
-                        <option value="" disabled>?뱀닔臾몄옄</option>
-                        <option value="??>????/option>
-                        <option value="??>??留덈쫫紐?/option>
-                        <option value="??>???쇨컖??/option>
-                        <option value="??>???먰삎</option>
-                        <option value="??>??蹂꾪몴??/option>
-                        <option value="??>???붿궡??/option>
-                        <option value="??>??泥댄겕</option>
+                        <option value="" disabled>특수문자</option>
+                        <option value="●">● 점</option>
+                        <option value="◇">◇ 마름모</option>
+                        <option value="▲">▲ 삼각형</option>
+                        <option value="○">○ 원형</option>
+                        <option value="❖">❖ 별표형</option>
+                        <option value="➔">➔ 화살표</option>
+                        <option value="✓">✓ 체크</option>
                     </select>
 
                     <select className="ql-line-height" defaultValue="2.0">
@@ -303,7 +303,7 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                 onChange={onChange}
                 modules={modules}
                 formats={formats}
-                placeholder={placeholder || '?몃? ?댁슜???낅젰?섏꽭??..'}
+                placeholder={placeholder || '세부 내용을 입력하세요...'}
             />
         </div>
     );

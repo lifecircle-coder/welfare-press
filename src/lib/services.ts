@@ -1,10 +1,11 @@
-﻿import { supabase } from './supabaseClient';
+import { supabase } from './supabaseClient';
 
 export interface User {
     id: string;
     name: string;
     email: string;
-    email_display?: string; // 湲곗궗 ?곸꽭?섏씠吏 ?몄텧???대찓??    role: 'admin' | 'reporter' | 'user';
+    email_display?: string; // 기사 상세페이지 노출용 이메일
+    role: 'admin' | 'reporter' | 'user';
     specialty?: string;
     grade?: string;
     joinDate: string;
@@ -46,7 +47,7 @@ export interface Comment {
     author: string;
     content: string;
     date: string;
-    parentId?: string; // ??볤? 吏?먯쓣 ?꾪븳 遺紐??볤? ID
+    parentId?: string; // 대댓글 지원을 위한 부모 댓글 ID
 }
 
 export interface PartnershipInquiry {
@@ -112,18 +113,18 @@ export const getArticlesByCategory = async (category: string, limit = 20, offset
         .select(ARTICLE_LIST_FIELDS)
         .eq('status', 'published');
     
-    // ?ㅼ쨷 移댄뀒怨좊━ 寃??吏??(category_list JSONB ?대???議댁옱 ?щ? ?뺤씤)
-    if (category && category !== 'all' && category !== '?꾩껜') {
+    // 다중 카테고리 검색 지원 (category_list JSONB 내부에 존재 여부 확인)
+    if (category && category !== 'all' && category !== '전체') {
         let jsonPart: string;
         let escapedJson: string;
 
-        if (prefix && prefix !== '?꾩껜') {
-            // ?뱀젙 ?뚮텇瑜?prefix)媛 ?좏깮??寃쎌슦: (?덇굅???꾨뱶 議고빀) OR (?좉퇋 JSONB ??議댁옱)
+        if (prefix && prefix !== '전체') {
+            // 특정 소분류(prefix)가 선택된 경우: (레거시 필드 조합) OR (신규 JSONB 내 존재)
             jsonPart = JSON.stringify([{ category, prefix }]);
             escapedJson = jsonPart.replace(/"/g, '\\"');
             query = query.or(`and(category.eq."${category}",prefix.eq."${prefix}"),category_list.cs."${escapedJson}"`);
         } else {
-            // ?뱀젙 ?뚮텇瑜섍? 吏?뺣릺吏 ?딆? 寃쎌슦: (?덇굅???遺꾨쪟) OR (?좉퇋 JSONB ???遺꾨쪟 議댁옱)
+            // 특정 소분류가 지정되지 않은 경우: (레거시 대분류) OR (신규 JSONB 내 대분류 존재)
             jsonPart = JSON.stringify([{ category }]);
             escapedJson = jsonPart.replace(/"/g, '\\"');
             query = query.or(`category.eq."${category}",category_list.cs."${escapedJson}"`);
@@ -172,7 +173,7 @@ export const getTopArticles = async (limit = 10, client = supabase): Promise<Art
 };
 
 /**
- * ?뱀젙 硫붾돱(?遺꾨쪟/?뚮텇瑜????곌껐??湲곗궗??媛쒖닔瑜?議고쉶?⑸땲??
+ * 특정 메뉴(대분류/소분류)에 연결된 기사의 개수를 조회합니다.
  */
 export const getLinkedArticleCount = async (menuName: string, isSub: boolean): Promise<number> => {
     const field = isSub ? 'prefix' : 'category';
@@ -300,7 +301,7 @@ export const saveArticle = async (article: Article, client = supabase): Promise<
     if (!finalThumbnail || finalThumbnail.startsWith('data:')) {
         let extractedSrc = null;
 
-        // 1. 釉뚮씪?곗? ?섍꼍??寃쎌슦 DOMParser ?쒖슜
+        // 1. 브라우저 환경인 경우 DOMParser 활용
         if (typeof window !== 'undefined' && window.DOMParser) {
             try {
                 const parser = new DOMParser();
@@ -332,22 +333,22 @@ export const saveArticle = async (article: Article, client = supabase): Promise<
     if (finalContent.length > MAX_CONTENT_SIZE) {
         return { 
             success: false, 
-            error: { message: '湲곗궗 ?댁슜???덈Т ?쎈땲?? ??⑸웾 ?대?吏??理쒖쟻?붽? ?꾩슂?⑸땲??(??5MB ?쒗븳).' } 
+            error: { message: '기사 내용이 너무 큽니다. 대용량 이미지는 최적화가 필요합니다 (약 5MB 제한).' } 
         };
     }
 
     const existing = await getArticleById(article.id);
     const now = new Date().toISOString();
 
-    // [?섏〈???꾩닔 議곗궗] ?뺣젹怨?諛쒗뻾?쇱쓽 湲곗????섎뒗 date ?꾨뱶瑜?created_at 媛쒕뀗?쇰줈 ?뺣┰
+    // [의존성 전수 조사] 정렬과 발행일의 기준이 되는 date 필드를 created_at 개념으로 정립
     let finalizedDate = article.date;
 
     if (existing) {
-        // ?섏젙 ?? 湲곗〈??date(諛쒗뻾??瑜??덈??곸쑝濡??좎???(珥??⑥쐞 ?ы븿)
-        // ?ъ슜?먭? 愿由ъ옄 ?섏씠吏?먯꽌 紐낆떆?곸쑝濡??섏젙?덉쓣 寃쎌슦?먮쭔 ?덈줈??媛믪쓣 ?곸슜
+        // 수정 시: 기존의 date(발행일)를 절대적으로 유지함 (초 단위 포함)
+        // 사용자가 관리자 페이지에서 명시적으로 수정했을 경우에만 새로운 값을 적용
         finalizedDate = article.date || existing.date || now;
     } else {
-        // ?좉퇋 ?묒꽦 ?? ?꾩옱 ?쒓컙??諛쒗뻾?쇰줈 ?ㅼ젙 (珥??⑥쐞 ?ы븿)
+        // 신규 작성 시: 현재 시간을 발행일로 설정 (초 단위 포함)
         finalizedDate = article.date || now;
     }
 
@@ -355,9 +356,10 @@ export const saveArticle = async (article: Article, client = supabase): Promise<
         ...article,
         content: finalContent,
         thumbnail: finalThumbnail,
-        date: finalizedDate || article.created_at, // date? created_at ?숆린??        created_at: article.created_at || finalizedDate, // 紐낆떆?곸쑝濡?created_at ?ы븿
+        date: finalizedDate || article.created_at, // date와 created_at 동기화
+        created_at: article.created_at || finalizedDate, // 명시적으로 created_at 포함
         updated_at: now,
-        // 泥?踰덉㎏ 移댄뀒怨좊━瑜?湲곗〈 ?꾨뱶???좎? (?섏쐞 ?명솚??諛?硫붿씤 ?쒖떆??
+        // 첫 번째 카테고리를 기존 필드에 유지 (하위 호환성 및 메인 표시용)
         category: article.category_list && article.category_list.length > 0 
             ? article.category_list[0].category 
             : article.category,
@@ -447,15 +449,15 @@ export const getUserById = async (id: string): Promise<User | undefined> => {
 };
 
 /**
- * ?묒꽦???대쫫(?됰꽕???쇰줈 ?좎? ?뺣낫瑜?議고쉶?⑸땲??
- * 湲곗궗 ?곸꽭?섏씠吏?먯꽌 ?대찓??留ㅼ묶???꾪빐 ?ъ슜?⑸땲??
+ * 작성자 이름(닉네임)으로 유저 정보를 조회합니다.
+ * 기사 상세페이지에서 이메일 매칭을 위해 사용합니다.
  */
 export const getUserByName = async (name: string): Promise<User | undefined> => {
     const { data, error } = await supabase
         .from('users')
         .select('*')
         .eq('name', name)
-        .eq('role', 'reporter') // 湲곗옄 怨꾩젙?먯꽌留?李얠쓬
+        .eq('role', 'reporter') // 기자 계정에서만 찾음
         .maybeSingle();
 
     if (error || !data) return undefined;
@@ -477,11 +479,12 @@ export const updateUser = async (user: User): Promise<void> => {
 };
 
 /**
- * 湲곗옄???대쫫???섏젙?섍퀬, ?대떦 湲곗옄媛 ?묒꽦??紐⑤뱺 湲곗궗, ?볤?, 臾몄쓽???묒꽦??紐낆쓣 ?쇨큵 ?낅뜲?댄듃?⑸땲??
- * @param userId ?섏젙???ъ슜?먯쓽 ID
- * @param oldName 湲곗? ?대쫫 (寃?됱슜)
- * @param newName ???대쫫
- * @param client Supabase ?대씪?댁뼵?? */
+ * 기자의 이름을 수정하고, 해당 기자가 작성한 모든 기사, 댓글, 문의의 작성자 명을 일괄 업데이트합니다.
+ * @param userId 수정할 사용자의 ID
+ * @param oldName 기준 이름 (검색용)
+ * @param newName 새 이름
+ * @param client Supabase 클라이언트
+ */
 export const updateUserWithContent = async (
     userId: string,
     oldName: string,
@@ -489,7 +492,7 @@ export const updateUserWithContent = async (
     client = supabase
 ): Promise<{ success: boolean; error?: any }> => {
     try {
-        // 1. users ?뚯씠釉??낅뜲?댄듃
+        // 1. users 테이블 업데이트
         const { error: userError } = await client
             .from('users')
             .update({ name: newName })
@@ -497,25 +500,25 @@ export const updateUserWithContent = async (
         
         if (userError) throw userError;
 
-        // ?대쫫??蹂寃쎈맂 寃쎌슦?먮쭔 愿??肄섑뀗痢??낅뜲?댄듃 吏꾪뻾
+        // 이름이 변경된 경우에만 관련 콘텐츠 업데이트 진행
         if (oldName !== newName) {
             console.log(`Synchronizing content creator name from [${oldName}] to [${newName}]...`);
             
-            // 2. articles ?뚯씠釉??낅뜲?댄듃
+            // 2. articles 테이블 업데이트
             const { error: artError } = await client
                 .from('articles')
                 .update({ author: newName })
                 .eq('author', oldName);
             if (artError) console.error('Error updating articles author:', artError);
 
-            // 3. comments ?뚯씠釉??낅뜲?댄듃
+            // 3. comments 테이블 업데이트
             const { error: cmtError } = await client
                 .from('comments')
                 .update({ author: newName })
                 .eq('author', oldName);
             if (cmtError) console.error('Error updating comments author:', cmtError);
 
-            // 4. inquiries ?뚯씠釉??낅뜲?댄듃
+            // 4. inquiries 테이블 업데이트
             const { error: inqError } = await client
                 .from('inquiries')
                 .update({ author: newName })
@@ -617,11 +620,11 @@ export const addComment = async (comment: Comment, client = supabase): Promise<v
             author: comment.author,
             content: comment.content,
             date: new Date().toISOString(),
-            parent_id: comment.parentId // 遺紐?ID 異붽?
+            parent_id: comment.parentId // 부모 ID 추가
         });
     if (error) {
         console.error('Error adding comment:', error);
-        alert('?볤? ?깅줉 以??ㅻ쪟媛 諛쒖깮?덉뒿?덈떎: ' + error.message);
+        alert('댓글 등록 중 오류가 발생했습니다: ' + error.message);
     }
 };
 
@@ -827,12 +830,13 @@ export const getPendingInquiriesCount = async (): Promise<number> => {
 };
 
 /**
- * 理쒓렐 ?뱀젙 ?쒓컙 ?대궡???덈줈???볤????щ┛ 湲곗궗??ID 紐⑸줉??議고쉶?⑸땲??
+ * 최근 특정 시간 이내에 새로운 댓글이 달린 기사의 ID 목록을 조회합니다.
  */
 export const getArticlesWithNewComments = async (hours = 12, client = supabase): Promise<string[]> => {
     const targetDate = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
 
-    // date 而щ읆??ISO ?뺤떇 臾몄옄?댁씠誘濡?gte濡?鍮꾧탳 媛??    const { data, error } = await client
+    // date 컬럼이 ISO 형식 문자열이므로 gte로 비교 가능
+    const { data, error } = await client
         .from('comments')
         .select('article_id')
         .gte('date', targetDate);
@@ -846,7 +850,7 @@ export const getArticlesWithNewComments = async (hours = 12, client = supabase):
         console.log(`[Admin Notice] Found ${data.length} new comments in last ${hours}h:`, data);
     }
 
-    // 以묐났 ?쒓굅??article_id 紐⑸줉 諛섑솚
+    // 중복 제거된 article_id 목록 반환
     const articleIds = Array.from(new Set(data.map(item => item.article_id)));
     return articleIds;
 };
@@ -867,15 +871,16 @@ export const getMenus = async (client = supabase): Promise<Menu[]> => {
 };
 
 /**
- * 硫붾돱 紐⑸줉???쇨큵 ??ν빀?덈떎. (?쒖꽌 諛?怨꾩링 援ъ“ 諛섏쁺)
- * 硫붾돱 紐낆묶??蹂寃쎈맂 寃쎌슦, ?대떦 移댄뀒怨좊━濡??묒꽦??湲곗〈 湲곗궗?ㅼ쓽 ?뺣낫???④퍡 ?낅뜲?댄듃?⑸땲??
+ * 메뉴 목록을 일괄 저장합니다. (순서 및 계층 구조 반영)
+ * 메뉴 명칭이 변경된 경우, 해당 카테고리로 작성된 기존 기사들의 정보도 함께 업데이트합니다.
  */
 export const saveMenus = async (menus: Menu[], client = supabase): Promise<{ success: boolean; error?: any }> => {
     try {
-        // 1. 湲곗〈 硫붾돱 ?뺣낫瑜?遺덈윭? 紐낆묶 蹂寃?媛먯? 以鍮?        const { data: existingMenus } = await client.from('menus').select('*');
+        // 1. 기존 메뉴 정보를 불러와 명칭 변경 감지 준비
+        const { data: existingMenus } = await client.from('menus').select('*');
         const existingMap = new Map((existingMenus || []).map(m => [m.id, m]));
 
-        // 2. 紐⑤뱺 硫붾돱瑜?upsert (id媛 ?덉쑝硫?update, ?놁쑝硫?insert)
+        // 2. 모든 메뉴를 upsert (id가 있으면 update, 없으면 insert)
         const { error: upsertError } = await client
             .from('menus')
             .upsert(menus.map(m => ({
@@ -888,22 +893,23 @@ export const saveMenus = async (menus: Menu[], client = supabase): Promise<{ suc
 
         if (upsertError) throw upsertError;
 
-        // 3. ?몄텧 ?щ? 諛?紐낆묶 蹂寃???湲곗궗 ?곗씠???숆린??(Article Sync)
+        // 3. 노출 여부 및 명칭 변경 시 기사 데이터 동기화 (Article Sync)
         for (const menu of menus) {
             const oldMenu = existingMap.get(menu.id);
             if (oldMenu) {
-                // ?몄텧 ?щ? 蹂寃?媛먯?: 誘몃끂異???'draft', ?몄텧 ??'published'濡??쇨큵 蹂寃?                if (oldMenu.is_visible !== menu.is_visible) {
+                // 노출 여부 변경 감지: 미노출 시 'draft', 노출 시 'published'로 일괄 변경
+                if (oldMenu.is_visible !== menu.is_visible) {
                     const newStatus = menu.is_visible ? 'published' : 'draft';
                     console.log(`Syncing article status: Menu [${menu.name}] Visibility ${oldMenu.is_visible} -> ${menu.is_visible} (Status: ${newStatus})`);
                     
                     if (!menu.parent_id) {
-                        // ?遺꾨쪟 ?몄텧 ?곹깭 蹂寃????대떦 移댄뀒怨좊━??紐⑤뱺 湲곗궗 ?곹깭 ?낅뜲?댄듃
+                        // 대분류 노출 상태 변경 시 해당 카테고리의 모든 기사 상태 업데이트
                         await client
                             .from('articles')
                             .update({ status: newStatus })
                             .eq('category', menu.name);
                     } else {
-                        // ?뚮텇瑜??몄텧 ?곹깭 蹂寃????대떦 ?뚮텇瑜?prefix) 湲곗궗 ?곹깭 ?낅뜲?댄듃
+                        // 소분류 노출 상태 변경 시 해당 소분류(prefix) 기사 상태 업데이트
                         await client
                             .from('articles')
                             .update({ status: newStatus })
@@ -911,17 +917,19 @@ export const saveMenus = async (menus: Menu[], client = supabase): Promise<{ suc
                     }
                 }
 
-                // 紐낆묶 蹂寃?媛먯? (湲곗〈 濡쒖쭅)
+                // 명칭 변경 감지 (기존 로직)
                 if (oldMenu.name !== menu.name) {
                     console.log(`Syncing article names: Category/Prefix [${oldMenu.name}] -> [${menu.name}]`);
                     
                     if (!menu.parent_id) {
-                        // ?遺꾨쪟(Category) 紐낆묶 蹂寃?                        await client
+                        // 대분류(Category) 명칭 변경
+                        await client
                             .from('articles')
                             .update({ category: menu.name })
                             .eq('category', oldMenu.name);
                     } else {
-                        // ?뚮텇瑜?Prefix) 紐낆묶 蹂寃?                        await client
+                        // 소분류(Prefix) 명칭 변경
+                        await client
                             .from('articles')
                             .update({ prefix: menu.name })
                             .eq('prefix', oldMenu.name);
@@ -939,7 +947,7 @@ export const saveMenus = async (menus: Menu[], client = supabase): Promise<{ suc
 
 export const deleteMenu = async (id: string, client = supabase): Promise<{ success: boolean; error?: any }> => {
     try {
-        // 1. ??젣??硫붾돱 ?뺣낫 議고쉶 (?곌? 湲곗궗 泥섎━瑜??꾪빐 ?대쫫怨??/?뚮텇瑜??щ? ?뺤씤)
+        // 1. 삭제할 메뉴 정보 조회 (연관 기사 처리를 위해 이름과 대/소분류 여부 확인)
         const { data: menuToDelete, error: fetchError } = await client
             .from('menus')
             .select('*')
@@ -947,37 +955,38 @@ export const deleteMenu = async (id: string, client = supabase): Promise<{ succe
             .single();
 
         if (fetchError || !menuToDelete) {
-            throw new Error('??젣??硫붾돱瑜?李얠쓣 ???놁뒿?덈떎.');
+            throw new Error('삭제할 메뉴를 찾을 수 없습니다.');
         }
 
         const isSubCategory = !!menuToDelete.parent_id;
 
-        // 2. ?곌???湲곗궗 泥섎━ (??쒕떂 吏?쒖궗??諛섏쁺)
+        // 2. 연관된 기사 처리 (대표님 지시사항 반영)
         if (!isSubCategory) {
-            // [?遺꾨쪟 ??젣]
-            // - ?대떦 移댄뀒怨좊━??湲곗궗瑜?'移댄뀒怨좊━ ?놁쓬'?쇰줈 蹂寃?            // - 湲곗궗 ?곹깭瑜?'draft'(誘멸쾶??濡??꾪솚
+            // [대분류 삭제]
+            // - 해당 카테고리의 기사를 '카테고리 없음'으로 변경
+            // - 기사 상태를 'draft'(미게재)로 전환
             await client
                 .from('articles')
                 .update({ 
-                    category: '移댄뀒怨좊━ ?놁쓬', 
+                    category: '카테고리 없음', 
                     status: 'draft',
-                    prefix: null // ?遺꾨쪟媛 ?щ씪吏硫??뚮텇瑜??섎?媛 ?놁쑝誘濡??④퍡 ?쒓굅
+                    prefix: null // 대분류가 사라지면 소분류 의미가 없으므로 함께 제거
                 })
                 .eq('category', menuToDelete.name);
             
-            // ?섏쐞 ?뚮텇瑜섎뱾???④퍡 ??젣 泥섎━媛 ?꾩슂?????덉쑝?? 
-            // ?꾩옱 DB ?쒖빟 議곌굔???녿떎硫??섎룞?쇰줈 ?섏쐞 硫붾돱????젣?섍굅???뚮┝李쎌뿉???덇퀬?쒕?濡?吏꾪뻾
+            // 하위 소분류들도 함께 삭제 처리가 필요할 수 있으나, 
+            // 현재 DB 제약 조건이 없다면 수동으로 하위 메뉴도 삭제하거나 알림창에서 예고한대로 진행
         } else {
-            // [?뚮텇瑜?留먮㉧由? ??젣]
-            // - 湲곗궗???뚮텇瑜?prefix)留??쒓굅
-            // - ?遺꾨쪟 諛?寃뚯옱 ?곹깭(published)???좎?
+            // [소분류(말머리) 삭제]
+            // - 기사의 소분류(prefix)만 제거
+            // - 대분류 및 게재 상태(published)는 유지
             await client
                 .from('articles')
                 .update({ prefix: null })
                 .eq('prefix', menuToDelete.name);
         }
 
-        // 3. ?ㅼ젣 硫붾돱 ?덉퐫????젣
+        // 3. 실제 메뉴 레코드 삭제
         const { error: deleteError } = await client
             .from('menus')
             .delete()
