@@ -65,27 +65,44 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
     }, [articleId]);
 
     const resizeImage = (file: File): Promise<File> => {
-        return new Promise((resolve) => {
+        return new Promise((resolve, reject) => {
             const reader = new FileReader();
             reader.readAsDataURL(file);
             reader.onload = (e) => {
                 const img = new Image();
                 img.src = e.target?.result as string;
                 img.onload = () => {
-                    const canvas = document.createElement('canvas');
-                    const MAX_SIZE = 1200;
-                    let w = img.width;
-                    let h = img.height;
-                    if (w > h && w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; }
-                    else if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; }
-                    canvas.width = w; canvas.height = h;
-                    const ctx = canvas.getContext('2d');
-                    ctx?.drawImage(img, 0, 0, w, h);
-                    canvas.toBlob((blob) => {
-                        resolve(new File([blob!], 'image.webp', { type: 'image/webp' }));
-                    }, 'image/webp', 0.82);
+                    try {
+                        const canvas = document.createElement('canvas');
+                        const MAX_SIZE = 1200;
+                        let w = img.width;
+                        let h = img.height;
+                        if (w > h && w > MAX_SIZE) { h *= MAX_SIZE / w; w = MAX_SIZE; }
+                        else if (h > MAX_SIZE) { w *= MAX_SIZE / h; h = MAX_SIZE; }
+                        canvas.width = w; canvas.height = h;
+                        const ctx = canvas.getContext('2d');
+                        if (!ctx) {
+                            // Canvas context fails (rare)
+                            resolve(file); // Fallback to original
+                            return;
+                        }
+                        ctx.drawImage(img, 0, 0, w, h);
+                        canvas.toBlob((blob) => {
+                            if (blob) {
+                                resolve(new File([blob], 'image.webp', { type: 'image/webp' }));
+                            } else {
+                                // toBlob failed (possibly too large)
+                                resolve(file); // Fallback to original
+                            }
+                        }, 'image/webp', 0.82);
+                    } catch (err) {
+                        console.error('Resize internal error:', err);
+                        resolve(file); // Final fallback
+                    }
                 };
+                img.onerror = () => reject(new Error('이미지 로드 실패'));
             };
+            reader.onerror = () => reject(new Error('파일 읽기 실패'));
         });
     };
 
@@ -103,19 +120,31 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                         if (file) {
                             try {
                                 setIsUploading(true);
-                                const optimized = await resizeImage(file);
+                                // 1. Optimization with error fallback
+                                const optimized = await resizeImage(file).catch(err => {
+                                    console.warn('Optimization failed, using original:', err);
+                                    return file;
+                                });
+
+                                // 2. Upload with admin client
                                 const url = await uploadArticleImage(optimized, articleIdRef.current || 'temp', adminSupabase);
+                                
                                 if (url) {
-                                    const quill = quillRef.current.getEditor();
-                                    const range = quill.getSelection(true);
-                                    quill.insertEmbed(range.index, 'image', url);
-                                    quill.setSelection(range.index + 1);
+                                    const quill = quillRef.current?.getEditor();
+                                    if (quill) {
+                                        // 3. Selection safety (fallback to end of editor)
+                                        const range = quill.getSelection(true) || { index: quill.getLength() };
+                                        quill.insertEmbed(range.index, 'image', url);
+                                        quill.setSelection(range.index + 1);
+                                    } else {
+                                        console.error('Quill editor instance not found');
+                                    }
                                 } else {
-                                    alert('이미지 업로드에 실패했습니다. (권한 또는 스토리지 오류)');
+                                    alert('이미지 업로드에 실패했습니다. (서버/권한 응답 없음)');
                                 }
-                            } catch (error) {
-                                console.error('Upload handler error:', error);
-                                alert('이미지 처리 중 오류가 발생했습니다.');
+                            } catch (error: any) {
+                                console.error('Upload handler critical error:', error);
+                                alert(`이미지 처리 중 오류: ${error.message || '알 수 없는 오류'}`);
                             } finally {
                                 setIsUploading(false);
                             }
