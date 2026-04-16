@@ -93,29 +93,43 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
             container: `#${toolbarId}`,
             handlers: {
                 'image': function () {
+                    console.log('이미지 버튼 클릭됨');
                     const input = document.createElement('input');
                     input.setAttribute('type', 'file');
                     input.setAttribute('accept', 'image/*');
-                    input.click();
+                    
+                    // ONCHANGE MUST BE ATTACHED BEFORE CLICK
                     input.onchange = async () => {
                         const file = input.files?.[0];
+                        console.log('파일 선택됨:', file?.name);
                         if (file) {
                             try {
                                 setIsUploading(true);
+                                console.log('이미지 최적화 시작...');
                                 const optimized = await resizeImage(file);
+                                console.log('최적화 완료. 업로드 시작...');
                                 const url = await uploadArticleImage(optimized, articleIdRef.current || 'temp');
+                                console.log('업로드 결과 URL:', url);
+                                
                                 if (url) {
                                     const quill = quillRef.current.getEditor();
                                     const range = quill.getSelection(true) || { index: quill.getLength() };
                                     quill.insertEmbed(range.index, 'image', url);
                                     quill.setSelection(range.index + 1);
+                                    console.log('에디터에 이미지 삽입 완료');
+                                } else {
+                                    alert('이미지 업로드에 실패했습니다. (URL 반환 실패)');
                                 }
-
+                            } catch (err) {
+                                console.error('이미지 처리 중 치명적 오류:', err);
+                                alert('이미지 처리 중 오류가 발생했습니다: ' + (err as Error).message);
                             } finally {
                                 setIsUploading(false);
                             }
                         }
                     };
+
+                    input.click();
                 }
             }
         },

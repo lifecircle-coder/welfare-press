@@ -230,8 +230,11 @@ export const uploadArticleImage = async (source: File | string, articleId: strin
             return null;
         }
 
+        console.log(`uploadArticleImage 시작: articleId=${articleId}, bodyType=${body instanceof File ? 'File' : 'Base64'}`);
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
         const filePath = `articles/${articleId}/${fileName}`;
+
+        console.log(`저장 경로: ${filePath}`);
 
         const { error: uploadError } = await adminSupabase.storage
             .from('partnership_files')
@@ -241,18 +244,20 @@ export const uploadArticleImage = async (source: File | string, articleId: strin
             });
 
         if (uploadError) {
-            console.error('Error uploading to storage:', uploadError);
+            console.error('Storage 업로드 에러:', uploadError);
             return null;
         }
+
+        console.log('업로드 성공, URL 생성 중...');
 
         const { data } = adminSupabase.storage
             .from('partnership_files')
             .getPublicUrl(filePath);
 
-
+        console.log('생성된 URL:', data.publicUrl);
         return data.publicUrl;
     } catch (err) {
-        console.error('In uploadArticleImage:', err);
+        console.error('In uploadArticleImage 치명적 오류:', err);
         return null;
     }
 };
