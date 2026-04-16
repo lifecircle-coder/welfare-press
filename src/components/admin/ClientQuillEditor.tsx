@@ -121,6 +121,13 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                     <button className="ql-strike transition-colors hover:text-primary" />
                 </span>
                 <span className="ql-formats">
+                    <select className="ql-color" />
+                    <select className="ql-background" />
+                </span>
+                <span className="ql-formats">
+                    <select className="ql-align" />
+                </span>
+                <span className="ql-formats">
                     <button className="ql-list transition-colors hover:text-primary" value="ordered" />
                     <button className="ql-list transition-colors hover:text-primary" value="bullet" />
                     
