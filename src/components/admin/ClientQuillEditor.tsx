@@ -82,8 +82,7 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                         canvas.width = w; canvas.height = h;
                         const ctx = canvas.getContext('2d');
                         if (!ctx) {
-                            // Canvas context fails (rare)
-                            resolve(file); // Fallback to original
+                            reject(new Error('Canvas context를 생성할 수 없습니다. (브라우저 메모리 부족)'));
                             return;
                         }
                         ctx.drawImage(img, 0, 0, w, h);
@@ -91,18 +90,16 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                             if (blob) {
                                 resolve(new File([blob], 'image.webp', { type: 'image/webp' }));
                             } else {
-                                // toBlob failed (possibly too large)
-                                resolve(file); // Fallback to original
+                                reject(new Error('이미지 변환(WebP)에 실패했습니다.'));
                             }
                         }, 'image/webp', 0.82);
-                    } catch (err) {
-                        console.error('Resize internal error:', err);
-                        resolve(file); // Final fallback
+                    } catch (err: any) {
+                        reject(new Error(`최적화 처리 중 오류: ${err.message}`));
                     }
                 };
-                img.onerror = () => reject(new Error('이미지 로드 실패'));
+                img.onerror = () => reject(new Error('이미지 로드에 실패했습니다. (손상된 파일)'));
             };
-            reader.onerror = () => reject(new Error('파일 읽기 실패'));
+            reader.onerror = () => reject(new Error('파일을 읽는 중 오류가 발생했습니다.'));
         });
     };
 
@@ -120,11 +117,8 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                         if (file) {
                             try {
                                 setIsUploading(true);
-                                // 1. Optimization with error fallback
-                                const optimized = await resizeImage(file).catch(err => {
-                                    console.warn('Optimization failed, using original:', err);
-                                    return file;
-                                });
+                                // 1. Strict Optimization (No Fallback to Original)
+                                const optimized = await resizeImage(file);
 
                                 // 2. Upload with admin client
                                 const url = await uploadArticleImage(optimized, articleIdRef.current || 'temp', adminSupabase);
@@ -132,19 +126,16 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                                 if (url) {
                                     const quill = quillRef.current?.getEditor();
                                     if (quill) {
-                                        // 3. Selection safety (fallback to end of editor)
                                         const range = quill.getSelection(true) || { index: quill.getLength() };
                                         quill.insertEmbed(range.index, 'image', url);
                                         quill.setSelection(range.index + 1);
-                                    } else {
-                                        console.error('Quill editor instance not found');
                                     }
                                 } else {
-                                    alert('이미지 업로드에 실패했습니다. (서버/권한 응답 없음)');
+                                    alert('이미지 업로드에 실패했습니다. (스토리지 권한 오류)');
                                 }
                             } catch (error: any) {
-                                console.error('Upload handler critical error:', error);
-                                alert(`이미지 처리 중 오류: ${error.message || '알 수 없는 오류'}`);
+                                console.error('Image processing fault:', error);
+                                alert(`최적화 중단: ${error.message || '요청하신 이미지를 최적화할 수 없어 업로드가 차단되었습니다.'}`);
                             } finally {
                                 setIsUploading(false);
                             }
