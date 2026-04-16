@@ -4,6 +4,7 @@ import React, { useMemo, useRef, useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css';
 import { uploadArticleImage } from '@/lib/services';
+import { adminSupabase } from '@/lib/supabaseClient';
 
 const ReactQuill = dynamic(
     async () => {
@@ -103,13 +104,18 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                             try {
                                 setIsUploading(true);
                                 const optimized = await resizeImage(file);
-                                const url = await uploadArticleImage(optimized, articleIdRef.current || 'temp');
+                                const url = await uploadArticleImage(optimized, articleIdRef.current || 'temp', adminSupabase);
                                 if (url) {
                                     const quill = quillRef.current.getEditor();
                                     const range = quill.getSelection(true);
                                     quill.insertEmbed(range.index, 'image', url);
                                     quill.setSelection(range.index + 1);
+                                } else {
+                                    alert('이미지 업로드에 실패했습니다. (권한 또는 스토리지 오류)');
                                 }
+                            } catch (error) {
+                                console.error('Upload handler error:', error);
+                                alert('이미지 처리 중 오류가 발생했습니다.');
                             } finally {
                                 setIsUploading(false);
                             }

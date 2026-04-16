@@ -208,7 +208,7 @@ export const getArticleById = async (id: string, client = supabase): Promise<Art
 /**
  * Uploads a file or Base64 string to Supabase Storage
  */
-export const uploadArticleImage = async (source: File | string, articleId: string): Promise<string | null> => {
+export const uploadArticleImage = async (source: File | string, articleId: string, client = supabase): Promise<string | null> => {
     try {
         let body: Buffer | File;
         let contentType: string;
@@ -233,7 +233,7 @@ export const uploadArticleImage = async (source: File | string, articleId: strin
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
         const filePath = `articles/${articleId}/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await client.storage
             .from('partnership_files')
             .upload(filePath, body, {
                 contentType,
@@ -245,7 +245,7 @@ export const uploadArticleImage = async (source: File | string, articleId: strin
             return null;
         }
 
-        const { data } = supabase.storage
+        const { data } = client.storage
             .from('partnership_files')
             .getPublicUrl(filePath);
 
@@ -293,7 +293,7 @@ export const saveArticle = async (article: Article, client = supabase): Promise<
 
     // 2. Process Thumbnail: If Base64 or missing, try to get from processed content or upload
     if (finalThumbnail && finalThumbnail.startsWith('data:')) {
-        const storageUrl = await uploadArticleImage(finalThumbnail, article.id);
+        const storageUrl = await uploadArticleImage(finalThumbnail, article.id, client);
         if (storageUrl) finalThumbnail = storageUrl;
     }
 
