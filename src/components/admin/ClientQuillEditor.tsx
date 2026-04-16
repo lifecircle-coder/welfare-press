@@ -117,25 +117,20 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                         if (file) {
                             try {
                                 setIsUploading(true);
-                                // 1. Strict Optimization (No Fallback to Original)
-                                const optimized = await resizeImage(file);
-
-                                // 2. Upload with standard client (proven session stability)
-                                const url = await uploadArticleImage(optimized, articleIdRef.current || 'temp', supabase);
+                                const optimizedFile = await resizeImage(file);
+                                const url = await uploadArticleImage(optimizedFile, articleIdRef.current || 'temp');
                                 
                                 if (url) {
-                                    const quill = quillRef.current?.getEditor();
-                                    if (quill) {
-                                        const range = quill.getSelection(true) || { index: quill.getLength() };
-                                        quill.insertEmbed(range.index, 'image', url);
-                                        quill.setSelection(range.index + 1);
-                                    }
+                                    const quill = quillRef.current.getEditor();
+                                    const range = quill.getSelection(true);
+                                    quill.insertEmbed(range.index, 'image', url);
+                                    quill.setSelection(range.index + 1);
                                 } else {
-                                    alert('이미지 업로드에 실패했습니다. (서버/권한 오류)\n브라우저 캐시를 삭제하거나 다시 로그인해 주세요.');
+                                    alert('이미지 업로드에 실패했습니다. (서버/권한 오류)');
                                 }
-                            } catch (error: any) {
-                                console.error('Image processing fault:', error);
-                                alert(`최적화 중단: ${error.message || '요청하신 이미지를 최적화할 수 없어 업로드가 차단되었습니다.'}`);
+                            } catch (error) {
+                                console.error('Image upload error:', error);
+                                alert('이미지 처리 중 오류가 발생했습니다.');
                             } finally {
                                 setIsUploading(false);
                             }
@@ -144,7 +139,40 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                 }
             }
         },
-        clipboard: { matchVisual: false }
+        clipboard: {
+            matchVisual: false,
+            matchers: [
+                ['img', (node: any, delta: any) => {
+                    const src = node.getAttribute('src');
+                    if (src && src.startsWith('data:')) {
+                        setTimeout(async () => {
+                            try {
+                                const response = await fetch(src);
+                                const blob = await response.blob();
+                                const file = new File([blob], 'pasted-image.webp', { type: blob.type });
+                                
+                                setIsUploading(true);
+                                const optimizedFile = await resizeImage(file);
+                                const url = await uploadArticleImage(optimizedFile, articleIdRef.current || 'temp');
+                                
+                                if (url) {
+                                    const quill = quillRef.current.getEditor();
+                                    const html = quill.root.innerHTML;
+                                    const updatedHtml = html.replace(src, url);
+                                    quill.root.innerHTML = updatedHtml;
+                                }
+                            } catch (error) {
+                                console.error('Pasted image processing failed:', error);
+                            } finally {
+                                setIsUploading(false);
+                            }
+                        }, 0);
+                    }
+                    return delta;
+                }]
+            ]
+        },
+
     }), [toolbarId]); // STABLE: articleId removed from deps
 
     return (

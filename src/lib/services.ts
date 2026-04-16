@@ -208,21 +208,19 @@ export const getArticleById = async (id: string, client = supabase): Promise<Art
 /**
  * Uploads a file or Base64 string to Supabase Storage
  */
-export const uploadArticleImage = async (source: File | string, articleId: string, client = supabase): Promise<string | null> => {
+export const uploadArticleImage = async (source: File | string, articleId: string): Promise<string | null> => {
     try {
         let body: Buffer | File;
         let contentType: string;
         let extension: string;
 
         if (typeof source === 'string' && source.startsWith('data:')) {
-            // Handle Base64
             const matches = source.match(/^data:image\/([a-zA-Z+]+);base64,(.+)$/);
             if (!matches) return null;
             extension = matches[1] === 'jpeg' ? 'jpg' : matches[1];
             contentType = `image/${extension}`;
             body = Buffer.from(matches[2], 'base64');
         } else if (source instanceof File) {
-            // Handle File object
             body = source;
             contentType = source.type;
             extension = source.name.split('.').pop() || 'jpg';
@@ -231,31 +229,33 @@ export const uploadArticleImage = async (source: File | string, articleId: strin
         }
 
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
-        const filePath = `articles/${articleId}/${fileName}`;
+        const filePath = `articles/${articleId || 'misc'}/${fileName}`;
 
-        const { error: uploadError } = await client.storage
+        const { error: uploadError } = await supabase.storage
             .from('partnership_files')
             .upload(filePath, body, {
                 contentType,
                 cacheControl: '3600',
-                upsert: true
+                upsert: false
             });
 
+
         if (uploadError) {
-            console.error('Storage Upload Error Detail:', uploadError);
+            console.error('Core Storage Upload Error:', uploadError);
             return null;
         }
 
-        const { data } = client.storage
+        const { data } = supabase.storage
             .from('partnership_files')
             .getPublicUrl(filePath);
 
         return data.publicUrl;
     } catch (err) {
-        console.error('In uploadArticleImage:', err);
+        console.error('Unexpected uploadArticleImage failure:', err);
         return null;
     }
 };
+
 
 export const saveArticle = async (article: Article, client = supabase): Promise<{ success: boolean; error?: any }> => {
     let finalContent = article.content || '';
@@ -294,7 +294,7 @@ export const saveArticle = async (article: Article, client = supabase): Promise<
 
     // 2. Process Thumbnail: If Base64 or missing, try to get from processed content or upload
     if (finalThumbnail && finalThumbnail.startsWith('data:')) {
-        const storageUrl = await uploadArticleImage(finalThumbnail, article.id, client);
+        const storageUrl = await uploadArticleImage(finalThumbnail, article.id);
         if (storageUrl) finalThumbnail = storageUrl;
     }
 
