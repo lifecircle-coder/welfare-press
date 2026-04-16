@@ -106,10 +106,11 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                                 const url = await uploadArticleImage(optimized, articleIdRef.current || 'temp');
                                 if (url) {
                                     const quill = quillRef.current.getEditor();
-                                    const range = quill.getSelection(true);
+                                    const range = quill.getSelection(true) || { index: quill.getLength() };
                                     quill.insertEmbed(range.index, 'image', url);
                                     quill.setSelection(range.index + 1);
                                 }
+
                             } finally {
                                 setIsUploading(false);
                             }
