@@ -1,4 +1,4 @@
-import { supabase } from './supabaseClient';
+import { supabase, adminSupabase } from './supabaseClient';
 
 export interface User {
     id: string;
@@ -233,7 +233,7 @@ export const uploadArticleImage = async (source: File | string, articleId: strin
         const fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.${extension}`;
         const filePath = `articles/${articleId}/${fileName}`;
 
-        const { error: uploadError } = await supabase.storage
+        const { error: uploadError } = await adminSupabase.storage
             .from('partnership_files')
             .upload(filePath, body, {
                 contentType,
@@ -245,9 +245,10 @@ export const uploadArticleImage = async (source: File | string, articleId: strin
             return null;
         }
 
-        const { data } = supabase.storage
+        const { data } = adminSupabase.storage
             .from('partnership_files')
             .getPublicUrl(filePath);
+
 
         return data.publicUrl;
     } catch (err) {
