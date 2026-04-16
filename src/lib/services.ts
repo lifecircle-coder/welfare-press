@@ -301,7 +301,7 @@ export const saveArticle = async (article: Article, client = supabase): Promise<
     if (!finalThumbnail || finalThumbnail.startsWith('data:')) {
         let extractedSrc = null;
 
-        // 1. 브라우저 환경인 경우 DOMParser 활용 (가장 안전한 방식)
+        // 1. 브라우저 환경인 경우 DOMParser 활용
         if (typeof window !== 'undefined' && window.DOMParser) {
             try {
                 const parser = new DOMParser();
@@ -313,9 +313,8 @@ export const saveArticle = async (article: Article, client = supabase): Promise<
             }
         }
 
-        // Fallback robust regex if DOMParser fails or server-side
+        // Fallback robust regex
         if (!extractedSrc) {
-            // More robust regex to catch src with various positioning and quotes
             const imgRegex = /<img[^>]+src=["']([^"']+)["']/i;
             const firstImgMatch = finalContent.match(imgRegex);
             if (firstImgMatch) {
@@ -325,8 +324,17 @@ export const saveArticle = async (article: Article, client = supabase): Promise<
 
         if (extractedSrc) {
             finalThumbnail = extractedSrc;
-            console.log(`Extracted new thumbnail: ${finalThumbnail}`);
         }
+    }
+
+    // 3. Payload Size Safety Check: Prevent "Statement Timeout" by blocking massive Base64
+    // If content still contains massive Base64 (> 2MB for safety), block saving.
+    const MAX_CONTENT_SIZE = 5 * 1024 * 1024; // 5MB
+    if (finalContent.length > MAX_CONTENT_SIZE) {
+        return { 
+            success: false, 
+            error: { message: '기사 내용이 너무 큽니다. 대용량 이미지는 최적화가 필요합니다 (약 5MB 제한).' } 
+        };
     }
 
     const existing = await getArticleById(article.id);

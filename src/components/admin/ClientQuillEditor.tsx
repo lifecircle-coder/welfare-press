@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useMemo, useRef, useEffect } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import 'react-quill/dist/quill.snow.css';
+import { uploadArticleImage } from '@/lib/services';
 
 const ReactQuill = dynamic(
     async () => {
         const { default: RQ } = await import('react-quill');
-        // react-quill v2 usually has Quill attached to the default export
         let Quill = (RQ as any).Quill;
         
         if (!Quill) {
@@ -54,11 +54,60 @@ interface EditorProps {
     onChange: (content: string) => void;
     placeholder?: string;
     height?: string;
+    articleId?: string; // Added articleId for storage path
 }
 
-export default function ClientQuillEditor({ value, onChange, placeholder, height = '400px' }: EditorProps) {
+export default function ClientQuillEditor({ value, onChange, placeholder, height = '400px', articleId }: EditorProps) {
     const quillRef = useRef<any>(null);
+    const [isUploading, setIsUploading] = useState(false);
     const toolbarId = useMemo(() => `toolbar-${Math.random().toString(36).substr(2, 9)}`, []);
+
+    // 1. Image Resizing Utility (Canvas-based)
+    const resizeImage = (file: File): Promise<File> => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = (event) => {
+                const img = new Image();
+                img.src = event.target?.result as string;
+                img.onload = () => {
+                    const canvas = document.createElement('canvas');
+                    let width = img.width;
+                    let height = img.height;
+                    const max_size = 1200; // Max width/height
+
+                    if (width > height) {
+                        if (width > max_size) {
+                            height *= max_size / width;
+                            width = max_size;
+                        }
+                    } else {
+                        if (height > max_size) {
+                            width *= max_size / height;
+                            height = max_size;
+                        }
+                    }
+
+                    canvas.width = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d');
+                    ctx?.drawImage(img, 0, 0, width, height);
+                    
+                    canvas.toBlob((blob) => {
+                        if (blob) {
+                            const resizedFile = new File([blob], file.name, {
+                                type: 'image/webp',
+                                lastModified: Date.now(),
+                            });
+                            resolve(resizedFile);
+                        } else {
+                            resolve(file); // Fallback
+                        }
+                    }, 'image/webp', 0.85); // Convert to WebP with good quality
+                };
+            };
+        });
+    };
 
     const modules = useMemo(() => ({
         toolbar: {
@@ -66,59 +115,118 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
             handlers: {
                 'special-char': function (value: string) {
                     if (!value) return;
-                    console.log('Special character selected:', value);
                     const quill = this.quill;
                     const range = quill.getSelection(true);
                     if (range) {
                         quill.insertText(range.index, value, 'user');
                         quill.setSelection(range.index + value.length, 0, 'user');
-                        console.log('Inserted character at index:', range.index);
-                    } else {
-                        console.warn('No range found for special character insertion');
                     }
+                },
+                'image': function () {
+                    const input = document.createElement('input');
+                    input.setAttribute('type', 'file');
+                    input.setAttribute('accept', 'image/*');
+                    input.click();
+
+                    input.onchange = async () => {
+                        const file = input.files?.[0];
+                        if (file) {
+                            try {
+                                setIsUploading(true);
+                                // Client-side Resize
+                                const optimizedFile = await resizeImage(file);
+                                // Upload to Storage
+                                const url = await uploadArticleImage(optimizedFile, articleId || 'temp');
+                                
+                                if (url) {
+                                    const quill = quillRef.current.getEditor();
+                                    const range = quill.getSelection(true);
+                                    quill.insertEmbed(range.index, 'image', url);
+                                    quill.setSelection(range.index + 1);
+                                } else {
+                                    alert('이미지 업로드에 실패했습니다.');
+                                }
+                            } catch (error) {
+                                console.error('Image upload error:', error);
+                                alert('이미지 처리 중 오류가 발생했습니다.');
+                            } finally {
+                                setIsUploading(false);
+                            }
+                        }
+                    };
                 }
             }
-
         },
         clipboard: {
             matchVisual: false,
+            matchers: [
+                ['img', (node: any, delta: any) => {
+                    const src = node.getAttribute('src');
+                    if (src && src.startsWith('data:')) {
+                        // We will handle Base64 image upload asynchronously
+                        setTimeout(async () => {
+                            try {
+                                const response = await fetch(src);
+                                const blob = await response.blob();
+                                const file = new File([blob], 'pasted-image.webp', { type: blob.type });
+                                
+                                setIsUploading(true);
+                                const optimizedFile = await resizeImage(file);
+                                const url = await uploadArticleImage(optimizedFile, articleId || 'temp');
+                                
+                                if (url) {
+                                    const quill = quillRef.current.getEditor();
+                                    const fullContents = quill.getContents();
+                                    
+                                    // Replace the base64 src with the new URL in the document
+                                    // This is a simplified replacement approach
+                                    const html = quill.root.innerHTML;
+                                    const updatedHtml = html.replace(src, url);
+                                    quill.root.innerHTML = updatedHtml;
+                                }
+                            } catch (error) {
+                                console.error('Pasted image processing failed:', error);
+                            } finally {
+                                setIsUploading(false);
+                            }
+                        }, 0);
+                    }
+                    return delta;
+                }]
+            ]
         },
-    }), [toolbarId]);
+    }), [toolbarId, articleId]);
 
     const formats = [
         'header', 'font', 'size',
         'bold', 'italic', 'underline', 'strike', 'blockquote',
         'list', 'bullet',
         'link', 'image', 'video', 'color', 'background', 'align',
-        'special-char', 'line-height' // Added line-height
+        'special-char', 'line-height'
     ];
 
     return (
-        <div className="quill-editor-container border rounded-lg bg-white shadow-sm border-gray-200">
-            {/* Custom Toolbar - Restored with Special Character Dropdown */}
+        <div className={`quill-editor-container border rounded-lg bg-white shadow-sm border-gray-200 ${isUploading ? 'opacity-70 pointer-events-none' : ''}`}>
+            {isUploading && (
+                <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-white/50 backdrop-blur-[1px]">
+                    <div className="w-10 h-10 border-4 border-primary border-t-transparent rounded-full animate-rotate mb-2" />
+                    <span className="text-sm font-bold text-primary animate-pulse">이미지 최적화 및 업로드 중...</span>
+                </div>
+            )}
+            
             <div id={toolbarId} className="border-b border-gray-200 bg-gray-50/80 backdrop-blur-sm flex flex-wrap items-center p-2 gap-1 sticky top-0 z-[10]">
                 <span className="ql-formats">
                     <select className="ql-size" defaultValue="16px">
-                        <option value="12px">12</option>
-                        <option value="13px">13</option>
-                        <option value="14px">14</option>
-                        <option value="15px">15</option>
-                        <option value="16px">16</option>
-                        <option value="17px">17</option>
-                        <option value="18px">18</option>
-                        <option value="19px">19</option>
-                        <option value="20px">20</option>
-                        <option value="21px">21</option>
-                        <option value="22px">22</option>
-                        <option value="23px">23</option>
-                        <option value="24px">24</option>
+                        {[12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24].map(s => (
+                            <option key={s} value={`${s}px`}>{s}</option>
+                        ))}
                     </select>
                 </span>
                 <span className="ql-formats">
-                    <button className="ql-bold transition-colors hover:text-primary" />
-                    <button className="ql-italic transition-colors hover:text-primary" />
-                    <button className="ql-underline transition-colors hover:text-primary" />
-                    <button className="ql-strike transition-colors hover:text-primary" />
+                    <button className="ql-bold" />
+                    <button className="ql-italic" />
+                    <button className="ql-underline" />
+                    <button className="ql-strike" />
                 </span>
                 <span className="ql-formats">
                     <select className="ql-color" />
@@ -128,10 +236,9 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                     <select className="ql-align" />
                 </span>
                 <span className="ql-formats">
-                    <button className="ql-list transition-colors hover:text-primary" value="ordered" />
-                    <button className="ql-list transition-colors hover:text-primary" value="bullet" />
+                    <button className="ql-list" value="ordered" />
+                    <button className="ql-list" value="bullet" />
                     
-                    {/* Special Character Dropdown */}
                     <select className="ql-special-char" defaultValue="">
                         <option value="" disabled>특수문자</option>
                         <option value="●">● 점</option>
@@ -143,26 +250,19 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                         <option value="✓">✓ 체크</option>
                     </select>
 
-                    {/* Line Height Dropdown - Moved to the right of Special Characters */}
                     <select className="ql-line-height" defaultValue="2.0">
-                        <option value="1.0">1.0</option>
-                        <option value="1.2">1.2</option>
-                        <option value="1.5">1.5</option>
-                        <option value="1.6">1.6</option>
-                        <option value="1.8">1.8</option>
-                        <option value="2.0">2.0</option>
-                        <option value="2.4">2.4</option>
-                        <option value="2.8">2.8</option>
-                        <option value="3.0">3.0</option>
+                        {['1.0', '1.2', '1.5', '1.6', '1.8', '2.0', '2.4', '2.8', '3.0'].map(lh => (
+                            <option key={lh} value={lh}>{lh}</option>
+                        ))}
                     </select>
                 </span>
                 <span className="ql-formats">
-                    <button className="ql-link transition-colors hover:text-primary" />
-                    <button className="ql-image transition-colors hover:text-primary" />
-                    <button className="ql-video transition-colors hover:text-primary" />
+                    <button className="ql-link" />
+                    <button className="ql-image" />
+                    <button className="ql-video" />
                 </span>
                 <span className="ql-formats">
-                    <button className="ql-clean transition-colors hover:text-primary" />
+                    <button className="ql-clean" />
                 </span>
             </div>
 
@@ -187,8 +287,12 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                     border: none !important;
                     padding: ${parseInt(height) < 100 ? '0.25rem 0.5rem' : '0.5rem'} !important;
                 }
-                .quill-editor-container :global(.ql-container.ql-snow) {
-                    border: none !important;
+                @keyframes rotate {
+                    from { transform: rotate(0deg); }
+                    to { transform: rotate(360deg); }
+                }
+                .animate-rotate {
+                    animation: rotate 1s linear infinite;
                 }
             `}</style>
 
