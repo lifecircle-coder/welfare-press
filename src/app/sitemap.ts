@@ -49,7 +49,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     },
     ...categoryEntries,
     ...articleEntries,
-    ...pSeoEntries,
     ...regionEntries,
   ]
 }
