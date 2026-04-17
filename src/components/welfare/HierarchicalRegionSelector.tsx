@@ -87,7 +87,7 @@ export default function HierarchicalRegionSelector() {
               {districts.map((region) => (
                 <Link
                   key={region.code}
-                  href={`/welfare/${region.code}-${policy.slug}`}
+                  href={region.city === '서울' ? `/welfare/regions/${region.code}` : `/welfare/${region.code}-${policy.slug}`}
                   className="group relative flex flex-col gap-1 p-5 bg-white border border-slate-100 rounded-2xl hover:border-blue-500 hover:shadow-xl hover:shadow-blue-500/5 transition-all"
                 >
                   <div className="flex items-center justify-between mb-2">

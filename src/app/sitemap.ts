@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next'
 import { getArticles } from '@/lib/services'
 import { generatePSeoSlugs } from '@/lib/welfare-data'
+import { getAllRegionSlugs } from '@/lib/welfare-pseo'
 
 const BASE_URL = 'https://thebok.co.kr'
 
@@ -24,13 +25,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     priority: 0.8,
   }))
 
-  // 3. Welfare Pilot pSEO Pages
-  const pSeoSlugs = generatePSeoSlugs()
-  const pSeoEntries: MetadataRoute.Sitemap = pSeoSlugs.map(({ slug }) => ({
-    url: `${BASE_URL}/welfare/${slug}`,
+  // 4. New Automated pSEO Region Pages (Seoul 25 Disricts +)
+  const regionSlugs = await getAllRegionSlugs()
+  const regionEntries: MetadataRoute.Sitemap = regionSlugs.map((slug) => ({
+    url: `${BASE_URL}/welfare/regions/${slug}`,
     lastModified: new Date(),
-    changeFrequency: 'weekly',
-    priority: 0.6,
+    changeFrequency: 'daily',
+    priority: 0.9,
   }))
 
   return [
@@ -49,5 +50,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     ...categoryEntries,
     ...articleEntries,
     ...pSeoEntries,
+    ...regionEntries,
   ]
 }
