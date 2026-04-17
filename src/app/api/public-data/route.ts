@@ -71,20 +71,31 @@ export async function GET(request: NextRequest) {
 
 
         if (type === 'MOGEF_LIST') {
-            const url = `http://apis.data.go.kr/1383000/mogefNew/nwEnwSelectList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}&_type=json`;
-            const response = await axios.get(url, { timeout: 7000 });
-            return new NextResponse(JSON.stringify(response.data), {
-                headers: { 'Content-Type': 'application/json; charset=utf-8' }
+            const url = 'http://apis.data.go.kr/1383000/mogefNew/nwEnwSelectList';
+            const response = await axios.get(url, {
+                params: {
+                    serviceKey: decodedCorpKey, // Verified working with CORP key
+                    pageNo,
+                    numOfRows,
+                    _type: 'json'
+                },
+                timeout: 7000
             });
+            return NextResponse.json(response.data);
         }
 
         if (type === 'SUBSIDY_LIST') {
-            const baseUrl = 'https://api.odcloud.kr/api/gov24/v3/list';
-            const fullUrl = `${baseUrl}?serviceKey=${GEN_API_KEY}&page=${pageNo}&perPage=${numOfRows}&returnType=json`;
-            const res = await fetch(fullUrl);
-            if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-            const finalData = await res.json();
-            return NextResponse.json(finalData);
+            const url = 'https://api.odcloud.kr/api/gov24/v1/serviceList';
+            const response = await axios.get(url, {
+                params: {
+                    serviceKey: decodedCorpKey, // Subsidy traditionally uses CORP key
+                    page: pageNo,
+                    perPage: numOfRows,
+                    returnType: 'json'
+                },
+                timeout: 7000
+            });
+            return NextResponse.json(response.data);
         }
 
         if (type === 'YOUTH_LIST') {
@@ -108,12 +119,32 @@ export async function GET(request: NextRequest) {
 
         // MCST APIs - Use RAW_API_KEY in URL to avoid double-encoding issues common with data.go.kr
         // MCST APIs - 신규 일반형 키(GEN_API_KEY) 사용
+        // MCST APIs - 신규 일반형 키(GEN_API_KEY) 사용
         if (type === 'MCST_PRESS' || type === 'MCST_PRESS_LIST') {
-            const url = `http://apis.data.go.kr/1371000/pressReleaseService/pressReleaseList?serviceKey=${GEN_API_KEY}&pageNo=${pageNo}&numOfRows=${numOfRows}`;
-            const response = await axios.get(url);
-            return new NextResponse(response.data, {
-                headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+            const today = new Date();
+            const startDay = new Date(today);
+            startDay.setDate(today.getDate() - 3); // MCST limit is 3 days
+            const startDate = startDay.toISOString().split('T')[0].replace(/-/g, '');
+            const endDate = today.toISOString().split('T')[0].replace(/-/g, '');
+
+            const url = 'http://apis.data.go.kr/1371000/pressReleaseService/pressReleaseList';
+            const response = await axios.get(url, {
+                params: {
+                    serviceKey: decodedGenKey,
+                    pageNo,
+                    numOfRows,
+                    startDate,
+                    endDate,
+                    _type: 'json'
+                }
             });
+            
+            if (typeof response.data === 'string' && response.data.includes('<?xml')) {
+                return new NextResponse(response.data, {
+                    headers: { 'Content-Type': 'application/xml; charset=utf-8' }
+                });
+            }
+            return NextResponse.json(response.data);
         }
 
 
