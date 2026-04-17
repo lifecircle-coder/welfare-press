@@ -4,15 +4,15 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '');
 const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
 
 export interface ExtractedPolicy {
-    title: string;           -- 검색 최적화된 키워드 포함 제목
-    category: string;        -- 주거, 일자리, 금융, 교육, 복지 등
-    content_summary: string; -- MZ세대 타겟 본능적 요약 (3문장 내)
-    eligibility: string;     -- 지원 대상 핵심 요약
-    benefits: string;        -- 지원 혜택 핵심 요약
-    application_method: string; -- 신청 방법 핵심 요약
-    deadline_text: string;   -- 마감일 관련 텍스트
-    deadline_date?: string;  -- YYYY-MM-DD 형식 (추출 가능 시)
-    ai_score: number;        -- 1~10점 (혜택 체감도 기준)
+    title: string;           // 검색 최적화된 키워드 포함 제목
+    category: string;        // 주거, 일자리, 금융, 교육, 복지 등
+    content_summary: string; // MZ세대 타겟 본능적 요약 (3문장 내)
+    eligibility: string;     // 지원 대상 핵심 요약
+    benefits: string;        // 지원 혜택 핵심 요약
+    application_method: string; // 신청 방법 핵심 요약
+    deadline_text: string;   // 마감일 관련 텍스트
+    deadline_date?: string;  // YYYY-MM-DD 형식 (추출 가능 시)
+    ai_score: number;        // 1~10점 (혜택 체감도 기준)
 }
 
 /**
