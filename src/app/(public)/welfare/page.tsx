@@ -1,13 +1,9 @@
 // src/app/(public)/welfare/page.tsx
 import type { Metadata } from 'next';
-import Link from 'next/link';
-import { WELFARE_POLICIES, TARGET_REGIONS, formatAmount } from '@/lib/welfare-data';
-import { MapPin, ArrowRight, Sparkles, ShieldCheck, Zap } from 'lucide-react';
-import HierarchicalRegionSelector from '@/components/welfare/HierarchicalRegionSelector';
 
 export const metadata: Metadata = {
-  title: '청년 복지 정책 지역별 맞춤 가이드 | THE복지',
-  description: '내일저축계좌, 청년 월세 지원, 근로장려금 등 대한민국 핵심 복지 정보를 지역별로 맞춤 제공합니다. 나에게 딱 맞는 혜택을 1분 만에 찾으세요.',
+  title: '복지 정책 정보 안내 | THE복지',
+  description: '청년, 어르신, 저소득층을 위한 대한민국 복지 정책 정보를 제공합니다.',
   robots: { index: true, follow: true },
 };
 
@@ -15,102 +11,29 @@ export default function WelfareIndexPage() {
   return (
     <div className="bg-white min-h-screen">
       {/* Hero Section */}
-      <section className="relative pt-20 pb-24 md:pt-32 md:pb-40 bg-slate-900 overflow-hidden">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-full h-full pointer-events-none opacity-30">
-            <div className="absolute top-1/4 left-1/4 w-72 h-72 bg-blue-600 rounded-full blur-[120px]" />
-            <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-indigo-600 rounded-full blur-[150px]" />
-        </div>
-        
-        <div className="max-w-5xl mx-auto px-6 relative z-10 text-center">
-          <motion_div 
-            initial={{ opacity: 0, y: 30 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="inline-flex items-center gap-2 px-4 py-2 bg-blue-500/10 border border-blue-500/20 text-blue-400 rounded-full text-xs font-black tracking-widest uppercase mb-8"
-          >
-            <Sparkles className="w-3.5 h-3.5" /> 2024-2025 최신 복지 로드맵
-          </motion_div>
+      <section className="relative pt-20 pb-24 md:pt-32 md:pb-40 bg-slate-900 overflow-hidden text-center">
+        <div className="max-w-5xl mx-auto px-6 relative z-10">
           <h1 className="text-5xl md:text-7xl font-black text-white leading-[1.1] tracking-tighter mb-8">
-            복잡한 혜택,<br />
-            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 font-black">내 지역 맞춤</span>으로 찾기
+            복지 정책 <br />
+            <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-emerald-400 font-black">정보 라이브러리</span>
           </h1>
           <p className="text-lg md:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-medium">
-            정부와 지자체가 준비한 수천 개의 정책 중 나에게 최적화된 혜택만 골라보세요. 
-            현금 지원부터 주거 자금까지, 단 3번의 클릭으로 충분합니다.
+            정부와 지자체가 제공하는 다양한 복지 혜택 정보를 한곳에서 확인하세요. <br />
+            더 나은 내일을 위한 소중한 정보를 전달합니다.
           </p>
         </div>
       </section>
 
-      {/* Trust Stats */}
-      <div className="max-w-5xl mx-auto px-6 -mt-10 relative z-20">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {[
-                { label: '활성 정책수', val: '2,400+', icon: <Zap className="w-5 h-5" /> },
-                { label: '누적 방문자', val: '150만명', icon: <Sparkles className="w-5 h-5" /> },
-                { label: '데이터 정확도', val: '99.9%', icon: <ShieldCheck className="w-5 h-5" /> },
-            ].map((stat, i) => (
-                <div key={i} className="bg-white border border-gray-100 p-6 rounded-[2rem] shadow-xl flex items-center justify-between">
-                    <div>
-                        <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">{stat.label}</p>
-                        <p className="text-2xl font-black text-gray-900">{stat.val}</p>
-                    </div>
-                    <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
-                        {stat.icon}
-                    </div>
-                </div>
-            ))}
-        </div>
-      </div>
-
-      <div className="max-w-5xl mx-auto px-6 py-24">
-        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 mb-16">
-            <div>
-                <h2 className="text-3xl md:text-4xl font-black text-gray-900 tracking-tight">핵심 킬러 콘텐츠</h2>
-                <p className="text-gray-500 mt-2 font-medium">가장 많은 분들이 선택한 TOP 3 복지 정책입니다.</p>
-            </div>
-            <div className="flex items-center gap-2 text-sm font-bold text-gray-400">
-                <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" /> 실시간 업데이트 중
-            </div>
-        </div>
-
-        {/* 정책 카드 섹션 (청년월세지원 고정) */}
-        <div className="grid gap-12">
-          {WELFARE_POLICIES.map((policy, i) => (
-            <div key={policy.slug} className="group relative">
-              <div className="absolute -inset-2 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-[3rem] opacity-0 group-hover:opacity-100 transition-opacity" />
-              <div className="relative bg-white rounded-[2.5rem] p-8 md:p-12 border border-gray-100 shadow-sm group-hover:shadow-xl transition-all">
-                <div className="flex flex-col md:flex-row justify-between items-start gap-8 mb-16">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-3 mb-6">
-                      <span className="bg-blue-600 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter">{policy.category}</span>
-                      <span className="bg-slate-900 text-white text-[10px] font-black px-3 py-1.5 rounded-full uppercase tracking-tighter">{policy.targetAge}</span>
-                    </div>
-                    <h3 className="text-3xl md:text-5xl font-black text-gray-900 leading-tight mb-4">
-                      {policy.policyName}
-                    </h3>
-                    <p className="text-lg text-gray-500 leading-relaxed font-medium line-clamp-2">
-                        {policy.description}
-                    </p>
-                  </div>
-                  <div className="bg-blue-50/50 p-8 rounded-3xl min-w-[240px] text-right border border-blue-100">
-                    <p className="text-[10px] text-blue-400 font-black mb-1 uppercase tracking-widest">MAX SUPPORT</p>
-                    <p className="text-4xl font-black text-blue-700">{formatAmount(policy.maxAmount)}</p>
-                  </div>
-                </div>
-
-                {/* 2단계 계층적 지역 선택 (Hotfix Applied) */}
-                <div className="pt-12 border-t border-gray-50">
-                   <HierarchicalRegionSelector />
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* Basic Content Placeholder */}
+      <div className="max-w-5xl mx-auto px-6 py-24 text-center">
+        <div className="bg-slate-50 border border-slate-100 rounded-[2.5rem] p-12 md:p-20">
+          <h2 className="text-2xl font-black text-slate-900 mb-4">현재 정보를 준비 중입니다.</h2>
+          <p className="text-slate-500 font-medium">
+            사용자 여러분께 더 정확하고 유익한 복지 정보를 제공하기 위해 <br />
+            콘텐츠를 업데이트하고 있습니다. 잠시만 기다려 주세요.
+          </p>
         </div>
       </div>
     </div>
   );
-}
-
-// Framer Motion을 위한 임시 억제 (서버 컴포넌트 환경)
-function motion_div({ children, ...props }: any) {
-    return <div {...props}>{children}</div>;
 }
