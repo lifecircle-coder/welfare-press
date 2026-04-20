@@ -28,13 +28,23 @@ const ReactQuill = dynamic(
                     Quill.register(LineHeightStyle, true);
                 }
 
-                // Register Special Char
-                if (!Quill.imports['formats/special-char']) {
-                    const SpecialChar = new Parchment.Attributor.Class('special-char', 'ql-special-char', {
-                        scope: Parchment.Scope.INLINE
-                    });
-                    Quill.register(SpecialChar, true);
+                // Register Custom Special Char Blot to prevent class/tag stripping
+                const Inline = Quill.import('blots/inline');
+                class SpecialCharBlot extends Inline {
+                    static create(value: any) {
+                        let node = super.create();
+                        node.setAttribute('class', 'article-special-char');
+                        node.setAttribute('data-char', value);
+                        node.innerText = value;
+                        return node;
+                    }
+                    static formats(node: HTMLElement) {
+                        return node.getAttribute('data-char');
+                    }
                 }
+                SpecialCharBlot.blotName = 'special-char';
+                SpecialCharBlot.tagName = 'span';
+                Quill.register(SpecialCharBlot);
             } catch (e) {
                 console.error('Quill registration error:', e);
             }
@@ -54,8 +64,9 @@ interface EditorProps {
 
 export default function ClientQuillEditor({ value, onChange, placeholder, height = '400px', articleId }: EditorProps) {
     const quillRef = useRef<any>(null);
-    const [isUploading, setIsUploading] = useState(false);
+    const [uploadStatus, setUploadStatus] = useState<'idle' | 'uploading' | 'optimizing'>('idle');
     const toolbarId = useMemo(() => `toolbar-${Math.random().toString(36).substr(2, 9)}`, []);
+    const editorContainerId = useMemo(() => `editor-container-${Math.random().toString(36).substr(2, 9)}`, []);
     
     // Use ref for articleId to avoid re-initializing modules when data loads
     const articleIdRef = useRef(articleId);
@@ -92,6 +103,27 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
         toolbar: {
             container: `#${toolbarId}`,
             handlers: {
+                'special-char': function (value: string) {
+                    if (!value) return;
+                    const quill = (this as any).quill;
+                    const range = quill.getSelection(true);
+                    if (range) {
+                        // Use insertEmbed with the registered 'special-char' blot
+                        quill.insertEmbed(range.index, 'special-char', value);
+                        quill.setSelection(range.index + 1);
+                        
+                        // Reset the select picker to default
+                        const select = document.querySelector(`#${toolbarId} .ql-special-char`) as HTMLSelectElement;
+                        if (select) {
+                            setTimeout(() => {
+                                const pickerLabel = select.parentElement?.querySelector('.ql-picker-label');
+                                if (pickerLabel) {
+                                  pickerLabel.setAttribute('data-value', '');
+                                }
+                            }, 50);
+                        }
+                    }
+                },
                 'image': function () {
                     console.log('이미지 버튼 클릭됨');
                     const input = document.createElement('input');
@@ -104,9 +136,10 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                         console.log('파일 선택됨:', file?.name);
                         if (file) {
                             try {
-                                setIsUploading(true);
+                                setUploadStatus('uploading');
                                 console.log('이미지 최적화 시작...');
                                 const optimized = await resizeImage(file);
+                                setUploadStatus('optimizing');
                                 console.log('최적화 완료. 업로드 시작...');
                                 const url = await uploadArticleImage(optimized, articleIdRef.current || 'temp');
                                 console.log('업로드 결과 URL:', url);
@@ -126,7 +159,7 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                                 console.error('이미지 처리 중 치명적 오류:', err);
                                 alert('이미지 처리 중 오류가 발생했습니다: ' + (err as Error).message);
                             } finally {
-                                setIsUploading(false);
+                                setUploadStatus('idle');
                             }
                         }
                     };
@@ -140,9 +173,11 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
 
     return (
         <div className="quill-editor-container" style={{ position: 'relative' }}>
-            {isUploading && (
+            {uploadStatus !== 'idle' && (
                 <div style={{ position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(255,255,255,0.6)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <div style={{ padding: '10px 20px', background: 'white', borderRadius: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', fontWeight: 'bold' }}>이미지 업로드 중...</div>
+                    <div style={{ padding: '10px 20px', background: 'white', borderRadius: '20px', boxShadow: '0 2px 10px rgba(0,0,0,0.1)', fontWeight: 'bold' }}>
+                        {uploadStatus === 'optimizing' ? '이미지를 최적화하는 중입니다...' : '이미지를 업로드 중입니다...'}
+                    </div>
                 </div>
             )}
             
@@ -177,7 +212,7 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                 <span className="ql-formats">
                     <select className="ql-special-char" defaultValue="">
                         <option value="">특수기호</option>
-                        {[ '●', '◇', '◆', '□', '■', '○', '▲', '△', '▼', '▽', '▶', '▷', '✓', '※'].map(c => (
+                        {['●', '○', '■', '□', '◆', '◇', '▲', '△', '▼', '▽', '▶', '▷', '✓', '※'].map(c => (
                             <option key={c} value={c}>{c}</option>
                         ))}
                     </select>
@@ -198,7 +233,7 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                 </span>
             </div>
 
-            <div className="editor-wrapper" style={{ border: '1px solid #e5e7eb', borderTop: 'none', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}>
+            <div id={editorContainerId} className="editor-wrapper" style={{ border: '1px solid #e5e7eb', borderTop: 'none', borderBottomLeftRadius: '8px', borderBottomRightRadius: '8px' }}>
                 <ReactQuill
                     ref={quillRef}
                     theme="snow"
@@ -209,21 +244,26 @@ export default function ClientQuillEditor({ value, onChange, placeholder, height
                 />
             </div>
 
-            <style jsx global>{`
-                .editor-wrapper .ql-container.ql-snow {
+            <style jsx>{`
+                #${editorContainerId} :global(.ql-container.ql-snow) {
                     border: none !important;
                     min-height: ${height};
                     font-size: 16px;
                 }
-                .editor-wrapper .ql-editor {
+                #${editorContainerId} :global(.ql-editor) {
                     min-height: ${height};
-                    padding: 20px;
+                    padding: ${parseInt(height) <= 100 ? '10px 15px' : '20px'};
                 }
-                .ql-snow .ql-picker.ql-special-char, 
-                .ql-snow .ql-picker.ql-line-height {
+                :global(.ql-snow .ql-picker.ql-special-char), 
+                :global(.ql-snow .ql-picker.ql-line-height) {
                     width: 90px;
+                }
+                /* Hide special char selection state to keep it as a button */
+                :global(.ql-snow .ql-picker.ql-special-char .ql-picker-label[data-value]) {
+                  content: '특수기호' !important;
                 }
             `}</style>
         </div>
     );
+
 }

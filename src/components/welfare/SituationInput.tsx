@@ -1,7 +1,7 @@
 'use client';
 
 import { Fragment, useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { ChevronRight, Sparkles } from 'lucide-react';
 
 const SEOUL_DISTRICTS = [
@@ -94,15 +94,10 @@ export default function SituationInput({ onSubmit }: Props) {
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={step}
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -24 }}
-          transition={{ duration: 0.2 }}
-          className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-blue-500/5 overflow-hidden"
-        >
+      <motion.div
+        layout
+        className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-blue-500/5 overflow-hidden"
+      >
           <div className="p-8 md:p-12">
             <div className="flex items-center gap-2 mb-6 uppercase tracking-widest text-[10px] font-black text-blue-500">
               <Sparkles className="w-4 h-4" />
@@ -285,7 +280,6 @@ export default function SituationInput({ onSubmit }: Props) {
             </div>
           </div>
         </motion.div>
-      </AnimatePresence>
     </div>
   );
 }

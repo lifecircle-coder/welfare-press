@@ -147,7 +147,6 @@ export default function QuizFlow({ situation, onComplete, onReset }: Props) {
   const [selected, setSelected] = useState<string | null>(null);
   const [answered, setAnswered] = useState(false);
   const [answers, setAnswers] = useState<Answer[]>([]);
-  const [completed, setCompleted] = useState(false);
 
   useEffect(() => {
     async function fetchQuestions() {
@@ -193,10 +192,11 @@ export default function QuizFlow({ situation, onComplete, onReset }: Props) {
 
   function handleNext() {
     if (currentIndex + 1 >= totalQuestions) {
+      // answers state는 이미 마지막 답변까지 포함된 상태
+      // setCompleted → return null 패턴을 제거하고 부모가 직접 unmount 처리
       const finalAnswers = answers;
       const eligible = calcEligiblePolicies(questions, finalAnswers, situation);
       const total = eligible.reduce((sum, p) => sum + (p.max_benefit_amount ?? 0), 0);
-      setCompleted(true);
       onComplete({
         answers: finalAnswers,
         questions,
@@ -240,10 +240,6 @@ export default function QuizFlow({ situation, onComplete, onReset }: Props) {
     );
   }
 
-  // ── Completed State ──────────────────────────────────────────────────────
-
-  if (completed) return null;
-
   // ── Quiz Question ────────────────────────────────────────────────────────
 
   const isOX = currentQuestion.question_type === 'ox';
@@ -269,15 +265,7 @@ export default function QuizFlow({ situation, onComplete, onReset }: Props) {
         </div>
       </div>
 
-      <AnimatePresence mode="wait">
-        <motion.div
-          key={currentQuestion.id}
-          initial={{ opacity: 0, x: 24 }}
-          animate={{ opacity: 1, x: 0 }}
-          exit={{ opacity: 0, x: -24 }}
-          transition={{ duration: 0.2 }}
-          className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-blue-500/5 overflow-hidden"
-        >
+      <motion.div layout className="bg-white rounded-[2.5rem] border border-slate-100 shadow-2xl shadow-blue-500/5 overflow-hidden">
           <div className="p-8 md:p-12 space-y-8">
             {/* Policy badge */}
             <div className="flex items-center gap-2 flex-wrap">
@@ -416,7 +404,6 @@ export default function QuizFlow({ situation, onComplete, onReset }: Props) {
             )}
           </div>
         </motion.div>
-      </AnimatePresence>
 
       {/* Reset link */}
       <div className="text-center">

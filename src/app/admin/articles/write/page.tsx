@@ -228,7 +228,7 @@ function WriteArticleForm() {
                         value={formData.summary}
                         onChange={(value: string) => setFormData(prev => ({ ...prev, summary: value }))}
                         articleId={formData.id}
-                        height="50px"
+                        height="40px"
                         placeholder="기사 요약 내용을 입력하세요..."
                     />
                 </div>
