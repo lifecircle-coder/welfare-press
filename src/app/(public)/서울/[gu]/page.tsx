@@ -9,10 +9,9 @@ import LocalWelfareGuide from '@/components/welfare/LocalWelfareGuide';
 export const revalidate = 86400;
 
 const SEOUL_REGIONS = REGIONS.filter(r => r.city === '서울');
-const INITIAL_GU_CODES = ['gwanak', 'gangnam', 'mapo', 'songpa', 'nowon'];
 
 export async function generateStaticParams() {
-  return INITIAL_GU_CODES.map(gu => ({ gu }));
+  return SEOUL_REGIONS.map(r => ({ gu: r.code }));
 }
 
 export async function generateMetadata(
