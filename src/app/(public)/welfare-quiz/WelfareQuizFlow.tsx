@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { sendGAEvent } from '@next/third-parties/google';
 import SituationInput, { SituationData } from '@/components/welfare/SituationInput';
 import QuizFlow, { QuizResult } from '@/components/welfare/QuizFlow';
 import QuizResultScreen from '@/components/welfare/QuizResult';
@@ -17,11 +18,27 @@ export default function WelfareQuizFlow() {
   const handleSituationSubmit = (data: SituationData) => {
     setSituation(data);
     setResult(null);
+    sendGAEvent('event', 'quiz_start', {
+      region: `${data.province} ${data.district}`,
+      age: data.age,
+      household_type: data.householdType,
+      income_level: data.incomeLevel,
+    });
     setFlowState('quiz');
   };
 
   const handleQuizComplete = (quizResult: QuizResult) => {
+    const correctCount = quizResult.answers.filter(a => a.is_correct).length;
+    const scorePercent = Math.round((correctCount / quizResult.questions.length) * 100);
     setResult(quizResult);
+    sendGAEvent('event', 'quiz_complete', {
+      score_percent: scorePercent,
+      correct_count: correctCount,
+      total_questions: quizResult.questions.length,
+      total_benefit_amount: quizResult.totalBenefitAmount,
+      eligible_policy_count: quizResult.eligiblePolicies.length,
+      region: `${quizResult.situation.province} ${quizResult.situation.district}`,
+    });
     setFlowState('result');
   };
 
@@ -54,7 +71,13 @@ export default function WelfareQuizFlow() {
           <QuizResultScreen
             result={result}
             onRestart={handleRestart}
-            onCertificate={() => setFlowState('certificate')}
+            onCertificate={() => {
+                sendGAEvent('event', 'quiz_certificate_view', {
+                  region: `${result.situation.province} ${result.situation.district}`,
+                  total_benefit_amount: result.totalBenefitAmount,
+                });
+                setFlowState('certificate');
+              }}
           />
         </motion.div>
       )}

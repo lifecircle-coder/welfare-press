@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
+import { sendGAEvent } from '@next/third-parties/google';
 import { Share2, Link2, CheckCircle2, Trophy, Sparkles, Loader2 } from 'lucide-react';
 import { QuizResult } from './QuizFlow';
 
@@ -72,6 +73,11 @@ export default function Certificate({ result }: Props) {
   const shareText = `[${regionLabel} 복지 퀴즈 완료! 🏆]\n나는 연간 최대 ${totalBenefitAmount.toLocaleString()}만원 혜택을 받을 수 있어요!\n내 결과 확인하기 → https://thebok.co.kr/welfare-quiz`;
 
   async function handleShare() {
+    sendGAEvent('event', 'quiz_share', {
+      method: navigator.share ? 'native' : 'clipboard',
+      region: regionLabel,
+      total_benefit_amount: totalBenefitAmount,
+    });
     if (navigator.share) {
       try {
         await navigator.share({
@@ -86,6 +92,10 @@ export default function Certificate({ result }: Props) {
   }
 
   async function handleCopyLink() {
+    sendGAEvent('event', 'quiz_copy_link', {
+      region: regionLabel,
+      total_benefit_amount: totalBenefitAmount,
+    });
     try {
       await navigator.clipboard.writeText(shareText);
       setCopied(true);
