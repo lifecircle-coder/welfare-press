@@ -300,119 +300,81 @@ export default function ArticleManagement() {
 
     const handleCopySource = async (api: WelfareService) => {
         try {
-            let prompt = '';
-            const sourceName = api.jurMnofNm || '공공기관';
-            const title = api.servNm;
-            const summary = api.servDgst;
-            const link = api.servDtlLink || '상세 페이지 참조';
-            const keywords = (api.keywords || []).length > 0 ? (api.keywords || []).join(', ') : '복지, 정책, 뉴스';
+            // 1. 메뉴/카테고리 목록 데이터화 (AI가 선택할 수 있도록 제공)
+            const menuListText = allMenus
+                .filter(m => m.parent_id) // 소분류만 추출
+                .map(sub => {
+                    const parent = allMenus.find(m => m.id === sub.parent_id);
+                    return `${parent?.name || '미분류'} > ${sub.name}`;
+                })
+                .join('\n- ');
 
-            // [스토리보드 반영] 왕 기자(AI Persona) 지능형 프롬프트 시스템
-            if (api.apiSource === 'MCST_PRESS') {
-                prompt = `[왕 기자 전용: 보도자료 기반 팩트체크 리포트]
+            // 2. 탭별 저널리즘 전략 설정
+            const strategies: Record<string, { type: string, structure: string, angle: string }> = {
+                'MCST_PRESS': { type: '스트레이트 뉴스', structure: '역피라미드 구조', angle: '정부 발표를 5W1H 기반으로 재구성하는 팩트 중심 속보' },
+                'YOUTH': { type: '서비스 저널리즘', structure: '다이아몬드 구조', angle: '"이 정책, 나도 받을 수 있을까?" 수혜자 관점의 실용 가이드' },
+                'MCST_NEWS': { type: '정책 해설', structure: '다이아몬드 구조', angle: '정책이 국민 삶에 미치는 영향을 분석하는 "So What?" 관점' },
+                'NEWS_ALL': { type: '종합 브리핑', structure: '역피라미드 구조', angle: '복수 소스를 횡단하며 핵심만 짚는 압축 브리핑' },
+                'NATIONAL': { type: '복지 서비스 가이드', structure: '다이아몬드 구조', angle: '"이런 분은 꼭 신청하라" — 수혜 자격 중심 복지 안내' },
+                'LOCAL': { type: '지역 밀착 복지 보도', structure: '다이아몬드 구조', angle: '"우리 동네에서 받을 수 있는 복지" — 지역 특화 관점' },
+                'MOIS_STATS': { type: '데이터 분석 리포트', structure: '역피라미드+분석', angle: '숫자 뒤에 숨은 이야기 — 트렌드 해석과 사회적 시사점' }
+            };
 
-핵심 소스: 문화체육관광부 정책브리핑 (보도자료)
-소속 기관: ${sourceName}
-헤드라인(원문): ${title}
-데이터 요약: ${summary}
-상세 URL: ${link}
-핵심 키워드: ${keywords}
+            const strategy = strategies[api.apiSource || 'NATIONAL'] || strategies['NATIONAL'];
+            const sourceName = api.jurMnofNm || api.deptNm || '공공기관';
+            const rawContent = api.fullContent || api.servDgst || api.summary;
 
-작성 지침 (보도자료형):
-1. '팩트 위주의 뉴스 브리핑' 형태를 유지하며, 정부의 공식 입장을 독자들에게 신뢰감 있게 전달하세요.
-2. 기사 도입부에 '이 정책이 왜 중요한지' 한 문장으로 정의하고 시작하세요.
-3. [누가, 언제, 무엇을, 어떻게] 수혜를 받는지 표(Table) 또는 리스트 형태로 일목요연하게 정리하세요.
-4. 마지막에는 정책 담당 부서와 연락처(있는 경우)를 명시하여 독자의 편의를 돕습니다.`;
-            } else if (api.apiSource === 'MCST_NEWS' || api.apiSource === 'MCST_PHOTO') {
-                prompt = `[왕 기자 전용: 정책 뉴스 기반 스토리텔링 지능형 프롬프트]
+            // 3. 변 기자 페르소나 및 출력 형식 고도화 프롬프트
+            const prompt = `
+당신은 대한민국 최고의 복지 전문 뉴스 매체 '복지프레스'의 베테랑 기자인 '변 기자'다.
+제공된 원본 데이터를 바탕으로 독자들에게 가장 유익하고 신뢰할 수 있는 기사를 작성하라.
 
-뉴스 소스: 정책브리핑 전문 뉴스/포토
-기사 제목: ${title}
-내용 요약: ${summary}
-참고 URL: ${link}
+■ 원본 데이터
+- 소스 기관: ${sourceName}
+- 원문 제목: ${api.servNm || api.title}
+- 원문 내용: ${rawContent}
+- 원문 URL: ${api.servDtlLink || api.link || '상세 페이지 참조'}
 
-작성 지침 (스토리텔링형):
-1. 딱딱한 정책 발표가 아닌, 실생활에 적용된 '사례' 중심의 친근한 해설 기사로 작성하세요.
-2. '왕 기자' 특유의 날카로운 분석을 더해, 이 정책이 가져올 기대효과 3가지를 도출하세요.
-3. 시각적으로 돋보이도록 적절한 소제목(Sub-heading)을 3개 이상 사용하세요.
-4. 독자 초청 멘트나 궁금증을 유발하는 질문으로 기사를 마무리하세요.`;
-            } else if (api.apiSource === 'NATIONAL' || api.apiSource === 'LOCAL' || api.apiSource === 'SUBSIDY' || api.apiSource === 'MOGEF') {
-                const keywords = api.keywords || [];
-                const category = keywords[0] || '일반';
-                const isWelfareMapSeries = ['영유아', '청년', '어르신'].includes(category);
-                
-                if (isWelfareMapSeries) {
-                    prompt = `[왕 기자 전용: 내 삶의 지도 (Welfare Map) 시리즈 - ${category}편]
+■ 기사 작성 지침
+1. 기사 유형: ${strategy.type} (${strategy.structure})
+2. 관점(Angle): ${strategy.angle}
+3. 문체: 단호하고 객관적인 '해라체' 사용. 한 문장은 50~70자 이내의 단문 위주로 구성할 것.
+4. 난이도: 중학생 수준이면 누구나 이해할 수 있도록 행정 용어(예: 수혜자, 가점 등)를 쉬운 일상 용어로 순화할 것.
+5. 구성:
+   - [제목]: 핵심 키워드와 숫자를 전진 배치하여 SEO를 최적화하라 (예: '최대 100만원 지원', '3월부터 신청' 등).
+   - [요약본]: 기사의 핵심 내용을 3개의 불렛 포인트로 정리하라 (최대 3줄).
+   - [부제]: 본문의 핵심 내용을 한눈에 관통하는 임팩트 있는 문장 (최대 2줄).
+   - [본문]: 소제목을 활용하여 가독성을 높이고, 신청 방법이나 지원 대상 등은 반드시 불렛 포인트를 사용하여 시각화하라.
+   - [해시태그]: 기사 내용과 관련된 핵심 키워드 3~5개를 # 형식으로 생성하라.
 
-시리즈 테마: 내 삶의 지도 (생애주기별 맞춤 복지)
-핵심 정책: ${title}
-제공 기관: ${sourceName}
-주요 내용: ${summary}
-상세 링크: ${link}
+■ 기사 카테고리 선정
+아래 메뉴 목록 중 이 기사에 가장 적합한 '대분류 > 소분류'를 하나만 선택하여 기사 최상단에 기재하라.
+- ${menuListText}
 
-작성 지침 (시리즈 특화형):
-1. '내 삶의 지도' 시리즈의 일환으로, ${category} 시기에 꼭 챙겨야 할 필수 복지라는 점을 강조하세요.
-2. 정책 요약을 넘어, '이 혜택이 내 삶을 어떻게 바꾸는지' 구체적인 라이프스타일 변화를 묘사하세요.
-3. [지도 포인트] 섹션을 만들어, 신청 시 주의사항이나 꿀팁 2가지를 '왕 기자'의 시선으로 짚어주세요.
-4. "당신의 인생 지도를 완성하는 한 줄기 빛, THE복지가 함께합니다."라는 문구로 감성적인 마무리를 해주세요.`;
-                } else {
-                    prompt = `[왕 기자 전용: 복지 서비스 수혜자 중심 가이드]
+■ 출력 형식 (아래 형식을 엄격히 준수할 것)
+[카테고리: 대분류 > 소분류]
 
-서비스명: ${title}
-제공 기관: ${sourceName}
-서비스 요약: ${summary}
-신청 링크: ${link}
+제목: 
+(헤드라인)
 
-작성 지침 (수혜자 맞춤형):
-1. '당신을 위한 맞춤 복지'라는 컨셉으로, 2030 청년 또는 6070 시니어 등 핵심 타겟을 명확히 설정하여 작성하세요.
-2. '쉬운 요약' 박스를 상단에 배치하고, 전문 용어 대신 일상 용어를 사용하세요.
-3. "이런 분들은 꼭 신청하세요!" 섹션을 만들어 자격 요건을 강조하세요.
-4. 기사 끝에 글자 크기 조절 버튼이 있다는 점을 언급하여 접근성을 강조하세요.`;
-                }
-            } else if (api.apiSource === 'YOUTH') {
-                prompt = `[왕 기자 전용: 청년정책 밀착 가이드 - "청년의 오늘을 응원합니다"]
-                
-정책명: ${title}
-기관: ${sourceName}
-주요 내용: ${summary}
-상세 주소: ${link}
-키워드: ${keywords}
+요약본:
+(불렛 포인트 3개, 최대 3줄)
 
-작성 지침 (청년 맞춤형):
-1. '청년의 미래를 바꾸는 한 걸음'이라는 컨셉으로, 2030 청년들이 즉각적으로 체감할 수 있는 혜택을 강조하세요.
-2. 기사 도입부에서 "당신만 몰랐던 청년 꿀팁" 또는 "청년의 삶을 바꾸는 새로운 정책"과 같은 호기심을 유발하는 문구를 사용하세요.
-3. [신청 포인트] 섹션을 별도로 만들어, 신청 자격과 방법을 3줄 요약으로 제공하세요.
-4. '왕 기자'의 논평을 한 줄 추가하여, 이 정책이 청년들에게 어떤 사회적 의미가 있는지 짧게 덧붙이세요.
-5. "청년이 행복한 세상, THE복지가 함께 찾아갑니다."라는 문구로 마무리하세요.`;
-            } else if (api.apiSource === 'MOIS_STATS') {
-                prompt = `[왕 기자 전용: 데이터 인사이트 분석 리포트]
+부제:
+(소제목, 최대 2줄)
 
-통계 데이터: ${title}
-출처: 행정안전부 (보도자료/통계)
-데이터 개요: ${summary}
+본문:
+(상세 기사 내용)
 
-작성 지침 (데이터 분석형):
-1. 숫자가 주는 의미를 파악하여 '데이터로 보는 복지 현황' 테마로 작성하세요.
-2. 과거 데이터나 다른 지표와 비교하여 증가/감소 추세를 분석해 주세요.
-3. 통계 결과가 시사하는 사회적 메시지를 '왕 기자'의 논평으로 정리하세요.
-4. 인포그래픽을 보는 듯한 텍스트 구조(도표화)를 사용하세요.`;
-            } else {
-                prompt = `[왕 기자 전용: 일반 정보 브리핑 지침]
-
-제목: ${title}
-내용: ${summary}
-출처: ${sourceName}
-
-작성 지침:
-1. 위 정보를 토대로 독자들에게 유익한 정보성 블로그/뉴스 기사를 작성하세요.
-2. 가독성 좋게 단락을 나누고 적절한 소제목을 붙여주세요.`;
-            }
+해시태그:
+(키워드 3~5개)
+`.trim();
 
             await navigator.clipboard.writeText(prompt);
             const newHistory = { ...apiStatusHistory, [api.servId]: 'copied' };
             setApiStatusHistory(newHistory);
             localStorage.setItem('copiedPublicData', JSON.stringify(newHistory));
-            alert('🚀 왕 기자 전용 지능형 프롬프트가 복사되었습니다!\n기사 작성 창의 AI 프롬프트 입력란에 붙여넣으세요.');
+            alert('🚀 "변 기자" 고품질 복지 뉴스 가이드라인이 반영된 프롬프트가 복사되었습니다!');
         } catch (error) {
             console.error('Failed to copy', error);
         }
@@ -844,7 +806,7 @@ export default function ArticleManagement() {
                                                         ${status === 'completed' 
                                                             ? 'bg-green-600 text-white hover:bg-green-700' 
                                                             : 'bg-blue-600 text-white hover:bg-blue-700 active:scale-95'}`}
-                                                    title="왕 기자 프롬프트 복사"
+                                                    title="변 기자 프롬프트 복사"
                                                 >
                                                     <Copy size={14} />
                                                 </button>
