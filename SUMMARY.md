@@ -24,3 +24,11 @@
 > [!CAUTION]
 > **에디터 수정 시**: 비동기 콜백(`async/await`) 내에서는 `quillRef.current`가 `null`이 될 수 있으므로, 반드시 `(this as any).quill`을 통해 내부 인스턴스를 직접 호출해야 합니다.
 
+---
+
+## 3. 관리자 페이지 접속 정보
+- **운영 사이트**: [thebok.co.kr](https://thebok.co.kr)
+- **관리자 페이지 주소**: [thebok.co.kr/admin](https://thebok.co.kr/admin)
+- **접속 방법**: 사용자 브라우저에 관리자 계정이 이미 로그인되어 있는 상태입니다. 접속 후 **로그인 버튼**만 클릭하면 즉시 관리자 대시보드로 진입할 수 있습니다.
+
+
