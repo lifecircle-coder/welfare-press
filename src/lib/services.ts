@@ -406,7 +406,7 @@ export const searchArticles = async (query: string): Promise<Article[]> => {
     const { data, error } = await supabase
         .from('articles')
         .select(ARTICLE_LIST_FIELDS)
-        .or(`"title.ilike.%${query}%","content.ilike.%${query}%","summary.ilike.%${query}%"`)
+        .or(`title.ilike.%${query}%,content.ilike.%${query}%,summary.ilike.%${query}%`)
         .order('created_at', { ascending: false })
         .limit(50);
 
